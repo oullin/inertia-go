@@ -11,6 +11,7 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/example/api/internal/database"
+	"github.com/oullin/inertia-go/example/api/internal/seed"
 )
 
 //go:embed resources/views/app.html
@@ -44,6 +45,10 @@ func main() {
 	}
 
 	defer db.Close()
+
+	if err := seed.Run(db); err != nil {
+		log.Fatal("failed to seed database:", err)
+	}
 
 	distPath, err := resolveDistPath()
 

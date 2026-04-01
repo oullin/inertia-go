@@ -1,14 +1,13 @@
 <script setup>
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-vue";
-import { Badge } from "@/js/components/ui/badge";
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/js/components/ui/card";
+import { IconUsers, IconUpload, IconCircleCheck, IconAlertTriangle } from "@tabler/icons-vue";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/js/components/ui/card";
+
+defineProps({
+  stats: {
+    type: Object,
+    default: () => ({ invites: 0, uploads: 0, approvals: 0, escalations: 0 }),
+  },
+});
 </script>
 
 <template>
@@ -17,82 +16,58 @@ import {
   >
     <Card class="@container/card">
       <CardHeader>
-        <CardDescription>Total Revenue</CardDescription>
+        <CardDescription>Team Invites</CardDescription>
         <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-          $1,250.00
+          {{ stats.invites }}
         </CardTitle>
-        <CardAction>
-          <Badge variant="outline">
-            <IconTrendingUp />
-            +12.5%
-          </Badge>
-        </CardAction>
       </CardHeader>
       <CardFooter class="flex-col items-start gap-1.5 text-sm">
         <div class="line-clamp-1 flex gap-2 font-medium">
-          Trending up this month <IconTrendingUp class="size-4" />
+          Onboarding queue <IconUsers class="size-4" />
         </div>
-        <div class="text-muted-foreground">Visitors for the last 6 months</div>
+        <div class="text-muted-foreground">Pending and accepted invitations</div>
       </CardFooter>
     </Card>
     <Card class="@container/card">
       <CardHeader>
-        <CardDescription>New Customers</CardDescription>
+        <CardDescription>Uploaded Files</CardDescription>
         <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-          1,234
+          {{ stats.uploads }}
         </CardTitle>
-        <CardAction>
-          <Badge variant="outline">
-            <IconTrendingDown />
-            -20%
-          </Badge>
-        </CardAction>
       </CardHeader>
       <CardFooter class="flex-col items-start gap-1.5 text-sm">
         <div class="line-clamp-1 flex gap-2 font-medium">
-          Down 20% this period <IconTrendingDown class="size-4" />
+          Document pipeline <IconUpload class="size-4" />
         </div>
-        <div class="text-muted-foreground">Acquisition needs attention</div>
+        <div class="text-muted-foreground">Processed, queued, and ready</div>
       </CardFooter>
     </Card>
     <Card class="@container/card">
       <CardHeader>
-        <CardDescription>Active Accounts</CardDescription>
+        <CardDescription>Approvals</CardDescription>
         <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-          45,678
+          {{ stats.approvals }}
         </CardTitle>
-        <CardAction>
-          <Badge variant="outline">
-            <IconTrendingUp />
-            +12.5%
-          </Badge>
-        </CardAction>
       </CardHeader>
       <CardFooter class="flex-col items-start gap-1.5 text-sm">
         <div class="line-clamp-1 flex gap-2 font-medium">
-          Strong user retention <IconTrendingUp class="size-4" />
+          Routing decisions <IconCircleCheck class="size-4" />
         </div>
-        <div class="text-muted-foreground">Engagement exceed targets</div>
+        <div class="text-muted-foreground">Approved, queued, and synced</div>
       </CardFooter>
     </Card>
     <Card class="@container/card">
       <CardHeader>
-        <CardDescription>Growth Rate</CardDescription>
+        <CardDescription>Priority Escalations</CardDescription>
         <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-          4.5%
+          {{ stats.escalations }}
         </CardTitle>
-        <CardAction>
-          <Badge variant="outline">
-            <IconTrendingUp />
-            +4.5%
-          </Badge>
-        </CardAction>
       </CardHeader>
       <CardFooter class="flex-col items-start gap-1.5 text-sm">
         <div class="line-clamp-1 flex gap-2 font-medium">
-          Steady performance increase <IconTrendingUp class="size-4" />
+          Promoted accounts <IconAlertTriangle class="size-4" />
         </div>
-        <div class="text-muted-foreground">Meets growth projections</div>
+        <div class="text-muted-foreground">Escalations synced to the queue</div>
       </CardFooter>
     </Card>
   </div>
