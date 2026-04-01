@@ -2,8 +2,8 @@
   "name": "@inertia-go/core",
   "private": true,
   "scripts": {
-    "build": "go build ./...",
-    "test": "go test ./...",
-    "lint": "go vet ./..."
+    "build": "make -C .. build",
+    "test": "make -C .. test",
+    "lint": "make -C .. format"
   }
 }
