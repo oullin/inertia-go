@@ -1,5 +1,12 @@
 # inertia-go
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/oullin/inertia-go.svg)](https://pkg.go.dev/github.com/oullin/inertia-go)
+[![go 1.25](https://img.shields.io/badge/go-1.25-00ADD8.svg)](https://go.dev/dl/)
+[![CI](https://github.com/oullin/inertia-go/actions/workflows/ci.yml/badge.svg)](https://github.com/oullin/inertia-go/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/oullin/inertia-go/branch/main/graph/badge.svg)](https://codecov.io/gh/oullin/inertia-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/oullin/inertia-go)](https://goreportcard.com/report/github.com/oullin/inertia-go)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Go server-side adapter for [Inertia.js](https://inertiajs.com). Build modern single-page apps using Vue, React, or Svelte with a Go backend -- no client-side routing or API layer required.
 
 ## Why
