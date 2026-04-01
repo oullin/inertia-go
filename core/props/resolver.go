@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	ihttp "github.com/oullin/inertia-go/http"
+	ihttp "github.com/oullin/inertia-go/core/http"
 )
 
 // Result holds the output of prop resolution: the evaluated props,

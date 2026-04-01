@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"os"
 
-	ihttp "github.com/oullin/inertia-go/http"
+	ihttp "github.com/oullin/inertia-go/core/http"
 )
 
 // Option configures an Inertia instance during construction.

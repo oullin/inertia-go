@@ -3,19 +3,19 @@ GO_FMT := $(shell go env GOPATH)/bin/fmt
 .PHONY: format format-check test lint build example
 
 format:
-	$(GO_FMT) format .
+	cd core && $(GO_FMT) format .
 
 format-check:
-	$(GO_FMT) check .
+	cd core && $(GO_FMT) check .
 
 test:
-	go test ./...
+	cd core && go test ./...
 
 lint:
-	go vet ./...
+	cd core && go vet ./...
 
 build:
-	go build ./...
+	cd core && go build ./...
 
 example:
 	pnpm turbo build --filter=@inertia-go/example

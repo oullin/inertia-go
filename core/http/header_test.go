@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ihttp "github.com/oullin/inertia-go/http"
+	ihttp "github.com/oullin/inertia-go/core/http"
 )
 
 func TestIsInertiaRequest(t *testing.T) {

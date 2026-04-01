@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	ihttp "github.com/oullin/inertia-go/http"
+	ihttp "github.com/oullin/inertia-go/core/http"
 )
 
 // Config holds the configuration for the Inertia middleware.

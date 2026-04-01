@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	ihttp "github.com/oullin/inertia-go/http"
-	"github.com/oullin/inertia-go/inertia"
-	"github.com/oullin/inertia-go/props"
+	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/inertia"
+	"github.com/oullin/inertia-go/core/props"
 )
 
 //go:embed resources/views/app.html

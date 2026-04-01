@@ -3,7 +3,7 @@ package inertia
 import (
 	"context"
 
-	ihttp "github.com/oullin/inertia-go/http"
+	ihttp "github.com/oullin/inertia-go/core/http"
 )
 
 type contextKey struct{ name string }

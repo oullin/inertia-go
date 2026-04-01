@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ihttp "github.com/oullin/inertia-go/http"
-	"github.com/oullin/inertia-go/middleware"
+	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/middleware"
 )
 
 func TestMiddleware_SetsVaryHeader(t *testing.T) {

@@ -9,10 +9,10 @@ import (
 	"os"
 	"sync"
 
-	ihttp "github.com/oullin/inertia-go/http"
-	"github.com/oullin/inertia-go/middleware"
-	"github.com/oullin/inertia-go/props"
-	"github.com/oullin/inertia-go/response"
+	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/middleware"
+	"github.com/oullin/inertia-go/core/props"
+	"github.com/oullin/inertia-go/core/response"
 )
 
 // Inertia is the central server-side adapter for the Inertia.js

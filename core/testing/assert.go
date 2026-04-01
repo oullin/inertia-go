@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/oullin/inertia-go/inertia"
+	"github.com/oullin/inertia-go/core/inertia"
 
-	ihttp "github.com/oullin/inertia-go/http"
+	ihttp "github.com/oullin/inertia-go/core/http"
 )
 
 // AssertableInertia holds a decoded Inertia page object for test

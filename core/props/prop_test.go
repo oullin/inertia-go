@@ -3,7 +3,7 @@ package props_test
 import (
 	"testing"
 
-	"github.com/oullin/inertia-go/props"
+	"github.com/oullin/inertia-go/core/props"
 )
 
 func TestAlwaysProp(t *testing.T) {

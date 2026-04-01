@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ihttp "github.com/oullin/inertia-go/http"
-	"github.com/oullin/inertia-go/inertia"
-	"github.com/oullin/inertia-go/props"
-	"github.com/oullin/inertia-go/response"
+	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/inertia"
+	"github.com/oullin/inertia-go/core/props"
+	"github.com/oullin/inertia-go/core/response"
 )
 
 const testTemplate = `<!DOCTYPE html>

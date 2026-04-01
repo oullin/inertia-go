@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
-	ihttp "github.com/oullin/inertia-go/http"
+	ihttp "github.com/oullin/inertia-go/core/http"
 )
 
 // WriteJSON writes an Inertia JSON response for XHR visits.
