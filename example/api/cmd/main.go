@@ -15,7 +15,7 @@ import (
 //go:embed resources/views/app.html
 var rootTemplateFS embed.FS
 
-var distFS = os.DirFS("../../app/dist")
+var distFS = os.DirFS("../app/dist")
 
 var i *inertia.Inertia
 
@@ -45,7 +45,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Serve Vite-built assets.
-	mux.Handle("/assets/", http.FileServer(http.FS(distFS)))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.FS(distFS))))
 
 	// Pages.
 	mux.Handle("/", i.Middleware(http.HandlerFunc(homeHandler)))

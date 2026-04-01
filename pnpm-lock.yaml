@@ -17,7 +17,7 @@ importers:
 
   core: {}
 
-  example:
+  example/app:
     dependencies:
       '@inertiajs/vue3':
         specifier: ^2.0.0
