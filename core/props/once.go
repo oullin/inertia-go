@@ -7,7 +7,7 @@ type OnceProp struct {
 	Value any
 }
 
-// Once creates a prop that is resolved only on the first visit.
+// Once creates a prop resolved only on the first visit.
 func Once(val any) OnceProp {
 	return OnceProp{Value: val}
 }

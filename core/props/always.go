@@ -6,7 +6,7 @@ type AlwaysProp struct {
 	Value any
 }
 
-// Always creates a prop that is always included in every response.
+// Always creates a prop always included in every response.
 func Always(val any) AlwaysProp {
 	return AlwaysProp{Value: val}
 }

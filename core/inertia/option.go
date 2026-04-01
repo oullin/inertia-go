@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"os"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 )
 
 // Option configures an Inertia instance during construction.
@@ -50,7 +50,7 @@ func WithContainerID(id string) Option {
 
 // WithJSONMarshaler replaces the default encoding/json marshaler with
 // a custom implementation.
-func WithJSONMarshaler(m ihttp.JSONMarshaler) Option {
+func WithJSONMarshaler(m httpx.JSONMarshaler) Option {
 	return func(i *Inertia) error {
 		i.jsonMarshaler = m
 
@@ -59,7 +59,7 @@ func WithJSONMarshaler(m ihttp.JSONMarshaler) Option {
 }
 
 // WithLogger sets a logger for diagnostic messages.
-func WithLogger(l ihttp.Logger) Option {
+func WithLogger(l httpx.Logger) Option {
 	return func(i *Inertia) error {
 		i.logger = l
 

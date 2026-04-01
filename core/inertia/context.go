@@ -3,7 +3,7 @@ package inertia
 import (
 	"context"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 )
 
 type contextKey struct{ name string }
@@ -27,7 +27,7 @@ func SetProp(ctx context.Context, key string, val any) context.Context {
 }
 
 // SetProps stores multiple props on the request context.
-func SetProps(ctx context.Context, props ihttp.Props) context.Context {
+func SetProps(ctx context.Context, props httpx.Props) context.Context {
 	p := propsFromContext(ctx)
 
 	for k, v := range props {
@@ -37,9 +37,9 @@ func SetProps(ctx context.Context, props ihttp.Props) context.Context {
 	return context.WithValue(ctx, ctxKeyProps, p)
 }
 
-// SetValidationErrors stores validation errors on the request context.
+// SetValidationErrors stores validation errors in the request context.
 // They are automatically added to the response props under the "errors" key.
-func SetValidationErrors(ctx context.Context, errors ihttp.ValidationErrors) context.Context {
+func SetValidationErrors(ctx context.Context, errors httpx.ValidationErrors) context.Context {
 	return context.WithValue(ctx, ctxKeyValidationErrors, errors)
 }
 
@@ -55,7 +55,7 @@ func SetClearHistory(ctx context.Context) context.Context {
 
 // SetTemplateData stores additional data for the root HTML template
 // used during initial (non-XHR) page visits.
-func SetTemplateData(ctx context.Context, data ihttp.TemplateData) context.Context {
+func SetTemplateData(ctx context.Context, data httpx.TemplateData) context.Context {
 	existing := templateDataFromContext(ctx)
 
 	for k, v := range data {
@@ -73,16 +73,16 @@ func SetTemplateDatum(ctx context.Context, key string, val any) context.Context 
 	return context.WithValue(ctx, ctxKeyTemplateData, d)
 }
 
-func propsFromContext(ctx context.Context) ihttp.Props {
-	if p, ok := ctx.Value(ctxKeyProps).(ihttp.Props); ok {
+func propsFromContext(ctx context.Context) httpx.Props {
+	if p, ok := ctx.Value(ctxKeyProps).(httpx.Props); ok {
 		return p
 	}
 
-	return make(ihttp.Props)
+	return make(httpx.Props)
 }
 
-func validationErrorsFromContext(ctx context.Context) ihttp.ValidationErrors {
-	if v, ok := ctx.Value(ctxKeyValidationErrors).(ihttp.ValidationErrors); ok {
+func validationErrorsFromContext(ctx context.Context) httpx.ValidationErrors {
+	if v, ok := ctx.Value(ctxKeyValidationErrors).(httpx.ValidationErrors); ok {
 		return v
 	}
 
@@ -101,10 +101,10 @@ func clearHistoryFromContext(ctx context.Context) bool {
 	return v
 }
 
-func templateDataFromContext(ctx context.Context) ihttp.TemplateData {
-	if d, ok := ctx.Value(ctxKeyTemplateData).(ihttp.TemplateData); ok {
+func templateDataFromContext(ctx context.Context) httpx.TemplateData {
+	if d, ok := ctx.Value(ctxKeyTemplateData).(httpx.TemplateData); ok {
 		return d
 	}
 
-	return make(ihttp.TemplateData)
+	return make(httpx.TemplateData)
 }

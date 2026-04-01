@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 )
 
 // Result holds the output of prop resolution: the evaluated props,
@@ -18,18 +18,18 @@ type Result struct {
 
 // Resolve filters and evaluates the merged props map according to the
 // Inertia.js partial-reload protocol headers found on r.
-func Resolve(r *http.Request, component string, merged ihttp.Props) (*Result, error) {
+func Resolve(r *http.Request, component string, merged httpx.Props) (*Result, error) {
 	res := &Result{
 		Props:         make(map[string]any, len(merged)),
 		DeferredProps: make(map[string][]string),
 	}
 
-	partialComponent := r.Header.Get(ihttp.HeaderPartialComponent)
-	isPartial := ihttp.IsInertiaRequest(r) && partialComponent == component
+	partialComponent := r.Header.Get(httpx.HeaderPartialComponent)
+	isPartial := httpx.IsInertiaRequest(r) && partialComponent == component
 
-	only := splitHeader(r.Header.Get(ihttp.HeaderPartialData))
-	except := splitHeader(r.Header.Get(ihttp.HeaderPartialExcept))
-	exceptOnce := splitHeader(r.Header.Get(ihttp.HeaderExceptOnceProps))
+	only := splitHeader(r.Header.Get(httpx.HeaderPartialData))
+	except := splitHeader(r.Header.Get(httpx.HeaderPartialExcept))
+	exceptOnce := splitHeader(r.Header.Get(httpx.HeaderExceptOnceProps))
 
 	onlySet := toSet(only)
 	exceptSet := toSet(except)
@@ -113,7 +113,8 @@ func (res *Result) shouldInclude(
 		if !isPartial {
 			return false, nil
 		}
-		// Only include if explicitly requested.
+
+		// Only include it if explicitly requested.
 		if len(onlySet) > 0 {
 			_, requested := onlySet[key]
 

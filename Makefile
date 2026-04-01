@@ -1,27 +1,26 @@
-GO_FMT := $(shell go env GOPATH)/bin/fmt
+GO_FMT := docker compose -f go-fmt.compose.yaml run --rm go-fmt
 
 .PHONY: format format-check test lint build tidy example
 
 format:
-	cd core && $(GO_FMT) format .
+	$(GO_FMT) format ./core
 	cd example && npx oxfmt --write resources
 	cd example && npx oxlint --fix resources
 
 format-check:
-	cd core && $(GO_FMT) check .
+	$(GO_FMT) check .
 
 test:
-	cd core && go test ./...
+	go test ./...
 
 lint:
-	cd core && go vet ./...
+	go vet ./...
 
 build:
-	cd core && go build ./...
+	go build ./...
 
 tidy:
-	cd core && go mod tidy
-	cd example && go mod tidy
+	go mod tidy
 
 example:
 	pnpm turbo build --filter=@inertia-go/example

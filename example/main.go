@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/props"
 )
@@ -66,7 +66,7 @@ func main() {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	err := i.Render(w, r, "Home", ihttp.Props{
+	err := i.Render(w, r, "Home", httpx.Props{
 		"title":   "Welcome",
 		"message": "This is the Inertia.js Go adapter with Vue and Vite.",
 	})
@@ -77,7 +77,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	err := i.Render(w, r, "About", ihttp.Props{
+	err := i.Render(w, r, "About", httpx.Props{
 		"title":       "About",
 		"description": "A Go server-side adapter for the Inertia.js protocol.",
 		"features": []string{
@@ -95,7 +95,7 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func usersHandler(w http.ResponseWriter, r *http.Request) {
-	err := i.Render(w, r, "Users", ihttp.Props{
+	err := i.Render(w, r, "Users", httpx.Props{
 		"title": "Users",
 		"users": []map[string]any{
 			{"id": 1, "name": "Alice Johnson", "email": "alice@example.com", "role": "Admin"},

@@ -1,4 +1,4 @@
-package testing
+package assert
 
 import (
 	"encoding/json"
@@ -10,14 +10,14 @@ import (
 
 	"github.com/oullin/inertia-go/core/inertia"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 )
 
 // AssertableInertia holds a decoded Inertia page object for test
 // assertions.
 type AssertableInertia struct {
 	Component      string              `json:"component"`
-	Props          ihttp.Props         `json:"props"`
+	Props          httpx.Props         `json:"props"`
 	URL            string              `json:"url"`
 	Version        string              `json:"version"`
 	EncryptHistory bool                `json:"encryptHistory"`
@@ -58,8 +58,8 @@ func AssertFromReader(t testing.TB, body io.Reader) AssertableInertia {
 func AssertFromHandler(t testing.TB, i *inertia.Inertia, handler http.HandlerFunc, r *http.Request) AssertableInertia {
 	t.Helper()
 
-	if r.Header.Get(ihttp.HeaderInertia) == "" {
-		r.Header.Set(ihttp.HeaderInertia, "true")
+	if r.Header.Get(httpx.HeaderInertia) == "" {
+		r.Header.Set(httpx.HeaderInertia, "true")
 	}
 
 	w := httptest.NewRecorder()

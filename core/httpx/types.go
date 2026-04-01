@@ -1,6 +1,9 @@
-package http
+package httpx
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // Props holds page properties passed to the frontend component.
 type Props map[string]any
@@ -30,5 +33,5 @@ type Logger interface {
 // IsInertiaRequest reports whether r was initiated by the Inertia.js
 // client (i.e. it carries the X-Inertia header).
 func IsInertiaRequest(r *http.Request) bool {
-	return r.Header.Get(HeaderInertia) == "true"
+	return strings.TrimSpace(r.Header.Get(HeaderInertia)) == "true"
 }

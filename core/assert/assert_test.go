@@ -1,13 +1,13 @@
-package testing_test
+package assert_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/assert"
+	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
-	itesting "github.com/oullin/inertia-go/core/testing"
 )
 
 const testTemplate = `<!DOCTYPE html>
@@ -19,7 +19,7 @@ const testTemplate = `<!DOCTYPE html>
 func TestAssertFromBytes(t *testing.T) {
 	body := []byte(`{"component":"Users/Index","props":{"name":"alice"},"url":"/users","version":"v1"}`)
 
-	a := itesting.AssertFromBytes(t, body)
+	a := assert.AssertFromBytes(t, body)
 	a.AssertComponent(t, "Users/Index")
 	a.AssertURL(t, "/users")
 	a.AssertVersion(t, "v1")
@@ -36,7 +36,7 @@ func TestAssertFromHandler(t *testing.T) {
 	}
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		i.Render(w, r, "Dashboard", ihttp.Props{
+		i.Render(w, r, "Dashboard", httpx.Props{
 			"title": "Test Dashboard",
 		})
 	})
@@ -44,7 +44,7 @@ func TestAssertFromHandler(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 	r.RequestURI = "/dashboard"
 
-	a := itesting.AssertFromHandler(t, i, handler, r)
+	a := assert.AssertFromHandler(t, i, handler, r)
 	a.AssertComponent(t, "Dashboard")
 	a.AssertURL(t, "/dashboard")
 	a.AssertVersion(t, "v1")

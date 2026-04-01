@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/props"
 	"github.com/oullin/inertia-go/core/response"
@@ -49,12 +49,12 @@ func TestRender_JSONResponse(t *testing.T) {
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/users", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
-	r.Header.Set(ihttp.HeaderVersion, "v1")
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderVersion, "v1")
 	r.RequestURI = "/users"
 	w := httptest.NewRecorder()
 
-	err := i.Render(w, r, "Users/Index", ihttp.Props{
+	err := i.Render(w, r, "Users/Index", httpx.Props{
 		"users": []string{"alice", "bob"},
 	})
 
@@ -74,7 +74,7 @@ func TestRender_JSONResponse(t *testing.T) {
 		t.Errorf("Content-Type = %q", ct)
 	}
 
-	if resp.Header.Get(ihttp.HeaderInertia) != "true" {
+	if resp.Header.Get(httpx.HeaderInertia) != "true" {
 		t.Error("missing X-Inertia header")
 	}
 
@@ -104,7 +104,7 @@ func TestRender_HTMLResponse(t *testing.T) {
 	r.RequestURI = "/users"
 	w := httptest.NewRecorder()
 
-	err := i.Render(w, r, "Users/Index", ihttp.Props{
+	err := i.Render(w, r, "Users/Index", httpx.Props{
 		"users": []string{"alice"},
 	})
 
@@ -135,7 +135,7 @@ func TestRender_NoProps(t *testing.T) {
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -159,7 +159,7 @@ func TestRender_NoProps(t *testing.T) {
 func TestSharedProps(t *testing.T) {
 	i := newTestInertia(t)
 	i.ShareProp("app_name", "TestApp")
-	i.ShareProps(ihttp.Props{"version": "1.0"})
+	i.ShareProps(httpx.Props{"version": "1.0"})
 
 	shared := i.SharedProps()
 
@@ -177,11 +177,11 @@ func TestSharedProps_MergedInRender(t *testing.T) {
 	i.ShareProp("app_name", "TestApp")
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
-	err := i.Render(w, r, "Page", ihttp.Props{"title": "Hello"})
+	err := i.Render(w, r, "Page", httpx.Props{"title": "Hello"})
 
 	if err != nil {
 		t.Fatal(err)
@@ -206,11 +206,11 @@ func TestContextProps_MergedInRender(t *testing.T) {
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "user", "alice")
-	ctx = inertia.SetValidationErrors(ctx, ihttp.ValidationErrors{"email": "required"})
+	ctx = inertia.SetValidationErrors(ctx, httpx.ValidationErrors{"email": "required"})
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
@@ -239,11 +239,11 @@ func TestRender_DeferredProps(t *testing.T) {
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
-	err := i.Render(w, r, "Dashboard", ihttp.Props{
+	err := i.Render(w, r, "Dashboard", httpx.Props{
 		"title": "Dashboard",
 		"stats": props.Defer(func() any { return "expensive" }, "sidebar"),
 	})
@@ -315,7 +315,7 @@ func TestLocation_InertiaRequest(t *testing.T) {
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 	w := httptest.NewRecorder()
 
 	i.Location(w, r, "https://external.com")
@@ -324,7 +324,7 @@ func TestLocation_InertiaRequest(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusConflict)
 	}
 
-	if loc := w.Header().Get(ihttp.HeaderLocation); loc != "https://external.com" {
+	if loc := w.Header().Get(httpx.HeaderLocation); loc != "https://external.com" {
 		t.Errorf("X-Inertia-Location = %q", loc)
 	}
 }

@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 )
 
 // Config holds the configuration for the Inertia middleware.
@@ -26,9 +26,9 @@ func New(cfg Config) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Always set Vary so caches differentiate Inertia vs
 			// regular responses for the same URL.
-			w.Header().Set("Vary", ihttp.HeaderInertia)
+			w.Header().Set("Vary", httpx.HeaderInertia)
 
-			if !ihttp.IsInertiaRequest(r) {
+			if !httpx.IsInertiaRequest(r) {
 				next.ServeHTTP(w, r)
 
 				return
@@ -36,10 +36,10 @@ func New(cfg Config) func(http.Handler) http.Handler {
 
 			// Version check (GET requests only).
 			if r.Method == http.MethodGet {
-				clientVersion := r.Header.Get(ihttp.HeaderVersion)
+				clientVersion := r.Header.Get(httpx.HeaderVersion)
 
 				if clientVersion != "" && clientVersion != cfg.Version {
-					w.Header().Set(ihttp.HeaderLocation, r.RequestURI)
+					w.Header().Set(httpx.HeaderLocation, r.RequestURI)
 					w.WriteHeader(http.StatusConflict)
 
 					return

@@ -19,7 +19,7 @@ import (
     "log"
     "net/http"
 
-    ihttp "github.com/oullin/inertia-go/core/http"
+    "github.com/oullin/inertia-go/core/httpx"
     "github.com/oullin/inertia-go/core/inertia"
 )
 
@@ -36,7 +36,7 @@ func main() {
 
     mux := http.NewServeMux()
     mux.Handle("/", i.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        i.Render(w, r, "Home", ihttp.Props{"message": "Hello from Go!"})
+        i.Render(w, r, "Home", httpx.Props{"message": "Hello from Go!"})
     })))
 
     log.Fatal(http.ListenAndServe(":8080", mux))
@@ -48,17 +48,17 @@ func main() {
 | Package | Purpose |
 |---------|---------|
 | `inertia/` | Core engine -- constructors, `Render`, `Redirect`, shared props, context helpers |
-| `http/` | Header constants (`X-Inertia-*`), shared types (`Props`, `ValidationErrors`) |
+| `httpx/` | Header constants (`X-Inertia-*`), shared types (`Props`, `ValidationErrors`) |
 | `props/` | Prop types (`Always`, `Defer`, `Once`, `Merge`, `Optional`) and resolver |
 | `middleware/` | HTTP middleware -- version checking, `Vary` header, redirect conversion |
 | `response/` | Page object and HTML/JSON response rendering |
-| `testing/` | `AssertableInertia` test helpers |
+| `assert/` | `AssertableInertia` test helpers |
 
 ## Rendering Pages
 
 ```go
 // JSON response for XHR visits, HTML for initial page loads.
-i.Render(w, r, "Users/Index", ihttp.Props{
+i.Render(w, r, "Users/Index", httpx.Props{
     "users": users,
     "title": "User List",
 })
@@ -73,7 +73,7 @@ i.ShareProp("auth", map[string]any{
     "user": currentUser,
 })
 
-i.ShareProps(ihttp.Props{
+i.ShareProps(httpx.Props{
     "app_name": "My App",
     "version":  "2.0",
 })
@@ -84,7 +84,7 @@ i.ShareProps(ihttp.Props{
 ```go
 import "github.com/oullin/inertia-go/core/props"
 
-i.Render(w, r, "Dashboard", ihttp.Props{
+i.Render(w, r, "Dashboard", httpx.Props{
     // Always included, even in partial reloads.
     "flash": props.Always(flashMessages),
 
@@ -134,7 +134,7 @@ Set per-request data from middleware or handlers:
 func authMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         ctx := inertia.SetProp(r.Context(), "user", currentUser)
-        ctx = inertia.SetValidationErrors(ctx, ihttp.ValidationErrors{
+        ctx = inertia.SetValidationErrors(ctx, httpx.ValidationErrors{
             "email": "This email is already taken.",
         })
         next.ServeHTTP(w, r.WithContext(ctx))
@@ -192,13 +192,13 @@ inertia.NewFromTemplate(tmpl, opts...)     // Use pre-parsed template
 ## Testing
 
 ```go
-import itesting "github.com/oullin/inertia-go/core/testing"
+import "github.com/oullin/inertia-go/core/assert"
 
 func TestUsersPage(t *testing.T) {
     req := httptest.NewRequest("GET", "/users", nil)
     req.RequestURI = "/users"
 
-    result := itesting.AssertFromHandler(t, i, usersHandler, req)
+    result := assert.AssertFromHandler(t, i, usersHandler, req)
     result.AssertComponent(t, "Users/Index")
     result.AssertURL(t, "/users")
     result.AssertVersion(t, "v1")
@@ -208,8 +208,8 @@ func TestUsersPage(t *testing.T) {
 }
 
 // Or decode raw JSON:
-result := itesting.AssertFromBytes(t, responseBody)
-result := itesting.AssertFromReader(t, resp.Body)
+result := assert.AssertFromBytes(t, responseBody)
+result := assert.AssertFromReader(t, resp.Body)
 ```
 
 ## Root Template

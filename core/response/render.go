@@ -6,12 +6,12 @@ import (
 	"html/template"
 	"net/http"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 )
 
 // WriteJSON writes an Inertia JSON response for XHR visits.
 // It sets the Content-Type and X-Inertia headers.
-func WriteJSON(w http.ResponseWriter, page *Page, marshaler ihttp.JSONMarshaler) error {
+func WriteJSON(w http.ResponseWriter, page *Page, marshaler httpx.JSONMarshaler) error {
 	data, err := marshaler.Marshal(page)
 
 	if err != nil {
@@ -19,7 +19,7 @@ func WriteJSON(w http.ResponseWriter, page *Page, marshaler ihttp.JSONMarshaler)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set(ihttp.HeaderInertia, "true")
+	w.Header().Set(httpx.HeaderInertia, "true")
 	w.WriteHeader(http.StatusOK)
 
 	_, err = w.Write(data)
@@ -35,8 +35,8 @@ func WriteHTML(
 	tmpl *template.Template,
 	page *Page,
 	containerID string,
-	marshaler ihttp.JSONMarshaler,
-	extraData ihttp.TemplateData,
+	marshaler httpx.JSONMarshaler,
+	extraData httpx.TemplateData,
 ) error {
 	data, err := marshaler.Marshal(page)
 

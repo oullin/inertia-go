@@ -6,7 +6,7 @@ type OptionalProp struct {
 	Value any
 }
 
-// Optional creates a prop that is only included on partial reloads
+// Optional creates a prop only included on partial reloads
 // when explicitly requested.
 func Optional(val any) OptionalProp {
 	return OptionalProp{Value: val}

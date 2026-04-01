@@ -9,7 +9,7 @@ import (
 	"os"
 	"sync"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/middleware"
 	"github.com/oullin/inertia-go/core/props"
 	"github.com/oullin/inertia-go/core/response"
@@ -23,10 +23,10 @@ type Inertia struct {
 	version        string
 	containerID    string
 	encryptHistory bool
-	sharedProps    ihttp.Props
+	sharedProps    httpx.Props
 	templateFuncs  template.FuncMap
-	jsonMarshaler  ihttp.JSONMarshaler
-	logger         ihttp.Logger
+	jsonMarshaler  httpx.JSONMarshaler
+	logger         httpx.Logger
 	mu             sync.RWMutex
 }
 
@@ -69,11 +69,11 @@ type Inertia struct {
 
 // Context props (set via SetProp/SetProps in middleware).
 
-// Render-time props (highest priority).
+// Render-time props (the highest priority).
 
 // Validation errors.
 
-// Re-parse template if custom template funcs were provided via options.
+// Reparse template if custom template funcs were provided via options.
 // This is needed because template funcs must be registered before parsing.
 
 // stdJSONMarshaler wraps encoding/json as the default JSONMarshaler.
@@ -119,7 +119,7 @@ func NewFromTemplate(t *template.Template, opts ...Option) (*Inertia, error) {
 	return i, i.apply(opts)
 }
 
-func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component string, pageProps ...ihttp.Props) error {
+func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component string, pageProps ...httpx.Props) error {
 	merged := i.mergeProps(r, pageProps...)
 
 	result, err := props.Resolve(r, component, merged)
@@ -140,7 +140,7 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 		DeferredProps:  result.DeferredProps,
 	}
 
-	if ihttp.IsInertiaRequest(r) {
+	if httpx.IsInertiaRequest(r) {
 		return response.WriteJSON(w, page, i.jsonMarshaler)
 	}
 
@@ -181,8 +181,8 @@ func (i *Inertia) Back(w http.ResponseWriter, r *http.Request, status ...int) {
 }
 
 func (i *Inertia) Location(w http.ResponseWriter, r *http.Request, url string, status ...int) {
-	if ihttp.IsInertiaRequest(r) {
-		w.Header().Set(ihttp.HeaderLocation, url)
+	if httpx.IsInertiaRequest(r) {
+		w.Header().Set(httpx.HeaderLocation, url)
 		w.WriteHeader(http.StatusConflict)
 
 		return
@@ -197,7 +197,7 @@ func (i *Inertia) ShareProp(key string, val any) {
 	i.mu.Unlock()
 }
 
-func (i *Inertia) ShareProps(p ihttp.Props) {
+func (i *Inertia) ShareProps(p httpx.Props) {
 	i.mu.Lock()
 
 	for k, v := range p {
@@ -207,12 +207,12 @@ func (i *Inertia) ShareProps(p ihttp.Props) {
 	i.mu.Unlock()
 }
 
-func (i *Inertia) SharedProps() ihttp.Props {
+func (i *Inertia) SharedProps() httpx.Props {
 	i.mu.RLock()
 
 	defer i.mu.RUnlock()
 
-	out := make(ihttp.Props, len(i.sharedProps))
+	out := make(httpx.Props, len(i.sharedProps))
 
 	for k, v := range i.sharedProps {
 		out[k] = v
@@ -229,9 +229,9 @@ func (i *Inertia) Version() string {
 	return i.version
 }
 
-func (i *Inertia) mergeProps(r *http.Request, pageProps ...ihttp.Props) ihttp.Props {
+func (i *Inertia) mergeProps(r *http.Request, pageProps ...httpx.Props) httpx.Props {
 	i.mu.RLock()
-	merged := make(ihttp.Props, len(i.sharedProps)+8)
+	merged := make(httpx.Props, len(i.sharedProps)+8)
 
 	for k, v := range i.sharedProps {
 		merged[k] = v
@@ -259,7 +259,7 @@ func (i *Inertia) mergeProps(r *http.Request, pageProps ...ihttp.Props) ihttp.Pr
 func defaults() *Inertia {
 	return &Inertia{
 		containerID:   "app",
-		sharedProps:   make(ihttp.Props),
+		sharedProps:   make(httpx.Props),
 		jsonMarshaler: &stdJSONMarshaler{},
 	}
 }

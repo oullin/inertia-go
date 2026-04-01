@@ -5,15 +5,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ihttp "github.com/oullin/inertia-go/core/http"
+	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/props"
 )
 
 func TestResolve_FullRequest(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/users", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"users":  []string{"alice", "bob"},
 		"title":  "Users Page",
 		"lazy":   func() any { return "computed" },
@@ -45,9 +45,9 @@ func TestResolve_FullRequest(t *testing.T) {
 
 func TestResolve_DeferredExcludedOnInitial(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"name":  "test",
 		"stats": props.Defer(func() any { return "expensive" }, "sidebar"),
 	}
@@ -75,11 +75,11 @@ func TestResolve_DeferredExcludedOnInitial(t *testing.T) {
 
 func TestResolve_DeferredIncludedOnPartialReload(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
-	r.Header.Set(ihttp.HeaderPartialComponent, "Dashboard")
-	r.Header.Set(ihttp.HeaderPartialData, "stats")
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Dashboard")
+	r.Header.Set(httpx.HeaderPartialData, "stats")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"name":  "test",
 		"stats": props.Defer(func() any { return "expensive" }),
 	}
@@ -101,9 +101,9 @@ func TestResolve_DeferredIncludedOnPartialReload(t *testing.T) {
 
 func TestResolve_OptionalExcludedOnInitial(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"name":     "test",
 		"optional": props.Optional("opt-val"),
 	}
@@ -121,11 +121,11 @@ func TestResolve_OptionalExcludedOnInitial(t *testing.T) {
 
 func TestResolve_OptionalIncludedOnPartialReload(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
-	r.Header.Set(ihttp.HeaderPartialComponent, "Page")
-	r.Header.Set(ihttp.HeaderPartialData, "optional")
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "optional")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"name":     "test",
 		"optional": props.Optional("opt-val"),
 	}
@@ -143,10 +143,10 @@ func TestResolve_OptionalIncludedOnPartialReload(t *testing.T) {
 
 func TestResolve_OnceExcludedWhenInExceptHeader(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
-	r.Header.Set(ihttp.HeaderExceptOnceProps, "meta")
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderExceptOnceProps, "meta")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"name": "test",
 		"meta": props.Once("metadata"),
 	}
@@ -164,9 +164,9 @@ func TestResolve_OnceExcludedWhenInExceptHeader(t *testing.T) {
 
 func TestResolve_OnceIncludedOnFirstVisit(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"meta": props.Once("metadata"),
 	}
 
@@ -183,9 +183,9 @@ func TestResolve_OnceIncludedOnFirstVisit(t *testing.T) {
 
 func TestResolve_MergeRecorded(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"posts": props.Merge([]string{"a", "b"}),
 		"deep":  props.DeepMerge(map[string]int{"x": 1}),
 	}
@@ -207,12 +207,12 @@ func TestResolve_MergeRecorded(t *testing.T) {
 
 func TestResolve_PartialExceptTakesPrecedence(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
-	r.Header.Set(ihttp.HeaderPartialComponent, "Page")
-	r.Header.Set(ihttp.HeaderPartialData, "a,b,c")
-	r.Header.Set(ihttp.HeaderPartialExcept, "b")
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "a,b,c")
+	r.Header.Set(httpx.HeaderPartialExcept, "b")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"a": "val-a",
 		"b": "val-b",
 		"c": "val-c",
@@ -239,11 +239,11 @@ func TestResolve_PartialExceptTakesPrecedence(t *testing.T) {
 
 func TestResolve_AlwaysIncludedInPartialReload(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
-	r.Header.Set(ihttp.HeaderPartialComponent, "Page")
-	r.Header.Set(ihttp.HeaderPartialData, "name")
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "name")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"name":   "test",
 		"always": props.Always("always-val"),
 	}
@@ -261,9 +261,9 @@ func TestResolve_AlwaysIncludedInPartialReload(t *testing.T) {
 
 func TestResolve_LazyFuncWithError(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Header.Set(ihttp.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderInertia, "true")
 
-	merged := ihttp.Props{
+	merged := httpx.Props{
 		"failing": func() (any, error) {
 			return nil, http.ErrAbortHandler
 		},
