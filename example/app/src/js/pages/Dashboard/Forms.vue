@@ -1,6 +1,18 @@
 <script setup>
 import { Head, router, useForm, useHttp } from "@inertiajs/vue3";
 import DashboardLayout from "@/js/layouts/DashboardLayout.vue";
+import { Badge } from "@/js/components/ui/badge";
+import { Button } from "@/js/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/js/components/ui/card";
+import { Input } from "@/js/components/ui/input";
+import { Label } from "@/js/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/js/components/ui/select";
 
 defineOptions({
   layout: DashboardLayout,
@@ -63,7 +75,7 @@ function runOptimisticEscalation() {
           {
             id: `temp-${Date.now()}`,
             label: "Priority routing promotion",
-            status: "Syncing…",
+            status: "Syncing\u2026",
             time: "Just now",
           },
           ...(currentProps.recentApprovals || []),
@@ -77,219 +89,219 @@ function runOptimisticEscalation() {
 <template>
   <Head :title="pageTitle" />
 
-  <div class="page-grid">
-    <section class="page-header">
+  <div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div class="flex items-center justify-between gap-4 px-4 lg:px-6">
       <div>
-        <h1>{{ pageTitle }}</h1>
-        <p>{{ pageSubtitle }}</p>
+        <h1 class="text-base font-medium">{{ pageTitle }}</h1>
+        <p class="text-muted-foreground text-sm">{{ pageSubtitle }}</p>
       </div>
-
-      <div class="page-actions">
-        <button class="btn btn-secondary" @click="previewHttp">Preview useHttp payload</button>
-        <button class="btn btn-primary" @click="runOptimisticEscalation">
-          Run optimistic action
-        </button>
+      <div class="flex items-center gap-2">
+        <Button variant="outline" @click="previewHttp">Preview useHttp payload</Button>
+        <Button @click="runOptimisticEscalation">Run optimistic action</Button>
       </div>
-    </section>
+    </div>
 
-    <section class="dashboard-cards">
-      <article class="dashboard-panel">
-        <div class="grid-note">
-          <strong>{{ approvalSummary.pending }}</strong>
-          <p>Queued approvals</p>
-        </div>
-      </article>
-      <article class="dashboard-panel">
-        <div class="grid-note">
-          <strong>{{ approvalSummary.priorityCount }}</strong>
-          <p>Priority escalations</p>
-        </div>
-      </article>
-      <article class="dashboard-panel">
-        <div class="grid-note">
-          <strong>{{ approvalSummary.sla }}</strong>
-          <p>Current review SLA</p>
-        </div>
-      </article>
-      <article class="dashboard-panel">
-        <div class="grid-note">
-          <strong>{{ recentInvites.length }}</strong>
-          <p>Recent invite records</p>
-        </div>
-      </article>
-    </section>
+    <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <Card class="p-4">
+        <p class="text-2xl font-semibold">{{ approvalSummary.pending }}</p>
+        <p class="text-muted-foreground text-sm">Queued approvals</p>
+      </Card>
+      <Card class="p-4">
+        <p class="text-2xl font-semibold">{{ approvalSummary.priorityCount }}</p>
+        <p class="text-muted-foreground text-sm">Priority escalations</p>
+      </Card>
+      <Card class="p-4">
+        <p class="text-2xl font-semibold">{{ approvalSummary.sla }}</p>
+        <p class="text-muted-foreground text-sm">Current review SLA</p>
+      </Card>
+      <Card class="p-4">
+        <p class="text-2xl font-semibold">{{ recentInvites.length }}</p>
+        <p class="text-muted-foreground text-sm">Recent invite records</p>
+      </Card>
+    </div>
 
-    <section class="dashboard-split">
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Invite workflow</h2>
-            <p>Server validation errors map straight back into the Inertia form state.</p>
-          </div>
-        </div>
-        <form class="form-grid" @submit.prevent="submitInvite">
-          <div class="form-grid two">
-            <div class="field">
-              <label for="invite-name">Name</label>
-              <input id="invite-name" v-model="inviteForm.name" type="text" />
-              <span v-if="inviteForm.errors.name" class="field-error">{{
-                inviteForm.errors.name
-              }}</span>
+    <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Invite workflow</CardTitle>
+          <CardDescription
+            >Server validation errors map straight back into the Inertia form
+            state.</CardDescription
+          >
+        </CardHeader>
+        <CardContent>
+          <form class="grid gap-4" @submit.prevent="submitInvite">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="grid gap-2">
+                <Label for="invite-name">Name</Label>
+                <Input id="invite-name" v-model="inviteForm.name" type="text" />
+                <p v-if="inviteForm.errors.name" class="text-destructive text-sm">
+                  {{ inviteForm.errors.name }}
+                </p>
+              </div>
+              <div class="grid gap-2">
+                <Label for="invite-email">Email</Label>
+                <Input id="invite-email" v-model="inviteForm.email" type="email" />
+                <p v-if="inviteForm.errors.email" class="text-destructive text-sm">
+                  {{ inviteForm.errors.email }}
+                </p>
+              </div>
             </div>
-            <div class="field">
-              <label for="invite-email">Email</label>
-              <input id="invite-email" v-model="inviteForm.email" type="email" />
-              <span v-if="inviteForm.errors.email" class="field-error">{{
-                inviteForm.errors.email
-              }}</span>
+            <div class="grid gap-2">
+              <Label for="invite-role">Role</Label>
+              <Select v-model="inviteForm.role">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="role in inviteRoles" :key="role" :value="role">{{
+                    role
+                  }}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p v-if="inviteForm.errors.role" class="text-destructive text-sm">
+                {{ inviteForm.errors.role }}
+              </p>
+            </div>
+            <Button type="submit" :disabled="inviteForm.processing" class="w-fit">
+              {{ inviteForm.processing ? "Sending\u2026" : "Send invite" }}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload workflow</CardTitle>
+          <CardDescription
+            >Multipart requests stay on the same route and redirect back with flash on
+            success.</CardDescription
+          >
+        </CardHeader>
+        <CardContent>
+          <form class="grid gap-4" @submit.prevent="submitUpload">
+            <div class="grid gap-2">
+              <Label for="upload-label">Label</Label>
+              <Input id="upload-label" v-model="uploadForm.label" type="text" />
+              <p v-if="uploadForm.errors.label" class="text-destructive text-sm">
+                {{ uploadForm.errors.label }}
+              </p>
+            </div>
+            <div class="grid gap-2">
+              <Label for="upload-file">File</Label>
+              <Input id="upload-file" type="file" @change="onFileChange" />
+              <p v-if="uploadForm.errors.file" class="text-destructive text-sm">
+                {{ uploadForm.errors.file }}
+              </p>
+            </div>
+            <Button type="submit" :disabled="uploadForm.processing" class="w-fit">
+              {{ uploadForm.processing ? "Uploading\u2026" : "Upload sample file" }}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>useHttp preview</CardTitle>
+          <CardDescription
+            >Run an out-of-band JSON preview without navigating away from the page.</CardDescription
+          >
+        </CardHeader>
+        <CardContent class="flex flex-col gap-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-2">
+              <Label for="preview-seats">Seats</Label>
+              <Input id="preview-seats" v-model="previewRequest.seats" type="number" min="1" />
+            </div>
+            <div class="grid gap-2">
+              <Label for="preview-tier">Tier</Label>
+              <Select v-model="previewRequest.tier">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="starter">Starter</SelectItem>
+                  <SelectItem value="growth">Growth</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div class="field">
-            <label for="invite-role">Role</label>
-            <select id="invite-role" v-model="inviteForm.role">
-              <option v-for="role in inviteRoles" :key="role" :value="role">{{ role }}</option>
-            </select>
-            <span v-if="inviteForm.errors.role" class="field-error">{{
-              inviteForm.errors.role
-            }}</span>
-          </div>
-          <div class="button-row">
-            <button type="submit" class="btn btn-primary" :disabled="inviteForm.processing">
-              {{ inviteForm.processing ? "Sending…" : "Send invite" }}
-            </button>
-          </div>
-        </form>
-      </article>
-
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Upload workflow</h2>
-            <p>
-              Multipart requests stay on the same route and redirect back with flash on success.
-            </p>
-          </div>
-        </div>
-        <form class="form-grid" @submit.prevent="submitUpload">
-          <div class="field">
-            <label for="upload-label">Label</label>
-            <input id="upload-label" v-model="uploadForm.label" type="text" />
-            <span v-if="uploadForm.errors.label" class="field-error">{{
-              uploadForm.errors.label
-            }}</span>
-          </div>
-          <div class="field">
-            <label for="upload-file">File</label>
-            <input id="upload-file" type="file" @change="onFileChange" />
-            <span v-if="uploadForm.errors.file" class="field-error">{{
-              uploadForm.errors.file
-            }}</span>
-          </div>
-          <div class="button-row">
-            <button type="submit" class="btn btn-primary" :disabled="uploadForm.processing">
-              {{ uploadForm.processing ? "Uploading…" : "Upload sample file" }}
-            </button>
-          </div>
-        </form>
-      </article>
-    </section>
-
-    <section class="dashboard-split">
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>useHttp preview</h2>
-            <p>Run an out-of-band JSON preview without navigating away from the page.</p>
-          </div>
-        </div>
-        <div class="form-grid two">
-          <div class="field">
-            <label for="preview-seats">Seats</label>
-            <input id="preview-seats" v-model="previewRequest.seats" type="number" min="1" />
-          </div>
-          <div class="field">
-            <label for="preview-tier">Tier</label>
-            <select id="preview-tier" v-model="previewRequest.tier">
-              <option value="starter">Starter</option>
-              <option value="growth">Growth</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
-          </div>
-        </div>
-        <div class="button-row" style="margin-top: 1rem">
-          <button
-            class="btn btn-secondary"
+          <Button
+            variant="outline"
             :disabled="previewRequest.processing"
+            class="w-fit"
             @click="previewHttp"
           >
-            {{ previewRequest.processing ? "Calculating…" : "Run HTTP preview" }}
-          </button>
-        </div>
-        <div v-if="previewRequest.response" class="inline-stats" style="margin-top: 1rem">
-          <div class="inline-stat">
-            <strong>${{ previewRequest.response.monthlyEstimate }}</strong>
-            <span>Monthly estimate</span>
+            {{ previewRequest.processing ? "Calculating\u2026" : "Run HTTP preview" }}
+          </Button>
+          <div v-if="previewRequest.response" class="flex flex-wrap gap-3">
+            <Card class="flex-1 p-4">
+              <p class="text-lg font-semibold">${{ previewRequest.response.monthlyEstimate }}</p>
+              <p class="text-muted-foreground text-sm">Monthly estimate</p>
+            </Card>
+            <Card class="flex-1 p-4">
+              <p class="text-lg font-semibold">${{ previewRequest.response.annualEstimate }}</p>
+              <p class="text-muted-foreground text-sm">Annual estimate</p>
+            </Card>
+            <Card class="flex-1 p-4">
+              <p class="text-lg font-semibold">{{ previewRequest.response.tier }}</p>
+              <p class="text-muted-foreground text-sm">
+                Recommended: {{ previewRequest.response.recommended ? "Yes" : "No" }}
+              </p>
+            </Card>
           </div>
-          <div class="inline-stat">
-            <strong>${{ previewRequest.response.annualEstimate }}</strong>
-            <span>Annual estimate</span>
-          </div>
-          <div class="inline-stat">
-            <strong>{{ previewRequest.response.tier }}</strong>
-            <span>Recommended: {{ previewRequest.response.recommended ? "Yes" : "No" }}</span>
-          </div>
-        </div>
-      </article>
+        </CardContent>
+      </Card>
 
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Mutation audit trail</h2>
-            <p>
-              Optimistic actions update this queue immediately, then the server confirms on
-              redirect.
+      <Card>
+        <CardHeader>
+          <CardTitle>Mutation audit trail</CardTitle>
+          <CardDescription
+            >Optimistic actions update this queue immediately, then the server confirms on
+            redirect.</CardDescription
+          >
+        </CardHeader>
+        <CardContent class="flex flex-col gap-2">
+          <div v-for="item in recentApprovals" :key="item.id" class="rounded-lg border p-4">
+            <p class="font-medium">{{ item.label }}</p>
+            <p class="text-muted-foreground text-sm">{{ item.status }} &middot; {{ item.time }}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent invites</CardTitle>
+        </CardHeader>
+        <CardContent class="flex flex-col gap-2">
+          <div v-for="item in recentInvites" :key="item.id" class="rounded-lg border p-4">
+            <p class="font-medium">{{ item.name }}</p>
+            <p class="text-muted-foreground text-sm">{{ item.role }} &middot; {{ item.email }}</p>
+            <p class="text-muted-foreground text-sm">{{ item.status }} &middot; {{ item.time }}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Uploaded files</CardTitle>
+        </CardHeader>
+        <CardContent class="flex flex-col gap-2">
+          <div v-for="item in uploadedFiles" :key="item.id" class="rounded-lg border p-4">
+            <p class="font-medium">{{ item.label }}</p>
+            <p class="text-muted-foreground text-sm">
+              {{ item.filename }} &middot; {{ item.size }}
             </p>
+            <p class="text-muted-foreground text-sm">{{ item.status }} &middot; {{ item.time }}</p>
           </div>
-        </div>
-        <div class="stack-list">
-          <div v-for="item in recentApprovals" :key="item.id" class="stack-row">
-            <strong>{{ item.label }}</strong>
-            <p>{{ item.status }} · {{ item.time }}</p>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    <section class="dashboard-columns">
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Recent invites</h2>
-          </div>
-        </div>
-        <div class="stack-list">
-          <div v-for="item in recentInvites" :key="item.id" class="stack-row">
-            <strong>{{ item.name }}</strong>
-            <p>{{ item.role }} · {{ item.email }}</p>
-            <p>{{ item.status }} · {{ item.time }}</p>
-          </div>
-        </div>
-      </article>
-
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Uploaded files</h2>
-          </div>
-        </div>
-        <div class="stack-list">
-          <div v-for="item in uploadedFiles" :key="item.id" class="stack-row">
-            <strong>{{ item.label }}</strong>
-            <p>{{ item.filename }} · {{ item.size }}</p>
-            <p>{{ item.status }} · {{ item.time }}</p>
-          </div>
-        </div>
-      </article>
-    </section>
+        </CardContent>
+      </Card>
+    </div>
   </div>
 </template>

@@ -384,6 +384,48 @@ func TestResolve_OnceMetadataRecorded(t *testing.T) {
 	}
 }
 
+func TestResolve_OnceMetadataExpiresAt(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"notes": props.Once("ship notes").ExpiresAt(1700000000),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	meta, ok := result.OnceProps["notes"]
+
+	if !ok {
+		t.Fatal("missing once metadata")
+	}
+
+	if meta.ExpiresAt == nil || *meta.ExpiresAt != 1700000000 {
+		t.Errorf("OnceProps[notes].ExpiresAt = %v, want 1700000000", meta.ExpiresAt)
+	}
+}
+
+func TestResolve_OnceMetadataExpiresAtNilByDefault(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"notes": props.Once("ship notes"),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	meta := result.OnceProps["notes"]
+
+	if meta.ExpiresAt != nil {
+		t.Errorf("OnceProps[notes].ExpiresAt = %v, want nil", meta.ExpiresAt)
+	}
+}
+
 func TestResolve_ScrollMetadataRecorded(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Set(httpx.HeaderInertia, "true")
@@ -1237,5 +1279,322 @@ func TestResolve_MixedExceptAndOnceExcept(t *testing.T) {
 
 	if _, ok := result.Props["cached_once"]; ok {
 		t.Error("cached_once should be excluded by except-once header")
+	}
+}
+
+// --- Nested Wrapper Tests ---
+
+func TestResolve_ScrollWrappingDefer_InitialLoad(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Scroll(
+			props.Defer(func() any { return []int{1, 2} }, "sidebar"),
+			"feedPage", 1, nil, 2,
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["feed"]; ok {
+		t.Error("Scroll(Defer(...)) should be excluded on initial load")
+	}
+
+	if len(result.DeferredProps["sidebar"]) != 1 || result.DeferredProps["sidebar"][0] != "feed" {
+		t.Errorf("DeferredProps[sidebar] = %v, want [feed]", result.DeferredProps["sidebar"])
+	}
+
+	if _, ok := result.ScrollProps["feed"]; ok {
+		t.Error("scroll metadata should not be recorded when prop is deferred on initial")
+	}
+}
+
+func TestResolve_ScrollWrappingDefer_PartialReload(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "feed")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Scroll(
+			props.Defer(func() any { return []int{1, 2} }, "sidebar"),
+			"feedPage", 1, nil, 2,
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Props["feed"] == nil {
+		t.Error("Scroll(Defer(...)) should be included on partial reload")
+	}
+
+	meta, ok := result.ScrollProps["feed"]
+
+	if !ok {
+		t.Fatal("scroll metadata should be recorded on partial reload")
+	}
+
+	if meta.PageName != "feedPage" {
+		t.Errorf("ScrollProps[feed].PageName = %q, want %q", meta.PageName, "feedPage")
+	}
+
+	if meta.NextPage != 2 {
+		t.Errorf("ScrollProps[feed].NextPage = %v, want 2", meta.NextPage)
+	}
+}
+
+func TestResolve_DeferWrappingScroll_InitialLoad(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Defer(
+			props.Scroll([]int{1, 2}, "feedPage", 1, nil, 2),
+			"sidebar",
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["feed"]; ok {
+		t.Error("Defer(Scroll(...)) should be excluded on initial load")
+	}
+
+	if len(result.DeferredProps["sidebar"]) != 1 || result.DeferredProps["sidebar"][0] != "feed" {
+		t.Errorf("DeferredProps[sidebar] = %v, want [feed]", result.DeferredProps["sidebar"])
+	}
+
+	if _, ok := result.ScrollProps["feed"]; ok {
+		t.Error("scroll metadata should not be recorded when prop is deferred on initial")
+	}
+}
+
+func TestResolve_DeferWrappingScroll_PartialReload(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "feed")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Defer(
+			props.Scroll([]int{1, 2}, "feedPage", 1, nil, 2),
+			"sidebar",
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Props["feed"] == nil {
+		t.Error("Defer(Scroll(...)) should be included on partial reload")
+	}
+
+	meta, ok := result.ScrollProps["feed"]
+
+	if !ok {
+		t.Fatal("scroll metadata should be recorded on partial reload")
+	}
+
+	if meta.PageName != "feedPage" {
+		t.Errorf("ScrollProps[feed].PageName = %q, want %q", meta.PageName, "feedPage")
+	}
+}
+
+func TestResolve_ScrollWrappingDeferMerge_InitialLoad(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Scroll(
+			props.Defer(func() any { return []int{1} }, "g").Merge(),
+			"p", 1, nil, 2,
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["feed"]; ok {
+		t.Error("should be excluded on initial")
+	}
+
+	if len(result.DeferredProps["g"]) != 1 {
+		t.Errorf("DeferredProps[g] = %v, want [feed]", result.DeferredProps["g"])
+	}
+
+	if len(result.MergeProps) != 1 || result.MergeProps[0] != "feed" {
+		t.Errorf("MergeProps = %v, want [feed]", result.MergeProps)
+	}
+}
+
+func TestResolve_DeferWrappingScrollMerge_PartialWithIntent(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "feed")
+	r.Header.Set(httpx.HeaderInfiniteScroll, "append")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Defer(
+			props.Scroll([]int{1}, "p", 1, nil, 2),
+			"g",
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Props["feed"] == nil {
+		t.Error("should be included on partial reload")
+	}
+
+	if _, ok := result.ScrollProps["feed"]; !ok {
+		t.Error("scroll metadata should be recorded")
+	}
+
+	if len(result.MergeProps) != 1 || result.MergeProps[0] != "feed" {
+		t.Errorf("MergeProps = %v, want [feed] (from merge intent header)", result.MergeProps)
+	}
+}
+
+func TestResolve_AlwaysWrappingDefer_InitialLoad(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"info": props.Always(props.Defer("val", "g")),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Props["info"] != "val" {
+		t.Errorf("Always(Defer(...)) should be included; got %v", result.Props["info"])
+	}
+
+	if len(result.DeferredProps) > 0 {
+		t.Error("deferred group should not be recorded when Always overrides")
+	}
+}
+
+func TestResolve_ScrollWrappingOnce_ExcludedByExceptOnce(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderExceptOnceProps, "feed")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Scroll(props.Once("val"), "p", 1, nil, 2),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["feed"]; ok {
+		t.Error("should be excluded by except-once header")
+	}
+
+	if _, ok := result.OnceProps["feed"]; !ok {
+		t.Error("once metadata should still be recorded")
+	}
+
+	if _, ok := result.ScrollProps["feed"]; ok {
+		t.Error("scroll metadata should not be recorded when excluded")
+	}
+}
+
+func TestResolve_TripleNesting_DeferScrollMerge_Initial(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Defer(
+			props.Scroll(props.Merge([]int{1}), "p", 1, nil, 2),
+			"g",
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["feed"]; ok {
+		t.Error("should be excluded on initial")
+	}
+
+	if len(result.DeferredProps["g"]) != 1 {
+		t.Errorf("DeferredProps[g] = %v, want [feed]", result.DeferredProps["g"])
+	}
+}
+
+func TestResolve_TripleNesting_DeferScrollMerge_Partial(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "feed")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Defer(
+			props.Scroll(props.Merge([]int{1}), "p", 1, nil, 2),
+			"g",
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Props["feed"] == nil {
+		t.Error("should be included on partial")
+	}
+
+	if _, ok := result.ScrollProps["feed"]; !ok {
+		t.Error("scroll metadata should be recorded on partial")
+	}
+
+	if len(result.MergeProps) < 1 {
+		t.Error("merge metadata should be recorded on partial")
+	}
+}
+
+func TestResolve_NestedWithPartialExcept(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "feed")
+	r.Header.Set(httpx.HeaderPartialExcept, "feed")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Scroll(
+			props.Defer(func() any { return []int{1} }, "g"),
+			"p", 1, nil, 2,
+		),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["feed"]; ok {
+		t.Error("should be excluded by partial except")
+	}
+
+	if _, ok := result.ScrollProps["feed"]; ok {
+		t.Error("no metadata should be recorded when excluded by partial except")
+	}
+
+	if len(result.DeferredProps) > 0 {
+		t.Error("no deferred metadata should be recorded when excluded by partial except")
 	}
 }

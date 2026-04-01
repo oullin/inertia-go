@@ -3,7 +3,7 @@ import { createInertiaApp } from "@inertiajs/vue3";
 import "./styles/app.css";
 
 createInertiaApp({
-  title: (title) => (title ? `${title} · Beacon Ops Console` : "Beacon Ops Console"),
+  title: (title) => (title ? `${title} · Progressive Oullin` : "Progressive Oullin"),
   resolve: (name) => {
     const pages = import.meta.glob("./pages/**/*.vue");
     return pages[`./pages/${name}.vue`]();

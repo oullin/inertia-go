@@ -2,6 +2,18 @@
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { Head, Link, router, useRemember } from "@inertiajs/vue3";
 import DashboardLayout from "@/js/layouts/DashboardLayout.vue";
+import { Badge } from "@/js/components/ui/badge";
+import { Button } from "@/js/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/js/components/ui/card";
+import { Input } from "@/js/components/ui/input";
+import { Label } from "@/js/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/js/components/ui/select";
 
 defineOptions({
   layout: DashboardLayout,
@@ -20,7 +32,7 @@ const props = defineProps({
 const rememberedState = useRemember(
   {
     search: "",
-    showPinnedOnly: false,
+    showPinnedOnly: "false",
   },
   "beacon-state-page",
 );
@@ -54,145 +66,171 @@ function setHistoryMode(mode) {
 <template>
   <Head :title="pageTitle" />
 
-  <div class="page-grid">
-    <section class="page-header">
+  <div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div class="flex items-center justify-between gap-4 px-4 lg:px-6">
       <div>
-        <h1>{{ pageTitle }}</h1>
-        <p>{{ pageSubtitle }}</p>
+        <h1 class="text-base font-medium">{{ pageTitle }}</h1>
+        <p class="text-muted-foreground text-sm">{{ pageSubtitle }}</p>
       </div>
-
-      <div class="page-actions">
-        <button class="btn btn-secondary" @click="setHistoryMode('encrypted')">
-          Encrypt next history state
-        </button>
-        <button class="btn btn-secondary" @click="setHistoryMode('clear')">
-          Clear encrypted history
-        </button>
+      <div class="flex items-center gap-2">
+        <Button variant="outline" @click="setHistoryMode('encrypted')"
+          >Encrypt next history state</Button
+        >
+        <Button variant="outline" @click="setHistoryMode('clear')">Clear encrypted history</Button>
       </div>
-    </section>
+    </div>
 
-    <section class="dashboard-split">
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Remembered UI state</h2>
-            <p>These controls persist locally even as the route reloads around them.</p>
+    <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Remembered UI state</CardTitle>
+          <CardDescription
+            >These controls persist locally even as the route reloads around them.</CardDescription
+          >
+        </CardHeader>
+        <CardContent class="flex flex-col gap-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-2">
+              <Label for="remember-search">Search</Label>
+              <Input id="remember-search" v-model="rememberedState.search" type="text" />
+            </div>
+            <div class="grid gap-2">
+              <Label for="remember-pinned">Pinned only</Label>
+              <Select v-model="rememberedState.showPinnedOnly">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">Everything</SelectItem>
+                  <SelectItem value="true">Pinned only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
-        <div class="form-grid two">
-          <div class="field">
-            <label for="remember-search">Search</label>
-            <input id="remember-search" v-model="rememberedState.search" type="text" />
-          </div>
-          <div class="field">
-            <label for="remember-pinned">Pinned only</label>
-            <select id="remember-pinned" v-model="rememberedState.showPinnedOnly">
-              <option :value="false">Everything</option>
-              <option :value="true">Pinned only</option>
-            </select>
-          </div>
-        </div>
-        <p class="subtle-note" style="margin-top: 0.8rem">History mode: {{ historyMode }}</p>
-      </article>
+          <p class="text-muted-foreground text-sm">History mode: {{ historyMode }}</p>
+        </CardContent>
+      </Card>
 
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Once-loaded release track</h2>
-            <p>This snapshot should stay stable while the rest of the page navigates.</p>
-          </div>
-        </div>
-        <div class="stack-row">
-          <strong>{{ releaseTrack.build }}</strong>
-          <p>{{ releaseTrack.status }} · {{ releaseTrack.note }}</p>
-        </div>
-      </article>
-    </section>
-
-    <section class="dashboard-columns">
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Navigation events</h2>
-            <p>Event listeners log route lifecycle changes as they happen.</p>
-          </div>
-        </div>
-        <div class="stack-list">
-          <div v-if="events.length === 0" class="empty-state">
-            Navigate between dashboard routes to populate this list.
-          </div>
-          <div v-for="event in events" :key="`${event.label}-${event.time}`" class="stack-row">
-            <strong>{{ event.label }}</strong>
-            <p>{{ event.time }}</p>
-          </div>
-        </div>
-      </article>
-
-      <article class="dashboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Error routes</h2>
-            <p>
-              Use these plain links to hit failure responses outside the normal Inertia page flow.
+      <Card>
+        <CardHeader>
+          <CardTitle>Once-loaded release track</CardTitle>
+          <CardDescription
+            >This snapshot should stay stable while the rest of the page navigates.</CardDescription
+          >
+        </CardHeader>
+        <CardContent>
+          <div class="rounded-lg border p-4">
+            <p class="font-medium">{{ releaseTrack.build }}</p>
+            <p class="text-muted-foreground text-sm">
+              {{ releaseTrack.status }} &middot; {{ releaseTrack.note }}
             </p>
           </div>
-        </div>
-        <div class="stack-list">
+        </CardContent>
+      </Card>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Navigation events</CardTitle>
+          <CardDescription
+            >Event listeners log route lifecycle changes as they happen.</CardDescription
+          >
+        </CardHeader>
+        <CardContent class="flex flex-col gap-2">
+          <div
+            v-if="events.length === 0"
+            class="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm"
+          >
+            Navigate between dashboard routes to populate this list.
+          </div>
+          <div
+            v-for="event in events"
+            :key="`${event.label}-${event.time}`"
+            class="rounded-lg border p-4"
+          >
+            <p class="font-medium">{{ event.label }}</p>
+            <p class="text-muted-foreground text-sm">{{ event.time }}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Error routes</CardTitle>
+          <CardDescription
+            >Use these plain links to hit failure responses outside the normal Inertia page
+            flow.</CardDescription
+          >
+        </CardHeader>
+        <CardContent class="flex flex-col gap-2">
           <a
             v-for="item in errorLinks"
             :key="item.href"
             :href="item.href"
-            class="stack-row"
+            class="hover:bg-accent rounded-lg border p-4 transition-colors"
             target="_blank"
             rel="noreferrer"
           >
-            <strong>{{ item.label }}</strong>
-            <p>{{ item.href }}</p>
+            <p class="font-medium">{{ item.label }}</p>
+            <p class="text-muted-foreground text-sm">{{ item.href }}</p>
           </a>
-        </div>
-      </article>
-    </section>
+        </CardContent>
+      </Card>
+    </div>
 
-    <section class="dashboard-panel">
-      <div class="panel-heading">
-        <div>
-          <h2>Playbooks</h2>
-          <p>High-level state-management scenarios exercised by this route.</p>
-        </div>
-      </div>
-      <div class="metric-list">
-        <div v-for="item in playbooks" :key="item.title" class="metric-row">
-          <strong>{{ item.title }}</strong>
-          <p>{{ item.detail }}</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="dashboard-panel">
-      <div class="panel-heading">
-        <div>
-          <h2>Long scroll region</h2>
-          <p>Use this list to test preserveScroll and remembered filters together.</p>
-        </div>
-        <Link href="/dashboard/navigation" class="btn btn-primary" view-transition>
-          Jump back to navigation demo
-        </Link>
-      </div>
-
-      <div class="scroll-region">
-        <div class="task-list">
-          <div
-            v-for="task in longTasks"
-            :key="task.id"
-            class="task-row"
-            v-show="!rememberedState.showPinnedOnly || task.status === 'Pinned'"
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Playbooks</CardTitle>
+          <CardDescription
+            >High-level state-management scenarios exercised by this route.</CardDescription
           >
-            <div class="status-pill neutral">{{ task.status }}</div>
-            <strong>{{ task.title }}</strong>
-            <p>{{ task.owner }} · {{ task.summary }}</p>
+        </CardHeader>
+        <CardContent class="flex flex-col gap-2">
+          <div v-for="item in playbooks" :key="item.title" class="rounded-lg border p-4">
+            <p class="font-medium">{{ item.title }}</p>
+            <p class="text-muted-foreground text-sm">{{ item.detail }}</p>
           </div>
-        </div>
-      </div>
-    </section>
+        </CardContent>
+      </Card>
+    </div>
+
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle>Long scroll region</CardTitle>
+              <CardDescription
+                >Use this list to test preserveScroll and remembered filters
+                together.</CardDescription
+              >
+            </div>
+            <Link href="/dashboard/navigation" view-transition>
+              <Button>Jump back to navigation demo</Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div class="max-h-[22rem] overflow-auto">
+            <div class="flex flex-col gap-2">
+              <div
+                v-for="task in longTasks"
+                :key="task.id"
+                v-show="rememberedState.showPinnedOnly !== 'true' || task.status === 'Pinned'"
+                class="rounded-lg border p-4"
+              >
+                <Badge variant="secondary" class="mb-2">{{ task.status }}</Badge>
+                <p class="font-medium">{{ task.title }}</p>
+                <p class="text-muted-foreground text-sm">
+                  {{ task.owner }} &middot; {{ task.summary }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   </div>
 </template>

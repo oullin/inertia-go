@@ -220,6 +220,35 @@ func TestOnceProp_WithNil(t *testing.T) {
 	}
 }
 
+func TestOnceProp_ExpiresAt(t *testing.T) {
+	original := props.Once("data")
+	withExpiry := original.ExpiresAt(1700000000)
+
+	if original.GetExpiresAt() != nil {
+		t.Error("original should not be affected by ExpiresAt()")
+	}
+
+	if withExpiry.GetExpiresAt() == nil || *withExpiry.GetExpiresAt() != 1700000000 {
+		t.Errorf("ExpiresAt = %v, want 1700000000", withExpiry.GetExpiresAt())
+	}
+}
+
+func TestOnceProp_ExpiresAtPreservesValue(t *testing.T) {
+	p := props.Once("data").ExpiresAt(1700000000)
+
+	if got := p.Prop(); got != "data" {
+		t.Errorf("Prop() = %v, want %q", got, "data")
+	}
+}
+
+func TestOnceProp_DefaultExpiresAtIsNil(t *testing.T) {
+	p := props.Once("data")
+
+	if p.GetExpiresAt() != nil {
+		t.Errorf("default GetExpiresAt() = %v, want nil", p.GetExpiresAt())
+	}
+}
+
 // --- MergeProp Extended ---
 
 func TestMergeProp_Prop(t *testing.T) {

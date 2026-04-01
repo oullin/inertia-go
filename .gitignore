@@ -41,6 +41,9 @@ example/dist/
 example/app/dist/
 example/api/dist/
 
+# SQLite
+*.db
+
 # Editor/IDE
 .idea/
 .vscode/

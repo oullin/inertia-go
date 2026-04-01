@@ -10,6 +10,7 @@ import (
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
+	"github.com/oullin/inertia-go/example/api/internal/database"
 )
 
 //go:embed resources/views/app.html
@@ -36,6 +37,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	db, err = database.Open("beacon.db")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+
 	distPath, err := resolveDistPath()
 
 	if err != nil {
@@ -44,19 +53,19 @@ func main() {
 
 	i.ShareProps(httpx.Props{
 		"app": map[string]any{
-			"name":        "Beacon Ops Console",
-			"productLine": "Revenue Operations",
-			"environment": "Sandbox",
+			"name":        "Progressive Oullin",
+			"productLine": "Documents",
+			"environment": "Production",
 		},
 		"auth": map[string]any{
 			"user": map[string]any{
-				"name":     "Maya Tan",
-				"title":    "Ops Director",
-				"initials": "MT",
+				"name":     "shadcn",
+				"email":    "m@example.com",
+				"initials": "CN",
 			},
 		},
 		"workspace": map[string]any{
-			"name": "Northstar HQ",
+			"name": "Oullin.io",
 			"plan": "Growth",
 		},
 	})
