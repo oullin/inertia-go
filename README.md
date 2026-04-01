@@ -22,7 +22,7 @@ The result: SPA-quality UX with the simplicity of a traditional server-rendered 
 go get github.com/oullin/inertia-go/core
 ```
 
-**Requires Go 1.25+**
+**Requires Go 1.26+**
 
 ## Quick Start
 
@@ -166,6 +166,7 @@ Available helpers:
 | `SetEncryptHistory(ctx)` | Flag response to encrypt browser history |
 | `SetClearHistory(ctx)` | Flag response to clear encrypted history |
 | `SetTemplateData(ctx, data)` | Extra data for the root HTML template |
+| `SetTemplateDatum(ctx, key, val)` | Add a single template data value |
 
 ## Redirects
 
