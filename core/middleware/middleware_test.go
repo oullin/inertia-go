@@ -186,3 +186,45 @@ func TestMiddleware_RedirectConversion_GETStays302(t *testing.T) {
 		t.Errorf("status = %d, want %d (302)", w.Code, http.StatusFound)
 	}
 }
+
+func TestMiddleware_WriteWithoutExplicitWriteHeader(t *testing.T) {
+	mw := middleware.New(middleware.Config{Version: "v1"})
+
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Write without calling WriteHeader first triggers implicit 200.
+		w.Write([]byte("hello"))
+	}))
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderVersion, "v1")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	if w.Body.String() != "hello" {
+		t.Errorf("body = %q", w.Body.String())
+	}
+}
+
+func TestMiddleware_DoubleWriteHeaderIgnored(t *testing.T) {
+	mw := middleware.New(middleware.Config{Version: "v1"})
+
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusInternalServerError) // Second call ignored.
+	}))
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderVersion, "v1")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("status = %d, want %d (first call wins)", w.Code, http.StatusCreated)
+	}
+}

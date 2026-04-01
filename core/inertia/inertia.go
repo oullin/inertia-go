@@ -76,8 +76,8 @@ type Inertia struct {
 // Reparse template if custom template funcs were provided via options.
 // This is needed because template funcs must be registered before parsing.
 
-// stdJSONMarshaler wraps encoding/json as the default JSONMarshaler.
-type stdJSONMarshaler struct{}
+// StdJSONMarshaler wraps encoding/json as the default JSONMarshaler.
+type StdJSONMarshaler struct{}
 
 func New(rootTemplateHTML string, opts ...Option) (*Inertia, error) {
 	i := defaults()
@@ -260,7 +260,7 @@ func defaults() *Inertia {
 	return &Inertia{
 		containerID:   "app",
 		sharedProps:   make(httpx.Props),
-		jsonMarshaler: &stdJSONMarshaler{},
+		jsonMarshaler: &StdJSONMarshaler{},
 	}
 }
 
@@ -278,10 +278,10 @@ func (i *Inertia) apply(opts []Option) error {
 	return nil
 }
 
-func (m *stdJSONMarshaler) Marshal(v any) ([]byte, error) {
+func (m *StdJSONMarshaler) Marshal(v any) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func (m *stdJSONMarshaler) Unmarshal(data []byte, v any) error {
+func (m *StdJSONMarshaler) Unmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }

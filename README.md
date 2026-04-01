@@ -230,7 +230,7 @@ result := assert.AssertFromReader(t, resp.Body)
 
 The root HTML template receives two special variables:
 
-- `{{ .inertia }}` -- The container div with `data-page` attribute
+- `{{ .inertia }}` -- A `<script type="application/json">` element with page data, followed by the container div
 - `{{ .inertiaHead }}` -- SSR head content (empty until SSR is configured)
 
 ```html

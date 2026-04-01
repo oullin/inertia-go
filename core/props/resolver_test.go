@@ -9,6 +9,10 @@ import (
 	"github.com/oullin/inertia-go/core/props"
 )
 
+// No X-Inertia-Partial-Data header — onlySet is empty.
+
+type tryPropValue struct{ val any }
+
 func TestResolve_FullRequest(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/users", nil)
 	r.Header.Set(httpx.HeaderInertia, "true")
@@ -273,5 +277,103 @@ func TestResolve_LazyFuncWithError(t *testing.T) {
 
 	if err == nil {
 		t.Error("expected error from lazy func")
+	}
+}
+
+func TestResolve_OptionalExcludedOnPartialWithoutOnly(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+
+	merged := httpx.Props{
+		"name":     "test",
+		"optional": props.Optional("opt-val"),
+	}
+
+	result, err := props.Resolve(r, "Page", merged)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["optional"]; ok {
+		t.Error("optional prop should be excluded on partial reload without explicit request")
+	}
+
+	if result.Props["name"] != "test" {
+		t.Errorf("name = %v", result.Props["name"])
+	}
+}
+
+func TestResolve_DeferredMergeOnInitial(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	merged := httpx.Props{
+		"items": props.Defer(func() any { return []string{"a"} }, "list").Merge(),
+	}
+
+	result, err := props.Resolve(r, "Page", merged)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := result.Props["items"]; ok {
+		t.Error("deferred prop should be excluded on initial load")
+	}
+
+	if len(result.DeferredProps["list"]) != 1 || result.DeferredProps["list"][0] != "items" {
+		t.Errorf("DeferredProps[list] = %v", result.DeferredProps["list"])
+	}
+
+	if len(result.MergeProps) != 1 || result.MergeProps[0] != "items" {
+		t.Errorf("MergeProps = %v, want [items]", result.MergeProps)
+	}
+}
+
+func TestResolve_DeferredMergeOnPartialReload(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "items")
+
+	merged := httpx.Props{
+		"items": props.Defer(func() any { return []string{"a"} }, "list").Merge(),
+	}
+
+	result, err := props.Resolve(r, "Page", merged)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Props["items"] == nil {
+		t.Error("deferred merge prop should be included in partial reload")
+	}
+
+	if len(result.MergeProps) != 1 || result.MergeProps[0] != "items" {
+		t.Errorf("MergeProps = %v, want [items]", result.MergeProps)
+	}
+}
+
+func (tp tryPropValue) TryProp() (any, error) { return tp.val, nil }
+
+func TestResolve_TryProper(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	merged := httpx.Props{
+		"custom": tryPropValue{val: "resolved-via-try"},
+	}
+
+	result, err := props.Resolve(r, "Page", merged)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Props["custom"] != "resolved-via-try" {
+		t.Errorf("custom = %v, want %q", result.Props["custom"], "resolved-via-try")
 	}
 }

@@ -2,9 +2,9 @@ package response
 
 import (
 	"fmt"
-	"html"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
 )
@@ -28,8 +28,9 @@ func WriteJSON(w http.ResponseWriter, page *Page, marshaler httpx.JSONMarshaler)
 }
 
 // WriteHTML executes the root HTML template for initial (non-XHR) page
-// visits. The page object is embedded as a JSON string in a data-page
-// attribute on the container div.
+// visits. The page object is embedded as JSON inside a
+// <script type="application/json" data-page="ID"> element, followed by
+// an empty container div for client-side mounting.
 func WriteHTML(
 	w http.ResponseWriter,
 	tmpl *template.Template,
@@ -44,11 +45,16 @@ func WriteHTML(
 		return fmt.Errorf("inertia: marshal page: %w", err)
 	}
 
-	// Build the container div with the page data escaped for HTML attributes.
+	// Escape "</" to prevent premature </script> closure. Go's
+	// encoding/json already escapes "<" as \u003c, but custom
+	// marshalers may not.
+	safeJSON := strings.ReplaceAll(string(data), "</", `<\/`)
+
 	inertiaHTML := fmt.Sprintf(
-		`<div id="%s" data-page="%s"></div>`,
+		`<script data-page="%s" type="application/json">%s</script><div id="%s"></div>`,
 		containerID,
-		html.EscapeString(string(data)),
+		safeJSON,
+		containerID,
 	)
 
 	templateData := map[string]any{

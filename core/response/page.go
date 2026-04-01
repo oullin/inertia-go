@@ -1,8 +1,8 @@
 package response
 
 // Page is the Inertia.js page object sent to the client. On XHR visits
-// it is the JSON body; on initial visits it is embedded in the root
-// HTML template's data-page attribute.
+// it is the JSON body; on initial visits it is embedded in a
+// <script type="application/json"> element in the root HTML template.
 type Page struct {
 	Component      string              `json:"component"`
 	Props          map[string]any      `json:"props"`
