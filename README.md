@@ -5,10 +5,10 @@ A Go server-side adapter for [Inertia.js](https://inertiajs.com). Build modern s
 ## Install
 
 ```bash
-go get github.com/oullin/inertia-go
+go get github.com/oullin/inertia-go/core
 ```
 
-**Requires Go 1.21+**
+**Requires Go 1.25+**
 
 ## Quick Start
 
@@ -19,8 +19,8 @@ import (
     "log"
     "net/http"
 
-    ihttp "github.com/oullin/inertia-go/http"
-    "github.com/oullin/inertia-go/inertia"
+    ihttp "github.com/oullin/inertia-go/core/http"
+    "github.com/oullin/inertia-go/core/inertia"
 )
 
 func main() {
@@ -82,7 +82,7 @@ i.ShareProps(ihttp.Props{
 ## Prop Types
 
 ```go
-import "github.com/oullin/inertia-go/props"
+import "github.com/oullin/inertia-go/core/props"
 
 i.Render(w, r, "Dashboard", ihttp.Props{
     // Always included, even in partial reloads.
@@ -192,7 +192,7 @@ inertia.NewFromTemplate(tmpl, opts...)     // Use pre-parsed template
 ## Testing
 
 ```go
-import itesting "github.com/oullin/inertia-go/testing"
+import itesting "github.com/oullin/inertia-go/core/testing"
 
 func TestUsersPage(t *testing.T) {
     req := httptest.NewRequest("GET", "/users", nil)
@@ -239,13 +239,8 @@ The root HTML template receives two special variables:
 The `example/` directory contains a full working app with Go + Vue 3 + Vite:
 
 ```bash
-cd example
-
-# Install frontend dependencies and build
-npm install && npm run build
-
-# Run the Go server
-go run main.go
+# From the repository root
+make example
 ```
 
 Then visit `http://localhost:8080`.
@@ -261,6 +256,6 @@ This adapter implements the [Inertia.js protocol](https://inertiajs.com/docs/v3/
 - Deferred, once, merge, always, and optional prop types
 - Automatic `302` to `303` redirect conversion for `PUT`/`PATCH`/`DELETE`
 
-## License
+## Licence
 
 MIT

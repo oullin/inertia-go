@@ -4,8 +4,6 @@
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
-    "css": [
-      "dist/app.css"
-    ]
+    "css": ["dist/app.css"]
   }
 }
