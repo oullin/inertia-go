@@ -1,0 +1,13 @@
+{
+  "name": "@inertia-go/core",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "go build ./...",
+    "test": "go test ./...",
+    "lint": "go vet ./..."
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  }
+}

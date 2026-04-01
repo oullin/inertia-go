@@ -27,6 +27,15 @@ go.work.sum
 # env file
 .env
 
+# Node
+node_modules/
+
+# pnpm
+storage/.pnpm-store/
+
+# Turbo
+.turbo/
+
 # Editor/IDE
 # .idea/
 # .vscode/

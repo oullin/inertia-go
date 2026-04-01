@@ -1,5 +1,5 @@
 {
-    "name": "inertia-go-example",
+    "name": "@inertia-go/example",
     "private": true,
     "type": "module",
     "scripts": {
