@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+cmd
 
 # Test binary, built with `go test -c`
 *.test
@@ -37,6 +38,8 @@ storage/.pnpm-store/
 
 # Build output
 example/dist/
+example/app/dist/
+example/api/dist/
 
 # Editor/IDE
 .idea/

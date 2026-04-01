@@ -15,8 +15,7 @@ import (
 //go:embed resources/views/app.html
 var rootTemplateFS embed.FS
 
-//go:embed dist
-var distFS embed.FS
+var distFS = os.DirFS("../../app/dist")
 
 var i *inertia.Inertia
 

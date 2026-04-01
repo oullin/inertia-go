@@ -5,15 +5,15 @@ export default defineConfig({
   plugins: [vue()],
   root: ".",
   build: {
-    outDir: "../api/cmd/dist",
+    outDir: "dist",
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {
       input: "src/js/app.js",
       output: {
-        entryFileNames: "dist/app.js",
-        chunkFileNames: "dist/[name]-[hash].js",
-        assetFileNames: "dist/app.[ext]",
+        entryFileNames: "app.js",
+        chunkFileNames: "[name]-[hash].js",
+        assetFileNames: "app.[ext]",
       },
     },
   },

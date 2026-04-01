@@ -8,6 +8,7 @@ format:
 	cd example/app && npx oxlint --fix src
 	go vet $(ROOT_PATH)/...
 	$(GO_FMT) format --host-path $(ROOT_PATH)/core
+	$(GO_FMT) format --host-path $(ROOT_PATH)/example/api
 
 test:
 	go test $(ROOT_PATH)/...
