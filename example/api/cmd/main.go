@@ -59,7 +59,11 @@ func main() {
 		addr = ":" + port
 	}
 
-	fmt.Printf("Server running at http://localhost%s\n", addr)
+	if url := os.Getenv("PORTLESS_URL"); url != "" {
+		fmt.Printf("Server running at %s\n", url)
+	} else {
+		fmt.Printf("Server running at http://localhost%s\n", addr)
+	}
 
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

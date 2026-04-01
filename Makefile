@@ -21,4 +21,4 @@ tidy:
 
 example:
 	pnpm turbo build --filter=@inertia-go/example
-	cd example/api && go run ./cmd
+	cd example/api && npx portless inertia-go go run ./cmd
