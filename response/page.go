@@ -1,0 +1,16 @@
+package response
+
+// Page is the Inertia.js page object sent to the client. On XHR visits
+// it is the JSON body; on initial visits it is embedded in the root
+// HTML template's data-page attribute.
+type Page struct {
+	Component      string              `json:"component"`
+	Props          map[string]any      `json:"props"`
+	URL            string              `json:"url"`
+	Version        string              `json:"version"`
+	EncryptHistory bool                `json:"encryptHistory,omitempty"`
+	ClearHistory   bool                `json:"clearHistory,omitempty"`
+	MergeProps     []string            `json:"mergeProps,omitempty"`
+	DeepMergeProps []string            `json:"deepMergeProps,omitempty"`
+	DeferredProps  map[string][]string `json:"deferredProps,omitempty"`
+}
