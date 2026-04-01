@@ -9,7 +9,7 @@ export default defineConfig({
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {
-      input: "resources/js/app.js",
+      input: "src/js/app.js",
       output: {
         entryFileNames: "dist/app.js",
         chunkFileNames: "dist/[name]-[hash].js",

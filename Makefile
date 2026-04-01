@@ -4,8 +4,8 @@ GO_FMT := docker compose -f go-fmt.compose.yaml run --rm go-fmt
 .PHONY: format test build tidy example
 
 format:
-	cd example/app && npx oxfmt --write resources
-	cd example/app && npx oxlint --fix resources
+	cd example/app && npx oxfmt --write src
+	cd example/app && npx oxlint --fix src
 	go vet $(ROOT_PATH)/...
 	$(GO_FMT) format --host-path $(ROOT_PATH)/core
 
