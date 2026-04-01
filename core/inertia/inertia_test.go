@@ -813,3 +813,880 @@ func containsStr(s, substr string) bool {
 
 	return false
 }
+
+// --- Response Structure ---
+
+func TestRender_URLPreservesFullRequestURI(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/users?page=2&sort=name", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/users?page=2&sort=name"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Users/Index")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.URL != "/users?page=2&sort=name" {
+		t.Errorf("url = %q, want %q", page.URL, "/users?page=2&sort=name")
+	}
+}
+
+func TestRender_URLWithTrailingSlash(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/users/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/users/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Users/Index")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.URL != "/users/" {
+		t.Errorf("url = %q, want %q", page.URL, "/users/")
+	}
+}
+
+func TestRender_URLWithTrailingSlashAndQueryParams(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/users/?page=1", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/users/?page=1"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Users/Index")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.URL != "/users/?page=1" {
+		t.Errorf("url = %q, want %q", page.URL, "/users/?page=1")
+	}
+}
+
+func TestRender_JSONOmitsEmptyOptionalFields(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	for _, field := range []string{
+		`"encryptHistory"`, `"clearHistory"`,
+		`"mergeProps"`, `"deepMergeProps"`,
+		`"deferredProps"`, `"scrollProps"`, `"onceProps"`,
+	} {
+		if contains(body, field) {
+			t.Errorf("JSON should omit empty field %s", field)
+		}
+	}
+}
+
+// --- Shared Props ---
+
+func TestSharedProps_ReturnsCopy(t *testing.T) {
+	i := newTestInertia(t)
+	i.ShareProp("key", "original")
+
+	copy := i.SharedProps()
+	copy["key"] = "mutated"
+
+	if i.SharedProps()["key"] != "original" {
+		t.Error("mutating SharedProps() return value should not affect internal state")
+	}
+}
+
+func TestSharedProps_OverriddenByRenderProps(t *testing.T) {
+	i := newTestInertia(t)
+	i.ShareProp("title", "shared")
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{"title": "render-override"})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["title"] != "render-override" {
+		t.Errorf("title = %v, want %q (render props should override shared)", page.Props["title"], "render-override")
+	}
+}
+
+func TestSharedProps_OverriddenByContextProps(t *testing.T) {
+	i := newTestInertia(t)
+	i.ShareProp("title", "shared")
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetProp(r.Context(), "title", "context-override")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["title"] != "context-override" {
+		t.Errorf("title = %v, want %q (context props should override shared)", page.Props["title"], "context-override")
+	}
+}
+
+func TestRenderProps_OverrideContextProps(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetProp(r.Context(), "title", "context-val")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page", httpx.Props{"title": "render-val"})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["title"] != "render-val" {
+		t.Errorf("title = %v, want %q (render props should override context)", page.Props["title"], "render-val")
+	}
+}
+
+func TestSharedProps_MergedWithAllSources(t *testing.T) {
+	i := newTestInertia(t)
+	i.ShareProp("shared", "shared-val")
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetProp(r.Context(), "ctx", "ctx-val")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page", httpx.Props{"render": "render-val"})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["shared"] != "shared-val" {
+		t.Error("shared prop missing")
+	}
+
+	if page.Props["ctx"] != "ctx-val" {
+		t.Error("context prop missing")
+	}
+
+	if page.Props["render"] != "render-val" {
+		t.Error("render prop missing")
+	}
+}
+
+func TestShareProp_ConcurrentSafe(t *testing.T) {
+	i := newTestInertia(t)
+
+	done := make(chan struct{})
+
+	for n := 0; n < 10; n++ {
+		go func(n int) {
+			i.ShareProp("key", n)
+			_ = i.SharedProps()
+
+			done <- struct{}{}
+		}(n)
+	}
+
+	for n := 0; n < 10; n++ {
+		<-done
+	}
+}
+
+func TestShareProp_FuncValueResolvedOnEachRender(t *testing.T) {
+	i := newTestInertia(t)
+
+	callCount := 0
+
+	i.ShareProp("counter", func() any {
+		callCount++
+
+		return callCount
+	})
+
+	for range 2 {
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r.Header.Set(httpx.HeaderInertia, "true")
+		r.RequestURI = "/"
+		w := httptest.NewRecorder()
+		i.Render(w, r, "Page")
+	}
+
+	if callCount != 2 {
+		t.Errorf("callCount = %d, want 2 (func should be invoked on each render)", callCount)
+	}
+}
+
+// --- Validation Errors ---
+
+func TestValidationErrors_MultipleFields(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{
+		"name":  "required",
+		"email": "invalid",
+	})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	errors, ok := page.Props["errors"].(map[string]any)
+
+	if !ok {
+		t.Fatal("errors prop not found or not a map")
+	}
+
+	if errors["name"] != "required" {
+		t.Errorf("errors.name = %v", errors["name"])
+	}
+
+	if errors["email"] != "invalid" {
+		t.Errorf("errors.email = %v", errors["email"])
+	}
+}
+
+func TestValidationErrors_EmptyNotAdded(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if _, ok := page.Props["errors"]; ok {
+		t.Error("empty validation errors should not be added to props")
+	}
+}
+
+func TestValidationErrors_NilNotAdded(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if _, ok := page.Props["errors"]; ok {
+		t.Error("no SetValidationErrors call should mean no 'errors' prop")
+	}
+}
+
+func TestValidationErrors_OverridesRenderErrors(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{"field": "required"})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page", httpx.Props{"errors": "custom"})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	// Validation errors are applied last in mergeProps, so they override.
+	errors, ok := page.Props["errors"].(map[string]any)
+
+	if !ok {
+		t.Fatal("errors should be the validation errors map, not a string")
+	}
+
+	if errors["field"] != "required" {
+		t.Errorf("errors.field = %v", errors["field"])
+	}
+}
+
+func TestValidationErrors_NestedStructure(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{
+		"address": map[string]string{"street": "required"},
+	})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["errors"] == nil {
+		t.Error("nested validation errors should be preserved")
+	}
+}
+
+// --- Location ---
+
+func TestLocation_InertiaRequest_EmptyBody(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	w := httptest.NewRecorder()
+
+	i.Location(w, r, "https://external.com")
+
+	if w.Body.Len() > 0 {
+		t.Errorf("409 response body should be empty, got %q", w.Body.String())
+	}
+}
+
+func TestLocation_NonInertiaRequest_CustomStatus(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	i.Location(w, r, "/path", http.StatusMovedPermanently)
+
+	if w.Code != http.StatusMovedPermanently {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusMovedPermanently)
+	}
+}
+
+func TestLocation_InertiaRequest_IgnoresCustomStatus(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	w := httptest.NewRecorder()
+
+	i.Location(w, r, "/path", http.StatusMovedPermanently)
+
+	if w.Code != http.StatusConflict {
+		t.Errorf("status = %d, want %d (always 409 for Inertia)", w.Code, http.StatusConflict)
+	}
+}
+
+// --- Redirect / Back ---
+
+func TestRedirect_SetsLocationHeader(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	i.Redirect(w, r, "/dashboard")
+
+	if loc := w.Header().Get("Location"); loc != "/dashboard" {
+		t.Errorf("Location = %q, want %q", loc, "/dashboard")
+	}
+}
+
+func TestBack_WithCustomStatus303(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set("Referer", "/previous")
+	w := httptest.NewRecorder()
+
+	i.Back(w, r, http.StatusSeeOther)
+
+	if w.Code != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusSeeOther)
+	}
+
+	if loc := w.Header().Get("Location"); loc != "/previous" {
+		t.Errorf("Location = %q, want %q", loc, "/previous")
+	}
+}
+
+// --- Deferred Props Integration ---
+
+func TestRender_DeferredPropsMultipleGroups(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"stats":    props.Defer("s", "sidebar"),
+		"forecast": props.Defer("f", "sidebar"),
+		"logs":     props.Defer("l", "footer"),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if len(page.DeferredProps["sidebar"]) != 2 {
+		t.Errorf("DeferredProps[sidebar] = %v, want 2 items", page.DeferredProps["sidebar"])
+	}
+
+	if len(page.DeferredProps["footer"]) != 1 {
+		t.Errorf("DeferredProps[footer] = %v, want 1 item", page.DeferredProps["footer"])
+	}
+}
+
+func TestRender_DeferredMergePropsInBothFields(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"items": props.Defer([]int{1}, "list").Merge(),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.DeferredProps["list"] == nil {
+		t.Error("deferredProps should contain the group")
+	}
+
+	if len(page.MergeProps) != 1 || page.MergeProps[0] != "items" {
+		t.Errorf("mergeProps = %v, want [items]", page.MergeProps)
+	}
+}
+
+func TestRender_DeferredOnPartialReload_Resolved(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderPartialComponent, "Page")
+	r.Header.Set(httpx.HeaderPartialData, "stats")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"stats": props.Defer(func() any { return "resolved" }),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["stats"] != "resolved" {
+		t.Errorf("stats = %v, want %q", page.Props["stats"], "resolved")
+	}
+
+	if len(page.DeferredProps) > 0 {
+		t.Error("deferredProps should be empty on partial reload")
+	}
+}
+
+// --- MergeProp Integration ---
+
+func TestRender_MergePropsInJSON(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"items": props.Merge([]string{"a", "b"}),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if len(page.MergeProps) != 1 || page.MergeProps[0] != "items" {
+		t.Errorf("mergeProps = %v, want [items]", page.MergeProps)
+	}
+}
+
+func TestRender_DeepMergePropsInJSON(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"data": props.DeepMerge(map[string]int{"a": 1}),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if len(page.DeepMergeProps) != 1 || page.DeepMergeProps[0] != "data" {
+		t.Errorf("deepMergeProps = %v, want [data]", page.DeepMergeProps)
+	}
+}
+
+func TestRender_MergeAndDeepMergeTogether(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"shallow": props.Merge([]int{1}),
+		"deep":    props.DeepMerge(map[string]int{"a": 1}),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if len(page.MergeProps) != 1 {
+		t.Errorf("mergeProps = %v, want 1 entry", page.MergeProps)
+	}
+
+	if len(page.DeepMergeProps) != 1 {
+		t.Errorf("deepMergeProps = %v, want 1 entry", page.DeepMergeProps)
+	}
+}
+
+// --- ScrollProp Integration ---
+
+func TestRender_ScrollPropsAllFieldsInJSON(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"feed": props.Scroll([]int{1}, "feedPage", 2, 1, 3),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	scroll := page.ScrollProps["feed"]
+
+	if scroll.PageName != "feedPage" {
+		t.Errorf("pageName = %q", scroll.PageName)
+	}
+
+	// JSON numbers decode as float64.
+	if scroll.CurrentPage != float64(2) {
+		t.Errorf("currentPage = %v", scroll.CurrentPage)
+	}
+
+	if scroll.PreviousPage != float64(1) {
+		t.Errorf("previousPage = %v", scroll.PreviousPage)
+	}
+
+	if scroll.NextPage != float64(3) {
+		t.Errorf("nextPage = %v", scroll.NextPage)
+	}
+}
+
+func TestRender_ScrollPropsWithReset(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"feed": props.Scroll([]int{1}, "p", 1, nil, 2).Reset(),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if !page.ScrollProps["feed"].Reset {
+		t.Error("scroll reset should be true")
+	}
+}
+
+func TestRender_ScrollPropsWithMerge(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"feed": props.Scroll([]int{1}, "p", 1, nil, 2).Merge(),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if len(page.MergeProps) != 1 || page.MergeProps[0] != "feed" {
+		t.Errorf("mergeProps = %v, want [feed]", page.MergeProps)
+	}
+}
+
+// --- OnceProp Integration ---
+
+func TestRender_OncePropsMetadataInJSON(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"notes": props.Once("snapshot"),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.OnceProps["notes"].Prop != "notes" {
+		t.Errorf("onceProps[notes].prop = %q", page.OnceProps["notes"].Prop)
+	}
+
+	if page.Props["notes"] != "snapshot" {
+		t.Errorf("notes = %v", page.Props["notes"])
+	}
+}
+
+func TestRender_OnceExcluded_AbsentFromProps(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderExceptOnceProps, "notes")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page", httpx.Props{
+		"notes": props.Once("snapshot"),
+	})
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if _, ok := page.Props["notes"]; ok {
+		t.Error("OnceProp should be absent when excluded by except-once header")
+	}
+}
+
+// --- History ---
+
+func TestRender_EncryptHistoryFromBothOptionAndContext(t *testing.T) {
+	i, _ := inertia.New(testTemplate, inertia.WithVersion("v1"), inertia.WithEncryptHistory())
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetEncryptHistory(r.Context())
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if !page.EncryptHistory {
+		t.Error("encryptHistory should be true (from option OR context)")
+	}
+}
+
+func TestRender_EncryptHistoryDefaultFalseOmitted(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if contains(body, `"encryptHistory"`) {
+		t.Error("encryptHistory should be omitted when false")
+	}
+}
+
+func TestRender_ClearHistoryOmittedWhenFalse(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if contains(body, `"clearHistory"`) {
+		t.Error("clearHistory should be omitted when false")
+	}
+}
+
+// --- Context Helpers ---
+
+func TestSetProp_MultipleCalls_Accumulate(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetProp(r.Context(), "a", "1")
+	ctx = inertia.SetProp(ctx, "b", "2")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["a"] != "1" {
+		t.Errorf("a = %v", page.Props["a"])
+	}
+
+	if page.Props["b"] != "2" {
+		t.Errorf("b = %v", page.Props["b"])
+	}
+}
+
+func TestSetProp_SameKeyOverwritten(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetProp(r.Context(), "key", "first")
+	ctx = inertia.SetProp(ctx, "key", "second")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	if page.Props["key"] != "second" {
+		t.Errorf("key = %v, want %q", page.Props["key"], "second")
+	}
+}
+
+func TestSetProps_MergesWithExisting(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetProp(r.Context(), "a", "1")
+	ctx = inertia.SetProps(ctx, httpx.Props{"b": "2", "c": "3"})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	var page response.Page
+
+	json.NewDecoder(w.Body).Decode(&page)
+
+	for _, key := range []string{"a", "b", "c"} {
+		if page.Props[key] == nil {
+			t.Errorf("prop %q should be present", key)
+		}
+	}
+}
+
+func TestSetTemplateData_DoesNotAffectJSON(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/"
+
+	ctx := inertia.SetTemplateData(r.Context(), httpx.TemplateData{"extra": "val"})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if contains(body, "extra") {
+		t.Error("template data should not appear in XHR JSON response")
+	}
+}

@@ -63,4 +63,20 @@ func TestHeaderConstants(t *testing.T) {
 	if httpx.HeaderInfiniteScroll != "X-Inertia-Infinite-Scroll-Merge-Intent" {
 		t.Errorf("HeaderInfiniteScroll = %q", httpx.HeaderInfiniteScroll)
 	}
+
+	if httpx.HeaderExceptOnceProps != "X-Inertia-Except-Once-Props" {
+		t.Errorf("HeaderExceptOnceProps = %q", httpx.HeaderExceptOnceProps)
+	}
+
+	if httpx.HeaderReset != "X-Inertia-Reset" {
+		t.Errorf("HeaderReset = %q", httpx.HeaderReset)
+	}
+
+	if httpx.HeaderErrorBag != "X-Inertia-Error-Bag" {
+		t.Errorf("HeaderErrorBag = %q", httpx.HeaderErrorBag)
+	}
+
+	if httpx.HeaderRedirect != "X-Inertia-Redirect" {
+		t.Errorf("HeaderRedirect = %q", httpx.HeaderRedirect)
+	}
 }
