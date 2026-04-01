@@ -59,4 +59,8 @@ func TestHeaderConstants(t *testing.T) {
 	if httpx.HeaderLocation != "X-Inertia-Location" {
 		t.Errorf("HeaderLocation = %q", httpx.HeaderLocation)
 	}
+
+	if httpx.HeaderInfiniteScroll != "X-Inertia-Infinite-Scroll-Merge-Intent" {
+		t.Errorf("HeaderInfiniteScroll = %q", httpx.HeaderInfiniteScroll)
+	}
 }

@@ -138,6 +138,8 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 		MergeProps:     result.MergeProps,
 		DeepMergeProps: result.DeepMergeProps,
 		DeferredProps:  result.DeferredProps,
+		ScrollProps:    toResponseScrollProps(result.ScrollProps),
+		OnceProps:      toResponseOnceProps(result.OnceProps),
 	}
 
 	if httpx.IsInertiaRequest(r) {

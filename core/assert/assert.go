@@ -25,6 +25,17 @@ type AssertableInertia struct {
 	MergeProps     []string            `json:"mergeProps"`
 	DeepMergeProps []string            `json:"deepMergeProps"`
 	DeferredProps  map[string][]string `json:"deferredProps"`
+	ScrollProps    map[string]struct {
+		PageName     string `json:"pageName"`
+		PreviousPage any    `json:"previousPage"`
+		NextPage     any    `json:"nextPage"`
+		CurrentPage  any    `json:"currentPage"`
+		Reset        bool   `json:"reset"`
+	} `json:"scrollProps"`
+	OnceProps map[string]struct {
+		Prop      string `json:"prop"`
+		ExpiresAt *int64 `json:"expiresAt"`
+	} `json:"onceProps"`
 }
 
 // AssertFromBytes decodes a JSON body into an AssertableInertia.

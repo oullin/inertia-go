@@ -6,16 +6,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
-	"github.com/oullin/inertia-go/core/props"
 )
 
 //go:embed resources/views/app.html
 var rootTemplateFS embed.FS
-
-var distFS = os.DirFS("../app/dist")
 
 var i *inertia.Inertia
 
@@ -38,20 +36,38 @@ func main() {
 		log.Fatal(err)
 	}
 
-	i.ShareProp("app", map[string]string{
-		"name": "Inertia Go + Vue",
+	distPath, err := resolveDistPath()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	i.ShareProps(httpx.Props{
+		"app": map[string]any{
+			"name":        "Beacon Ops Console",
+			"productLine": "Revenue Operations",
+			"environment": "Sandbox",
+		},
+		"auth": map[string]any{
+			"user": map[string]any{
+				"name":     "Maya Tan",
+				"title":    "Ops Director",
+				"initials": "MT",
+			},
+		},
+		"workspace": map[string]any{
+			"name": "Northstar HQ",
+			"plan": "Growth",
+		},
 	})
 
 	mux := http.NewServeMux()
+	mux.Handle(
+		"/assets/",
+		http.StripPrefix("/assets/", http.FileServer(http.Dir(distPath))),
+	)
 
-	// Serve Vite-built assets.
-	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.FS(distFS))))
-
-	// Pages.
-	mux.Handle("/", i.Middleware(http.HandlerFunc(homeHandler)))
-	mux.Handle("/about", i.Middleware(http.HandlerFunc(aboutHandler)))
-	mux.Handle("/users", i.Middleware(http.HandlerFunc(usersHandler)))
-	mux.Handle("/redirect-test", i.Middleware(http.HandlerFunc(redirectHandler)))
+	registerDashboardRoutes(mux)
 
 	addr := ":8080"
 
@@ -68,59 +84,17 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	err := i.Render(w, r, "Home", httpx.Props{
-		"title":   "Welcome",
-		"message": "This is the Inertia.js Go adapter with Vue and Vite.",
-	})
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+func resolveDistPath() (string, error) {
+	candidates := []string{
+		"example/app/dist",
+		"../app/dist",
 	}
-}
 
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	err := i.Render(w, r, "About", httpx.Props{
-		"title":       "About",
-		"description": "A Go server-side adapter for the Inertia.js protocol.",
-		"features": []string{
-			"Zero external dependencies",
-			"net/http compatible middleware",
-			"Partial reloads",
-			"Deferred props",
-			"Asset versioning",
-		},
-	})
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	for _, candidate := range candidates {
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			return filepath.Clean(candidate), nil
+		}
 	}
-}
 
-func usersHandler(w http.ResponseWriter, r *http.Request) {
-	err := i.Render(w, r, "Users", httpx.Props{
-		"title": "Users",
-		"users": []map[string]any{
-			{"id": 1, "name": "Alice Johnson", "email": "alice@example.com", "role": "Admin"},
-			{"id": 2, "name": "Bob Smith", "email": "bob@example.com", "role": "Editor"},
-			{"id": 3, "name": "Charlie Brown", "email": "charlie@example.com", "role": "Viewer"},
-		},
-		"stats": props.Defer(func() any {
-			return map[string]int{
-				"total":  3,
-				"active": 2,
-			}
-		}, "sidebar"),
-		"metadata": props.Once(map[string]string{
-			"last_sync": "2026-04-01T12:00:00Z",
-		}),
-	})
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func redirectHandler(w http.ResponseWriter, r *http.Request) {
-	i.Redirect(w, r, "/")
+	return "", fmt.Errorf("failed to locate example app dist directory")
 }

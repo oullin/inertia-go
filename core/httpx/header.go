@@ -8,6 +8,7 @@ const (
 	HeaderPartialData      = "X-Inertia-Partial-Data"
 	HeaderPartialExcept    = "X-Inertia-Partial-Except"
 	HeaderExceptOnceProps  = "X-Inertia-Except-Once-Props"
+	HeaderInfiniteScroll   = "X-Inertia-Infinite-Scroll-Merge-Intent"
 	HeaderLocation         = "X-Inertia-Location"
 	HeaderRedirect         = "X-Inertia-Redirect"
 	HeaderErrorBag         = "X-Inertia-Error-Bag"

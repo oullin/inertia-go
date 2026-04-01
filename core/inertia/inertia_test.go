@@ -299,6 +299,40 @@ func TestRender_DeferredProps(t *testing.T) {
 	}
 }
 
+func TestRender_OnceAndScrollProps(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/feed", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.RequestURI = "/feed"
+	w := httptest.NewRecorder()
+
+	err := i.Render(w, r, "Feed", httpx.Props{
+		"release_notes": props.Once("Frozen snapshot"),
+		"feed": props.Scroll(map[string]any{
+			"data": []map[string]any{{"id": "evt_1"}},
+		}, "feedPage", 1, nil, 2),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var page response.Page
+
+	if err := json.NewDecoder(w.Body).Decode(&page); err != nil {
+		t.Fatal(err)
+	}
+
+	if page.OnceProps["release_notes"].Prop != "release_notes" {
+		t.Errorf("once prop metadata = %+v", page.OnceProps["release_notes"])
+	}
+
+	if page.ScrollProps["feed"].PageName != "feedPage" {
+		t.Errorf("scroll prop metadata = %+v", page.ScrollProps["feed"])
+	}
+}
+
 func TestRedirect(t *testing.T) {
 	i := newTestInertia(t)
 

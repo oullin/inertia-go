@@ -16,14 +16,25 @@ type TryProper interface {
 // lazy values.
 func resolve(val any) (any, error) {
 	// Unwrap prop type wrappers to get the inner value.
-	switch v := val.(type) {
-	case TryProper:
-		return v.TryProp()
-	case Proper:
-		val = v.Prop()
+	for {
+		switch v := val.(type) {
+		case TryProper:
+			next, err := v.TryProp()
+
+			if err != nil {
+				return nil, err
+			}
+
+			val = next
+		case Proper:
+			val = v.Prop()
+		default:
+			goto resolved
+		}
 	}
 
 	// Evaluate lazy function values.
+resolved:
 	switch v := val.(type) {
 	case func() (any, error):
 		return v()

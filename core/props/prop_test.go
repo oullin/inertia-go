@@ -81,3 +81,19 @@ func TestMergeProp(t *testing.T) {
 		}
 	})
 }
+
+func TestScrollProp(t *testing.T) {
+	p := props.Scroll([]int{1, 2}, "feedPage", 1, nil, 2).Merge().Reset()
+
+	if !p.IsMerge() {
+		t.Error("Scroll.Merge().IsMerge() = false, want true")
+	}
+
+	if !p.IsReset() {
+		t.Error("Scroll.Reset().IsReset() = false, want true")
+	}
+
+	if p.PageName != "feedPage" {
+		t.Errorf("Scroll.PageName = %q, want %q", p.PageName, "feedPage")
+	}
+}

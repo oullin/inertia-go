@@ -14,6 +14,23 @@ type Result struct {
 	MergeProps     []string
 	DeepMergeProps []string
 	DeferredProps  map[string][]string
+	ScrollProps    map[string]ScrollMeta
+	OnceProps      map[string]OnceMeta
+}
+
+// ScrollMeta is the response metadata for a scrollable prop.
+type ScrollMeta struct {
+	PageName     string
+	PreviousPage any
+	NextPage     any
+	CurrentPage  any
+	Reset        bool
+}
+
+// OnceMeta identifies a prop as a once prop on the client.
+type OnceMeta struct {
+	Prop      string
+	ExpiresAt *int64
 }
 
 // Resolve filters and evaluates the merged props map according to the
@@ -22,6 +39,8 @@ func Resolve(r *http.Request, component string, merged httpx.Props) (*Result, er
 	res := &Result{
 		Props:         make(map[string]any, len(merged)),
 		DeferredProps: make(map[string][]string),
+		ScrollProps:   make(map[string]ScrollMeta),
+		OnceProps:     make(map[string]OnceMeta),
 	}
 
 	partialComponent := r.Header.Get(httpx.HeaderPartialComponent)
@@ -35,8 +54,10 @@ func Resolve(r *http.Request, component string, merged httpx.Props) (*Result, er
 	exceptSet := toSet(except)
 	exceptOnceSet := toSet(exceptOnce)
 
+	mergeIntent := r.Header.Get(httpx.HeaderInfiniteScroll)
+
 	for key, val := range merged {
-		included, err := res.shouldInclude(key, val, isPartial, onlySet, exceptSet, exceptOnceSet)
+		included, err := res.shouldInclude(key, val, isPartial, onlySet, exceptSet, exceptOnceSet, mergeIntent)
 
 		if err != nil {
 			return nil, err
@@ -67,6 +88,7 @@ func (res *Result) shouldInclude(
 	val any,
 	isPartial bool,
 	onlySet, exceptSet, exceptOnceSet map[string]struct{},
+	mergeIntent string,
 ) (bool, error) {
 
 	// AlwaysProp bypasses all filters.
@@ -124,8 +146,25 @@ func (res *Result) shouldInclude(
 		return false, nil
 
 	case OnceProp:
+		res.OnceProps[key] = OnceMeta{Prop: key}
+
 		if _, skip := exceptOnceSet[key]; skip {
 			return false, nil
+		}
+
+		return true, nil
+
+	case ScrollProp:
+		res.ScrollProps[key] = ScrollMeta{
+			PageName:     v.PageName,
+			PreviousPage: v.PreviousPage,
+			NextPage:     v.NextPage,
+			CurrentPage:  v.CurrentPage,
+			Reset:        v.IsReset(),
+		}
+
+		if v.IsMerge() || mergeIntent == "append" {
+			res.MergeProps = append(res.MergeProps, key)
 		}
 
 		return true, nil

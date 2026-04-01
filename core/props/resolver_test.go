@@ -357,6 +357,58 @@ func TestResolve_DeferredMergeOnPartialReload(t *testing.T) {
 	}
 }
 
+func TestResolve_OnceMetadataRecorded(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"notes": props.Once("ship notes"),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	meta, ok := result.OnceProps["notes"]
+
+	if !ok {
+		t.Fatal("missing once metadata")
+	}
+
+	if meta.Prop != "notes" {
+		t.Errorf("OnceProps[notes].Prop = %q, want %q", meta.Prop, "notes")
+	}
+}
+
+func TestResolve_ScrollMetadataRecorded(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+
+	result, err := props.Resolve(r, "Page", httpx.Props{
+		"feed": props.Scroll(map[string]any{
+			"data": []string{"one"},
+		}, "feedPage", 1, nil, 2),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	meta, ok := result.ScrollProps["feed"]
+
+	if !ok {
+		t.Fatal("missing scroll metadata")
+	}
+
+	if meta.PageName != "feedPage" {
+		t.Errorf("ScrollProps[feed].PageName = %q, want %q", meta.PageName, "feedPage")
+	}
+
+	if meta.NextPage != 2 {
+		t.Errorf("ScrollProps[feed].NextPage = %v, want %v", meta.NextPage, 2)
+	}
+}
+
 func (tp tryPropValue) TryProp() (any, error) { return tp.val, nil }
 
 func TestResolve_TryProper(t *testing.T) {
