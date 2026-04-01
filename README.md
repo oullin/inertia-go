@@ -2,6 +2,20 @@
 
 A Go server-side adapter for [Inertia.js](https://inertiajs.com). Build modern single-page apps using Vue, React, or Svelte with a Go backend -- no client-side routing or API layer required.
 
+## Why
+
+Go teams building modern UIs face two bad options: build a full REST/GraphQL API plus a separate SPA with its own routing, state management, and deployment pipeline -- or stick with server-rendered templates and accept the UX tradeoff.
+
+Inertia removes this choice. Your Go handlers render frontend components directly. No API endpoints to maintain, no client-side router to configure, no request/response contracts to keep in sync. A handler calls `Render("Users/Index", props)` and the client gets a Vue, React, or Svelte page with exactly the data it needs. On first visit it's server-rendered HTML; on navigation it's a JSON payload that swaps the component in place. Same handler, both cases.
+
+The result: SPA-quality UX with the simplicity of a traditional server-rendered app. One router, one source of truth, one deployment.
+
+## Who it's for
+
+- **Go backend developers** who want a modern frontend without building and maintaining a separate API layer.
+- **Teams moving to Go** from Laravel, Rails, or Django stacks that already use Inertia and want to keep the same workflow.
+- **Fullstack developers** who prefer server-driven control over routing, authorization, and data loading -- but don't want to give up single-page app UX.
+
 ## Install
 
 ```bash
