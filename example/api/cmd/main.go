@@ -64,9 +64,9 @@ func main() {
 		},
 		"auth": map[string]any{
 			"user": map[string]any{
-				"name":     "shadcn",
-				"email":    "m@example.com",
-				"initials": "CN",
+				"name":     "Gus",
+				"email":    "gus@example.com",
+				"initials": "GC",
 			},
 		},
 		"workspace": map[string]any{

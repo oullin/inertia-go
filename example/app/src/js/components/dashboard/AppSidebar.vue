@@ -2,19 +2,11 @@
 import { computed } from "vue";
 import { usePage } from "@inertiajs/vue3";
 import {
-  IconCamera,
   IconChartBar,
   IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
   IconFolder,
-  IconHelp,
   IconInnerShadowTop,
   IconListDetails,
-  IconReport,
-  IconSearch,
   IconSettings,
   IconUsers,
 } from "@tabler/icons-vue";
@@ -28,13 +20,12 @@ import {
   SidebarMenuItem,
 } from "@/js/components/ui/sidebar";
 import NavMain from "./NavMain.vue";
-import NavDocuments from "./NavDocuments.vue";
 import NavSecondary from "./NavSecondary.vue";
 import NavUser from "./NavUser.vue";
 
 const page = usePage();
 const user = computed(
-  () => page.props.auth?.user ?? { name: "shadcn", email: "m@example.com", initials: "CN" },
+  () => page.props.auth?.user ?? { name: "Gus", email: "gus@example.com", initials: "GC" },
 );
 
 const navMain = [
@@ -45,17 +36,7 @@ const navMain = [
   { title: "Team", url: "/dashboard/feed", icon: IconUsers },
 ];
 
-const navDocuments = [
-  { name: "Data Library", url: "#", icon: IconDatabase },
-  { name: "Reports", url: "#", icon: IconReport },
-  { name: "Word Assistant", url: "#", icon: IconFileWord },
-];
-
-const navSecondary = [
-  { title: "Settings", url: "/dashboard/state", icon: IconSettings },
-  { title: "Get Help", url: "#", icon: IconHelp },
-  { title: "Search", url: "#", icon: IconSearch },
-];
+const navSecondary = [{ title: "Settings", url: "/dashboard/state", icon: IconSettings }];
 </script>
 
 <template>
@@ -74,7 +55,6 @@ const navSecondary = [
     </SidebarHeader>
     <SidebarContent>
       <NavMain :items="navMain" />
-      <NavDocuments :items="navDocuments" />
       <NavSecondary :items="navSecondary" />
     </SidebarContent>
     <SidebarFooter>
