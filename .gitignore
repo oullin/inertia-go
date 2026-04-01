@@ -33,6 +33,9 @@ node_modules/
 storage/.pnpm-store/
 !storage/.gitkeep
 
+# npm (use pnpm)
+package-lock.json
+
 # Turbo
 .turbo/
 
