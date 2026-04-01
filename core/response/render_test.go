@@ -101,7 +101,7 @@ func TestWriteHTML(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +135,7 @@ func TestWriteHTML_MarshalError(t *testing.T) {
 	page := &response.Page{Component: "Page"}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &failMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &failMarshaler{}})
 
 	if err == nil {
 		t.Error("expected error from marshal failure")
@@ -157,7 +157,7 @@ func TestWriteHTML_ExtraTemplateData(t *testing.T) {
 	extra := httpx.TemplateData{"pageTitle": "My App"}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, extra)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}, ExtraData: extra})
 
 	if err != nil {
 		t.Fatal(err)
@@ -182,7 +182,7 @@ func TestWriteHTML_ScriptClosingTagEscaped(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -209,7 +209,7 @@ func TestWriteHTML_CustomContainerID(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "root", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "root", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -237,7 +237,7 @@ func TestWriteHTML_OmitsEmptyOptionalFields(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -481,7 +481,7 @@ func TestWriteHTML_NilExtraDataHandled(t *testing.T) {
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatalf("WriteHTML with nil extraData should not panic: %v", err)
@@ -493,7 +493,7 @@ func TestWriteHTML_EmptyExtraData(t *testing.T) {
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, httpx.TemplateData{})
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}, ExtraData: httpx.TemplateData{}})
 
 	if err != nil {
 		t.Fatalf("WriteHTML with empty extraData: %v", err)
@@ -509,7 +509,7 @@ func TestWriteHTML_MultipleExtraDataKeys(t *testing.T) {
 	extra := httpx.TemplateData{"keyA": "valA", "keyB": "valB"}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, extra)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}, ExtraData: extra})
 
 	if err != nil {
 		t.Fatal(err)
@@ -532,7 +532,7 @@ func TestWriteHTML_EmbeddedJSONIsValid(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	body := w.Body.String()
 
@@ -586,7 +586,7 @@ func TestWriteHTML_InertiaHeadIsEmpty(t *testing.T) {
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
 	w := httptest.NewRecorder()
-	response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	body := w.Body.String()
 

@@ -36,6 +36,17 @@ type OnceMeta struct {
 // Resolve filters and evaluates the merged props map according to the
 // Inertia.js partial-reload protocol headers found on r.
 
+// filterContext holds the request-scoped filter state parsed from
+// Inertia protocol headers. It is built once per Resolve call and
+// passed to shouldInclude so the method signature stays small.
+type filterContext struct {
+	isPartial     bool
+	onlySet       map[string]struct{}
+	exceptSet     map[string]struct{}
+	exceptOnceSet map[string]struct{}
+	mergeIntent   string
+}
+
 // propTraits holds metadata discovered by walking a nested prop
 // wrapper chain. Each flag indicates whether the corresponding
 // wrapper type was found; the associated fields carry its metadata.
@@ -67,39 +78,52 @@ func Resolve(r *http.Request, component string, merged httpx.Props) (*Result, er
 	}
 
 	partialComponent := r.Header.Get(httpx.HeaderPartialComponent)
-	isPartial := httpx.IsInertiaRequest(r) && partialComponent == component
 
-	only := splitHeader(r.Header.Get(httpx.HeaderPartialData))
-	except := splitHeader(r.Header.Get(httpx.HeaderPartialExcept))
-	exceptOnce := splitHeader(r.Header.Get(httpx.HeaderExceptOnceProps))
+	fc := filterContext{
+		isPartial:     httpx.IsInertiaRequest(r) && partialComponent == component,
+		onlySet:       toSet(splitHeader(r.Header.Get(httpx.HeaderPartialData))),
+		exceptSet:     toSet(splitHeader(r.Header.Get(httpx.HeaderPartialExcept))),
+		exceptOnceSet: toSet(splitHeader(r.Header.Get(httpx.HeaderExceptOnceProps))),
+		mergeIntent:   r.Header.Get(httpx.HeaderInfiniteScroll),
+	}
 
-	onlySet := toSet(only)
-	exceptSet := toSet(except)
-	exceptOnceSet := toSet(exceptOnce)
-
-	mergeIntent := r.Header.Get(httpx.HeaderInfiniteScroll)
+	// Stage 1: filter — decide which props to include and collect metadata.
+	included := make(map[string]any, len(merged))
 
 	for key, val := range merged {
-		included, err := res.shouldInclude(key, val, isPartial, onlySet, exceptSet, exceptOnceSet, mergeIntent)
+		ok, err := res.shouldInclude(key, val, fc)
 
 		if err != nil {
 			return nil, err
 		}
 
-		if !included {
-			continue
+		if ok {
+			included[key] = val
 		}
+	}
 
+	// Stage 2: evaluate — resolve the included props into final values.
+	if err := res.evaluate(included); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// evaluate resolves every included prop into its final value and
+// stores it in res.Props.
+func (res *Result) evaluate(included map[string]any) error {
+	for key, val := range included {
 		resolved, err := resolve(val)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		res.Props[key] = resolved
 	}
 
-	return res, nil
+	return nil
 }
 
 // walkPropChain iterates through the Proper wrapper chain collecting
@@ -169,40 +193,34 @@ func walkPropChain(val any) propTraits {
 // response and records metadata (merge keys, deferred groups) as a
 // side effect. It returns true when the prop should be resolved and
 // added to the output.
-func (res *Result) shouldInclude(
-	key string,
-	val any,
-	isPartial bool,
-	onlySet, exceptSet, exceptOnceSet map[string]struct{},
-	mergeIntent string,
-) (bool, error) {
+func (res *Result) shouldInclude(key string, val any, fc filterContext) (bool, error) {
 	traits := walkPropChain(val)
 
 	// AlwaysProp bypasses all filters.
 	if traits.hasAlways {
-		res.recordMetadata(key, traits, mergeIntent)
+		res.recordMetadata(key, traits, fc.mergeIntent)
 
 		return true, nil
 	}
 
 	// Partial reload filtering.
-	if isPartial {
+	if fc.isPartial {
 		// exceptSet takes precedence.
-		if len(exceptSet) > 0 {
-			if _, excluded := exceptSet[key]; excluded {
+		if len(fc.exceptSet) > 0 {
+			if _, excluded := fc.exceptSet[key]; excluded {
 				return false, nil
 			}
 		}
 
-		if len(onlySet) > 0 {
-			if _, included := onlySet[key]; !included {
+		if len(fc.onlySet) > 0 {
+			if _, included := fc.onlySet[key]; !included {
 				return false, nil
 			}
 		}
 	}
 
 	// DeferProp: excluded on initial, included on partial reload.
-	if traits.hasDefer && !isPartial {
+	if traits.hasDefer && !fc.isPartial {
 		res.DeferredProps[traits.deferGroup] = append(res.DeferredProps[traits.deferGroup], key)
 
 		if traits.deferMerge {
@@ -214,12 +232,12 @@ func (res *Result) shouldInclude(
 
 	// OptionalProp: excluded on initial, only on explicit request.
 	if traits.hasOptional {
-		if !isPartial {
+		if !fc.isPartial {
 			return false, nil
 		}
 
-		if len(onlySet) > 0 {
-			if _, requested := onlySet[key]; !requested {
+		if len(fc.onlySet) > 0 {
+			if _, requested := fc.onlySet[key]; !requested {
 				return false, nil
 			}
 		} else {
@@ -231,13 +249,13 @@ func (res *Result) shouldInclude(
 	if traits.hasOnce {
 		res.OnceProps[key] = OnceMeta{Prop: key, ExpiresAt: traits.onceExpiresAt}
 
-		if _, skip := exceptOnceSet[key]; skip {
+		if _, skip := fc.exceptOnceSet[key]; skip {
 			return false, nil
 		}
 	}
 
 	// Record all remaining metadata for included props.
-	res.recordMetadata(key, traits, mergeIntent)
+	res.recordMetadata(key, traits, fc.mergeIntent)
 
 	return true, nil
 }

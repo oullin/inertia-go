@@ -1,5 +1,11 @@
 package props
 
+import "github.com/oullin/inertia-go/core/httpx"
+
+// MergeAll combines multiple prop maps in order. Later sources
+// override earlier ones, giving a natural precedence chain:
+// shared → context → page → validation errors.
+
 // Proper is implemented by prop type wrappers to provide their
 // underlying value during resolution.
 type Proper interface {
@@ -9,6 +15,24 @@ type Proper interface {
 // TryProper extends Proper for values whose resolution may fail.
 type TryProper interface {
 	TryProp() (any, error)
+}
+
+func MergeAll(sources ...httpx.Props) httpx.Props {
+	size := 0
+
+	for _, s := range sources {
+		size += len(s)
+	}
+
+	merged := make(httpx.Props, size)
+
+	for _, s := range sources {
+		for k, v := range s {
+			merged[k] = v
+		}
+	}
+
+	return merged
 }
 
 // resolve evaluates a raw prop value. It unwraps Proper/TryProper
