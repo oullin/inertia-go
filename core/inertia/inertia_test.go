@@ -1765,6 +1765,35 @@ meta:
 	}
 }
 
+func TestWithHeadFromFile_FileNotFound(t *testing.T) {
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	_, err := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHeadFromFile("/nonexistent/seo.yml"),
+	)
+
+	if err == nil {
+		t.Error("expected error for missing file")
+	}
+}
+
+func TestWithHeadFromFile_InvalidYAML(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/seo.yml"
+
+	os.WriteFile(path, []byte("title: [\ninvalid"), 0644)
+
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	_, err := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHeadFromFile(path),
+	)
+
+	if err == nil {
+		t.Error("expected error for invalid YAML")
+	}
+}
+
 func TestSetHead_OverridesDefault(t *testing.T) {
 	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
 	i, err := inertia.New(tmpl,

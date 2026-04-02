@@ -411,6 +411,21 @@ func TestApplyEnv_AddsNewMetaWhenMissing(t *testing.T) {
 	}
 }
 
+func TestApplyEnv_OverridesExistingPropertyMeta(t *testing.T) {
+	t.Setenv("INERTIA_SEO_OG_TITLE", "Env OG Override")
+
+	h := httpx.Head{
+		Meta: []httpx.MetaTag{
+			{Property: "og:title", Content: "YAML OG Title"},
+		},
+	}
+	h.ApplyEnv()
+
+	if h.Meta[0].Content != "Env OG Override" {
+		t.Errorf("og:title = %q, want %q", h.Meta[0].Content, "Env OG Override")
+	}
+}
+
 func TestApplyEnv_NoOpWhenEnvEmpty(t *testing.T) {
 	os.Unsetenv("INERTIA_SEO_TITLE")
 

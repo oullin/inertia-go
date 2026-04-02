@@ -5,8 +5,10 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/i18n"
 )
 
@@ -108,6 +110,15 @@ func TestLoadConfig_EnvOverride(t *testing.T) {
 
 	if cfg.DefaultLocale != "es" {
 		t.Errorf("default locale = %q, want %q", cfg.DefaultLocale, "es")
+	}
+}
+
+func TestLoadConfig_InvalidYAML(t *testing.T) {
+	path := writeConfigFile(t, "default_locale: [\ninvalid")
+	_, err := i18n.LoadConfig(path)
+
+	if err == nil {
+		t.Error("expected error for invalid YAML")
 	}
 }
 
@@ -220,5 +231,62 @@ func TestMiddleware_RootWithPrefix(t *testing.T) {
 
 	if capturedPath != "/" {
 		t.Errorf("path = %q, want %q", capturedPath, "/")
+	}
+}
+
+func TestMiddleware_UnknownPrefixFallsBackToDefault(t *testing.T) {
+	path := writeConfigFile(t, testConfig)
+	cfg, _ := i18n.LoadConfig(path)
+
+	var capturedPath string
+
+	var capturedLocale *httpx.Locale
+
+	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		capturedLocale = httpx.LocaleFromContext(r.Context())
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// "xx" is not a configured locale, so path should remain unchanged
+	// and the default locale ("en") should be used.
+	r := httptest.NewRequest(http.MethodGet, "/xx/dashboard", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	if capturedPath != "/xx/dashboard" {
+		t.Errorf("path = %q, want %q", capturedPath, "/xx/dashboard")
+	}
+
+	if capturedLocale == nil || capturedLocale.Code != "en" {
+		t.Errorf("expected default locale en, got %v", capturedLocale)
+	}
+}
+
+func TestMiddleware_HreflangTrimsTrailingSlash(t *testing.T) {
+	path := writeConfigFile(t, testConfig)
+	cfg, _ := i18n.LoadConfig(path)
+
+	var capturedLocale *httpx.Locale
+
+	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedLocale = httpx.LocaleFromContext(r.Context())
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Request /es/ — the trailing slash on the clean path ("/") combined
+	// with the prefix should produce "/es" not "/es/".
+	r := httptest.NewRequest(http.MethodGet, "/es/admin/", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	if capturedLocale == nil {
+		t.Fatal("locale not set in context")
+	}
+
+	for _, link := range capturedLocale.Head.Links {
+		if link.Rel == "alternate" && strings.HasSuffix(link.Href, "/") && link.Href != "/" {
+			t.Errorf("hreflang href %q should not have trailing slash", link.Href)
+		}
 	}
 }

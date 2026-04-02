@@ -17,6 +17,7 @@ func TestIsInertiaRequest(t *testing.T) {
 		{"with header", "true", true},
 		{"without header", "", false},
 		{"wrong value", "false", false},
+		{"with surrounding whitespace", "  true  ", true},
 	}
 
 	for _, tt := range tests {
