@@ -2,30 +2,33 @@ package i18n
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/oullin/inertia-go/core/httpx"
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 )
 
 // Config holds the multilanguage configuration loaded from a YAML file.
 type Config struct {
-	DefaultLocale string                   `yaml:"default_locale"`
-	URLPrefix     bool                     `yaml:"url_prefix"`
-	Locales       map[string]*httpx.Locale `yaml:"locales"`
+	DefaultLocale string                   `mapstructure:"default_locale"`
+	URLPrefix     bool                     `mapstructure:"url_prefix"`
+	Locales       map[string]*httpx.Locale `mapstructure:"locales"`
 }
 
 // LoadConfig reads a YAML i18n config file and applies env var overrides.
 func LoadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+	v := viper.New()
+	v.SetConfigFile(path)
 
-	if err != nil {
+	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("i18n: read config: %w", err)
 	}
 
+	v.SetEnvPrefix("INERTIA_I18N")
+	v.AutomaticEnv()
+
 	var cfg Config
 
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("i18n: parse config: %w", err)
 	}
 
@@ -33,8 +36,6 @@ func LoadConfig(path string) (*Config, error) {
 	for code, locale := range cfg.Locales {
 		locale.Code = code
 	}
-
-	cfg.applyEnv()
 
 	return &cfg, nil
 }
@@ -58,10 +59,4 @@ func (cfg *Config) Codes() []string {
 	}
 
 	return codes
-}
-
-func (cfg *Config) applyEnv() {
-	if v := os.Getenv("INERTIA_I18N_DEFAULT_LOCALE"); v != "" {
-		cfg.DefaultLocale = v
-	}
 }

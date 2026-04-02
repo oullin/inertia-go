@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/oullin/inertia-go/core/httpx"
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 )
 
 // Option configures an Inertia instance during construction.
@@ -105,15 +105,16 @@ func WithHead(head httpx.Head) Option {
 // placeholders and are excluded from rendering.
 func WithHeadFromFile(path string) Option {
 	return func(i *Inertia) error {
-		data, err := os.ReadFile(path)
+		v := viper.New()
+		v.SetConfigFile(path)
 
-		if err != nil {
+		if err := v.ReadInConfig(); err != nil {
 			return fmt.Errorf("inertia: head file: %w", err)
 		}
 
 		var head httpx.Head
 
-		if err := yaml.Unmarshal(data, &head); err != nil {
+		if err := v.Unmarshal(&head); err != nil {
 			return fmt.Errorf("inertia: parse head yaml: %w", err)
 		}
 

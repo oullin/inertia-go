@@ -36,28 +36,28 @@ type Logger interface {
 // MetaTag represents a single <meta> element for server-side head rendering.
 // Exactly one of Name or Property should be set to identify the tag.
 type MetaTag struct {
-	Name     string `json:"name,omitempty"     yaml:"name,omitempty"`
-	Property string `json:"property,omitempty" yaml:"property,omitempty"`
-	Content  string `json:"content"            yaml:"content"`
+	Name     string `json:"name,omitempty"     mapstructure:"name"`
+	Property string `json:"property,omitempty" mapstructure:"property"`
+	Content  string `json:"content"            mapstructure:"content"`
 }
 
 // LinkTag represents a single <link> element for server-side head rendering.
 type LinkTag struct {
-	Rel      string `json:"rel"                yaml:"rel"`
-	Href     string `json:"href"               yaml:"href"`
-	HrefLang string `json:"hreflang,omitempty"  yaml:"hreflang,omitempty"`
-	Type     string `json:"type,omitempty"      yaml:"type,omitempty"`
+	Rel      string `json:"rel"                mapstructure:"rel"`
+	Href     string `json:"href"               mapstructure:"href"`
+	HrefLang string `json:"hreflang,omitempty"  mapstructure:"hreflang"`
+	Type     string `json:"type,omitempty"      mapstructure:"type"`
 }
 
 // Head holds the server-side head elements rendered into {{ .inertiaHead }}
 // on initial page loads, and the lang/dir rendered into {{ .inertiaLang }}
 // and {{ .inertiaDir }}.
 type Head struct {
-	Title     string    `json:"title,omitempty"     yaml:"title,omitempty"`
-	Lang      string    `json:"lang,omitempty"      yaml:"lang,omitempty"`
-	Direction string    `json:"direction,omitempty"  yaml:"direction,omitempty"`
-	Meta      []MetaTag `json:"meta,omitempty"      yaml:"meta,omitempty"`
-	Links     []LinkTag `json:"links,omitempty"     yaml:"links,omitempty"`
+	Title     string    `json:"title,omitempty"     mapstructure:"title"`
+	Lang      string    `json:"lang,omitempty"      mapstructure:"lang"`
+	Direction string    `json:"direction,omitempty"  mapstructure:"direction"`
+	Meta      []MetaTag `json:"meta,omitempty"      mapstructure:"meta"`
+	Links     []LinkTag `json:"links,omitempty"     mapstructure:"links"`
 }
 
 // metaKey returns the identifying key for a MetaTag. Tags are considered
@@ -90,10 +90,10 @@ type Head struct {
 
 // Locale holds locale information resolved by the i18n middleware.
 type Locale struct {
-	Code      string `yaml:"-"`
-	Name      string `yaml:"name"`
-	Direction string `yaml:"direction"`
-	Head      Head   `yaml:"head"`
+	Code      string `mapstructure:"-"`
+	Name      string `mapstructure:"name"`
+	Direction string `mapstructure:"direction"`
+	Head      Head   `mapstructure:"head"`
 }
 
 type ctxKey struct{ name string }

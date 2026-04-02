@@ -8,20 +8,19 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 )
 
 // CSRFConfig holds configuration for the CSRF middleware.
 type CSRFConfig struct {
-	Secret     string `json:"secret"      yaml:"secret"`
-	CookieName string `json:"cookie_name" yaml:"cookie_name"`
-	HeaderName string `json:"header_name" yaml:"header_name"`
-	Secure     bool   `json:"secure"      yaml:"secure"`
-	SameSite   string `json:"same_site"   yaml:"same_site"`
+	Secret     string `json:"secret"      mapstructure:"secret"`
+	CookieName string `json:"cookie_name" mapstructure:"cookie_name"`
+	HeaderName string `json:"header_name" mapstructure:"header_name"`
+	Secure     bool   `json:"secure"      mapstructure:"secure"`
+	SameSite   string `json:"same_site"   mapstructure:"same_site"`
 }
 
 func (c *CSRFConfig) defaults() {
@@ -35,28 +34,6 @@ func (c *CSRFConfig) defaults() {
 
 	if c.SameSite == "" {
 		c.SameSite = "lax"
-	}
-}
-
-func (c *CSRFConfig) applyEnv() {
-	if v := os.Getenv("INERTIA_CSRF_SECRET"); v != "" {
-		c.Secret = v
-	}
-
-	if v := os.Getenv("INERTIA_CSRF_COOKIE_NAME"); v != "" {
-		c.CookieName = v
-	}
-
-	if v := os.Getenv("INERTIA_CSRF_HEADER_NAME"); v != "" {
-		c.HeaderName = v
-	}
-
-	if v := os.Getenv("INERTIA_CSRF_SECURE"); v != "" {
-		c.Secure = v == "true"
-	}
-
-	if v := os.Getenv("INERTIA_CSRF_SAME_SITE"); v != "" {
-		c.SameSite = v
 	}
 }
 
@@ -125,21 +102,23 @@ func CSRF(cfg CSRFConfig) func(http.Handler) http.Handler {
 }
 
 // CSRFFromFile reads a YAML config file and returns the CSRF middleware.
-// After parsing, env var overrides are applied.
+// After parsing, env var overrides are applied via Viper's AutomaticEnv.
 func CSRFFromFile(path string) (func(http.Handler) http.Handler, error) {
-	data, err := os.ReadFile(path)
+	v := viper.New()
+	v.SetConfigFile(path)
 
-	if err != nil {
+	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("csrf: read config: %w", err)
 	}
 
+	v.SetEnvPrefix("INERTIA_CSRF")
+	v.AutomaticEnv()
+
 	var cfg CSRFConfig
 
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("csrf: parse config: %w", err)
 	}
-
-	cfg.applyEnv()
 
 	return CSRF(cfg), nil
 }
