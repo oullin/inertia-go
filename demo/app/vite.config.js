@@ -13,7 +13,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "dist",
+    outDir: "../../storage/dist/app",
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {

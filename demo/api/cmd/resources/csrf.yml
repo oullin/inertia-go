@@ -1,0 +1,5 @@
+secret: "change-me-in-production"
+cookie_name: "_csrf_token"
+header_name: "X-CSRF-TOKEN"
+secure: false
+same_site: "lax"
