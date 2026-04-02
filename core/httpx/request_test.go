@@ -1,72 +1,37 @@
 package httpx_test
 
 import (
-	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
-func TestCSRFToken_ContextRoundTrip(t *testing.T) {
-	ctx := httpx.SetCSRFToken(context.Background(), "test-token-abc")
-	got := httpx.CSRFTokenFromContext(ctx)
-
-	if got != "test-token-abc" {
-		t.Errorf("CSRFTokenFromContext() = %q, want %q", got, "test-token-abc")
-	}
-}
-
-func TestCSRFTokenFromContext_Missing(t *testing.T) {
-	got := httpx.CSRFTokenFromContext(context.Background())
-
-	if got != "" {
-		t.Errorf("CSRFTokenFromContext() = %q, want empty string", got)
-	}
-}
-
-func TestLocale_ContextRoundTrip(t *testing.T) {
-	locale := &httpx.Locale{
-		Code:      "es",
-		Name:      "Español",
-		Direction: "ltr",
+func TestIsInertiaRequest(t *testing.T) {
+	tests := []struct {
+		name   string
+		header string
+		want   bool
+	}{
+		{"with header", "true", true},
+		{"without header", "", false},
+		{"wrong value", "false", false},
+		{"with surrounding whitespace", "  true  ", true},
 	}
 
-	ctx := httpx.SetLocale(context.Background(), locale)
-	got := httpx.LocaleFromContext(ctx)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
 
-	if got == nil {
-		t.Fatal("LocaleFromContext() = nil, want locale")
-	}
+			if tt.header != "" {
+				r.Header.Set(httpx.HeaderInertia, tt.header)
+			}
 
-	if got.Code != "es" {
-		t.Errorf("Code = %q, want %q", got.Code, "es")
-	}
-
-	if got.Name != "Español" {
-		t.Errorf("Name = %q, want %q", got.Name, "Español")
-	}
-}
-
-func TestLocaleFromContext_Missing(t *testing.T) {
-	got := httpx.LocaleFromContext(context.Background())
-
-	if got != nil {
-		t.Errorf("LocaleFromContext() = %v, want nil", got)
-	}
-}
-
-func TestPrecognition_ContextRoundTrip(t *testing.T) {
-	ctx := httpx.SetPrecognition(context.Background())
-
-	if !httpx.IsPrecognition(ctx) {
-		t.Error("IsPrecognition() = false, want true")
-	}
-}
-
-func TestIsPrecognition_Missing(t *testing.T) {
-	if httpx.IsPrecognition(context.Background()) {
-		t.Error("IsPrecognition() = true, want false")
+			if got := httpx.IsInertiaRequest(r); got != tt.want {
+				t.Errorf("IsInertiaRequest() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

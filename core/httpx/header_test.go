@@ -1,39 +1,10 @@
 package httpx_test
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/httpx"
 )
-
-func TestIsInertiaRequest(t *testing.T) {
-	tests := []struct {
-		name   string
-		header string
-		want   bool
-	}{
-		{"with header", "true", true},
-		{"without header", "", false},
-		{"wrong value", "false", false},
-		{"with surrounding whitespace", "  true  ", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, "/", nil)
-
-			if tt.header != "" {
-				r.Header.Set(httpx.HeaderInertia, tt.header)
-			}
-
-			if got := httpx.IsInertiaRequest(r); got != tt.want {
-				t.Errorf("IsInertiaRequest() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestHeaderConstants(t *testing.T) {
 	// Verify header names match the Inertia.js protocol spec.
