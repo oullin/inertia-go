@@ -14,147 +14,276 @@ type Result struct {
 	MergeProps     []string
 	DeepMergeProps []string
 	DeferredProps  map[string][]string
+	ScrollProps    map[string]ScrollMeta
+	OnceProps      map[string]OnceMeta
+}
+
+// ScrollMeta is the response metadata for a scrollable prop.
+type ScrollMeta struct {
+	PageName     string
+	PreviousPage any
+	NextPage     any
+	CurrentPage  any
+	Reset        bool
+}
+
+// OnceMeta identifies a prop as a once prop on the client.
+type OnceMeta struct {
+	Prop      string
+	ExpiresAt *int64
 }
 
 // Resolve filters and evaluates the merged props map according to the
 // Inertia.js partial-reload protocol headers found on r.
+
+// filterContext holds the request-scoped filter state parsed from
+// Inertia protocol headers. It is built once per Resolve call and
+// passed to shouldInclude so the method signature stays small.
+type filterContext struct {
+	isPartial     bool
+	onlySet       map[string]struct{}
+	exceptSet     map[string]struct{}
+	exceptOnceSet map[string]struct{}
+	mergeIntent   string
+}
+
+// propTraits holds metadata discovered by walking a nested prop
+// wrapper chain. Each flag indicates whether the corresponding
+// wrapper type was found; the associated fields carry its metadata.
+type propTraits struct {
+	hasAlways   bool
+	hasDefer    bool
+	hasOptional bool
+	hasOnce     bool
+	hasScroll   bool
+	hasMerge    bool
+
+	deferGroup string
+	deferMerge bool
+
+	scrollMeta  ScrollMeta
+	scrollMerge bool
+
+	mergeDeep bool
+
+	onceExpiresAt *int64
+}
+
 func Resolve(r *http.Request, component string, merged httpx.Props) (*Result, error) {
 	res := &Result{
 		Props:         make(map[string]any, len(merged)),
 		DeferredProps: make(map[string][]string),
+		ScrollProps:   make(map[string]ScrollMeta),
+		OnceProps:     make(map[string]OnceMeta),
 	}
 
 	partialComponent := r.Header.Get(httpx.HeaderPartialComponent)
-	isPartial := httpx.IsInertiaRequest(r) && partialComponent == component
 
-	only := splitHeader(r.Header.Get(httpx.HeaderPartialData))
-	except := splitHeader(r.Header.Get(httpx.HeaderPartialExcept))
-	exceptOnce := splitHeader(r.Header.Get(httpx.HeaderExceptOnceProps))
+	fc := filterContext{
+		isPartial:     httpx.IsInertiaRequest(r) && partialComponent == component,
+		onlySet:       toSet(splitHeader(r.Header.Get(httpx.HeaderPartialData))),
+		exceptSet:     toSet(splitHeader(r.Header.Get(httpx.HeaderPartialExcept))),
+		exceptOnceSet: toSet(splitHeader(r.Header.Get(httpx.HeaderExceptOnceProps))),
+		mergeIntent:   r.Header.Get(httpx.HeaderInfiniteScroll),
+	}
 
-	onlySet := toSet(only)
-	exceptSet := toSet(except)
-	exceptOnceSet := toSet(exceptOnce)
+	// Stage 1: filter — decide which props to include and collect metadata.
+	included := make(map[string]any, len(merged))
 
 	for key, val := range merged {
-		included, err := res.shouldInclude(key, val, isPartial, onlySet, exceptSet, exceptOnceSet)
+		ok, err := res.shouldInclude(key, val, fc)
 
 		if err != nil {
 			return nil, err
 		}
 
-		if !included {
-			continue
+		if ok {
+			included[key] = val
 		}
+	}
 
+	// Stage 2: evaluate — resolve the included props into final values.
+	if err := res.evaluate(included); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// evaluate resolves every included prop into its final value and
+// stores it in res.Props.
+func (res *Result) evaluate(included map[string]any) error {
+	for key, val := range included {
 		resolved, err := resolve(val)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		res.Props[key] = resolved
 	}
 
-	return res, nil
+	return nil
+}
+
+// walkPropChain iterates through the Proper wrapper chain collecting
+// trait flags and metadata from every layer. When the same wrapper
+// type appears more than once the outermost instance wins.
+func walkPropChain(val any) propTraits {
+	var t propTraits
+	cur := val
+
+	for {
+		switch v := cur.(type) {
+		case AlwaysProp:
+			t.hasAlways = true
+			cur = v.Value
+
+		case DeferProp:
+			if !t.hasDefer {
+				t.hasDefer = true
+				t.deferGroup = v.Group
+				t.deferMerge = v.IsMerge()
+			}
+
+			cur = v.Value
+
+		case OptionalProp:
+			t.hasOptional = true
+			cur = v.Value
+
+		case OnceProp:
+			if !t.hasOnce {
+				t.hasOnce = true
+				t.onceExpiresAt = v.GetExpiresAt()
+			}
+
+			cur = v.Value
+
+		case ScrollProp:
+			if !t.hasScroll {
+				t.hasScroll = true
+				t.scrollMeta = ScrollMeta{
+					PageName:     v.PageName,
+					PreviousPage: v.PreviousPage,
+					NextPage:     v.NextPage,
+					CurrentPage:  v.CurrentPage,
+					Reset:        v.IsReset(),
+				}
+				t.scrollMerge = v.IsMerge()
+			}
+
+			cur = v.Value
+
+		case MergeProp:
+			if !t.hasMerge {
+				t.hasMerge = true
+				t.mergeDeep = v.IsDeep()
+			}
+
+			cur = v.Value
+
+		default:
+			return t
+		}
+	}
 }
 
 // shouldInclude determines whether a prop should be included in the
 // response and records metadata (merge keys, deferred groups) as a
 // side effect. It returns true when the prop should be resolved and
 // added to the output.
-func (res *Result) shouldInclude(
-	key string,
-	val any,
-	isPartial bool,
-	onlySet, exceptSet, exceptOnceSet map[string]struct{},
-) (bool, error) {
+func (res *Result) shouldInclude(key string, val any, fc filterContext) (bool, error) {
+	traits := walkPropChain(val)
 
 	// AlwaysProp bypasses all filters.
-	if _, ok := val.(AlwaysProp); ok {
-		res.recordMerge(key, val)
+	if traits.hasAlways {
+		res.recordMetadata(key, traits, fc.mergeIntent)
 
 		return true, nil
 	}
 
 	// Partial reload filtering.
-	if isPartial {
+	if fc.isPartial {
 		// exceptSet takes precedence.
-		if len(exceptSet) > 0 {
-			if _, excluded := exceptSet[key]; excluded {
+		if len(fc.exceptSet) > 0 {
+			if _, excluded := fc.exceptSet[key]; excluded {
 				return false, nil
 			}
 		}
 
-		if len(onlySet) > 0 {
-			if _, included := onlySet[key]; !included {
+		if len(fc.onlySet) > 0 {
+			if _, included := fc.onlySet[key]; !included {
 				return false, nil
 			}
 		}
 	}
 
-	switch v := val.(type) {
-	case DeferProp:
-		if !isPartial {
-			// Record for client-side lazy loading.
-			res.DeferredProps[v.Group] = append(res.DeferredProps[v.Group], key)
+	// DeferProp: excluded on initial, included on partial reload.
+	if traits.hasDefer && !fc.isPartial {
+		res.DeferredProps[traits.deferGroup] = append(res.DeferredProps[traits.deferGroup], key)
 
-			if v.IsMerge() {
-				res.MergeProps = append(res.MergeProps, key)
-			}
-
-			return false, nil
-		}
-
-		res.recordMerge(key, val)
-
-		return true, nil
-
-	case OptionalProp:
-		if !isPartial {
-			return false, nil
-		}
-
-		// Only include it if explicitly requested.
-		if len(onlySet) > 0 {
-			_, requested := onlySet[key]
-
-			return requested, nil
+		if traits.deferMerge {
+			res.MergeProps = append(res.MergeProps, key)
 		}
 
 		return false, nil
+	}
 
-	case OnceProp:
-		if _, skip := exceptOnceSet[key]; skip {
+	// OptionalProp: excluded on initial, only on explicit request.
+	if traits.hasOptional {
+		if !fc.isPartial {
 			return false, nil
 		}
 
-		return true, nil
-
-	case MergeProp:
-		res.recordMerge(key, val)
-
-		return true, nil
-
-	default:
-		// Regular prop: on a non-partial request always include.
-		return true, nil
+		if len(fc.onlySet) > 0 {
+			if _, requested := fc.onlySet[key]; !requested {
+				return false, nil
+			}
+		} else {
+			return false, nil
+		}
 	}
+
+	// OnceProp: record metadata, skip if in except-once set.
+	if traits.hasOnce {
+		res.OnceProps[key] = OnceMeta{Prop: key, ExpiresAt: traits.onceExpiresAt}
+
+		if _, skip := fc.exceptOnceSet[key]; skip {
+			return false, nil
+		}
+	}
+
+	// Record all remaining metadata for included props.
+	res.recordMetadata(key, traits, fc.mergeIntent)
+
+	return true, nil
 }
 
-// recordMerge adds the key to MergeProps or DeepMergeProps when val
-// is a merge-type prop.
-func (res *Result) recordMerge(key string, val any) {
-	switch v := val.(type) {
-	case MergeProp:
-		if v.IsDeep() {
+// recordMetadata records scroll, merge, and deferred-merge metadata
+// from the collected traits for an included prop.
+func (res *Result) recordMetadata(key string, traits propTraits, mergeIntent string) {
+	if traits.hasScroll {
+		res.ScrollProps[key] = traits.scrollMeta
+
+		if traits.scrollMerge || mergeIntent == "append" {
+			res.MergeProps = append(res.MergeProps, key)
+		}
+	}
+
+	if traits.hasMerge {
+		if traits.mergeDeep {
 			res.DeepMergeProps = append(res.DeepMergeProps, key)
 		} else {
 			res.MergeProps = append(res.MergeProps, key)
 		}
-	case DeferProp:
-		if v.IsMerge() {
-			res.MergeProps = append(res.MergeProps, key)
-		}
+
+		return
+	}
+
+	// DeferProp merge on partial reload (prop is included).
+	if traits.hasDefer && traits.deferMerge {
+		res.MergeProps = append(res.MergeProps, key)
 	}
 }
 

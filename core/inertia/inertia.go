@@ -138,16 +138,20 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 		MergeProps:     result.MergeProps,
 		DeepMergeProps: result.DeepMergeProps,
 		DeferredProps:  result.DeferredProps,
+		ScrollProps:    toResponseScrollProps(result.ScrollProps),
+		OnceProps:      toResponseOnceProps(result.OnceProps),
 	}
 
 	if httpx.IsInertiaRequest(r) {
 		return response.WriteJSON(w, page, i.jsonMarshaler)
 	}
 
-	return response.WriteHTML(
-		w, i.rootTemplate, page, i.containerID,
-		i.jsonMarshaler, templateDataFromContext(r.Context()),
-	)
+	return response.WriteHTML(w, page, response.HTMLConfig{
+		Template:    i.rootTemplate,
+		ContainerID: i.containerID,
+		Marshaler:   i.jsonMarshaler,
+		ExtraData:   templateDataFromContext(r.Context()),
+	})
 }
 
 func (i *Inertia) Middleware(next http.Handler) http.Handler {
@@ -231,29 +235,25 @@ func (i *Inertia) Version() string {
 
 func (i *Inertia) mergeProps(r *http.Request, pageProps ...httpx.Props) httpx.Props {
 	i.mu.RLock()
-	merged := make(httpx.Props, len(i.sharedProps)+8)
+	shared := make(httpx.Props, len(i.sharedProps))
 
 	for k, v := range i.sharedProps {
-		merged[k] = v
+		shared[k] = v
 	}
 
 	i.mu.RUnlock()
 
-	for k, v := range propsFromContext(r.Context()) {
-		merged[k] = v
+	ctx := r.Context()
+
+	sources := make([]httpx.Props, 0, 2+len(pageProps)+1)
+	sources = append(sources, shared, propsFromContext(ctx))
+	sources = append(sources, pageProps...)
+
+	if errors := validationErrorsFromContext(ctx); len(errors) > 0 {
+		sources = append(sources, httpx.Props{"errors": errors})
 	}
 
-	for _, p := range pageProps {
-		for k, v := range p {
-			merged[k] = v
-		}
-	}
-
-	if errors := validationErrorsFromContext(r.Context()); len(errors) > 0 {
-		merged["errors"] = errors
-	}
-
-	return merged
+	return props.MergeAll(sources...)
 }
 
 func defaults() *Inertia {

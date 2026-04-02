@@ -101,7 +101,7 @@ func TestWriteHTML(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +135,7 @@ func TestWriteHTML_MarshalError(t *testing.T) {
 	page := &response.Page{Component: "Page"}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &failMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &failMarshaler{}})
 
 	if err == nil {
 		t.Error("expected error from marshal failure")
@@ -157,7 +157,7 @@ func TestWriteHTML_ExtraTemplateData(t *testing.T) {
 	extra := httpx.TemplateData{"pageTitle": "My App"}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, extra)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}, ExtraData: extra})
 
 	if err != nil {
 		t.Fatal(err)
@@ -182,7 +182,7 @@ func TestWriteHTML_ScriptClosingTagEscaped(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -209,7 +209,7 @@ func TestWriteHTML_CustomContainerID(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "root", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "root", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -237,7 +237,7 @@ func TestWriteHTML_OmitsEmptyOptionalFields(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	err := response.WriteHTML(w, tmpl, page, "app", &testMarshaler{}, nil)
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	if err != nil {
 		t.Fatal(err)
@@ -266,4 +266,331 @@ func contains(s, substr string) bool {
 	}
 
 	return false
+}
+
+// --- WriteJSON Extended ---
+
+func TestWriteJSON_IncludesMergePropsField(t *testing.T) {
+	page := &response.Page{
+		Component:  "Page",
+		Props:      map[string]any{"items": []int{1}},
+		URL:        "/",
+		Version:    "v1",
+		MergeProps: []string{"items"},
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"mergeProps":["items"]`) {
+		t.Errorf("missing mergeProps in JSON: %s", body)
+	}
+}
+
+func TestWriteJSON_IncludesDeepMergePropsField(t *testing.T) {
+	page := &response.Page{
+		Component:      "Page",
+		Props:          map[string]any{},
+		URL:            "/",
+		Version:        "v1",
+		DeepMergeProps: []string{"data"},
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"deepMergeProps":["data"]`) {
+		t.Errorf("missing deepMergeProps in JSON: %s", body)
+	}
+}
+
+func TestWriteJSON_IncludesDeferredPropsField(t *testing.T) {
+	page := &response.Page{
+		Component: "Page",
+		Props:     map[string]any{},
+		URL:       "/",
+		Version:   "v1",
+		DeferredProps: map[string][]string{
+			"sidebar": {"stats"},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"deferredProps"`) {
+		t.Errorf("missing deferredProps in JSON: %s", body)
+	}
+
+	if !contains(body, `"sidebar"`) {
+		t.Errorf("missing sidebar group in JSON: %s", body)
+	}
+}
+
+func TestWriteJSON_IncludesScrollPropsField(t *testing.T) {
+	page := &response.Page{
+		Component: "Page",
+		Props:     map[string]any{},
+		URL:       "/",
+		Version:   "v1",
+		ScrollProps: map[string]response.Scroll{
+			"feed": {
+				PageName:     "feedPage",
+				PreviousPage: nil,
+				NextPage:     2,
+				CurrentPage:  1,
+			},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"scrollProps"`) {
+		t.Errorf("missing scrollProps in JSON: %s", body)
+	}
+
+	if !contains(body, `"feedPage"`) {
+		t.Errorf("missing pageName in JSON: %s", body)
+	}
+}
+
+func TestWriteJSON_IncludesOncePropsField(t *testing.T) {
+	page := &response.Page{
+		Component: "Page",
+		Props:     map[string]any{},
+		URL:       "/",
+		Version:   "v1",
+		OnceProps: map[string]response.Once{
+			"notes": {Prop: "notes"},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"onceProps"`) {
+		t.Errorf("missing onceProps in JSON: %s", body)
+	}
+
+	// ExpiresAt is nil so should be omitted.
+	if contains(body, `"expiresAt"`) {
+		t.Errorf("nil expiresAt should be omitted: %s", body)
+	}
+}
+
+func TestWriteJSON_OncePropsWithExpiresAt(t *testing.T) {
+	expires := int64(1700000000)
+
+	page := &response.Page{
+		Component: "Page",
+		Props:     map[string]any{},
+		URL:       "/",
+		Version:   "v1",
+		OnceProps: map[string]response.Once{
+			"notes": {Prop: "notes", ExpiresAt: &expires},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"expiresAt"`) {
+		t.Errorf("expiresAt should be present when set: %s", body)
+	}
+}
+
+func TestWriteJSON_EncryptHistoryTrue(t *testing.T) {
+	page := &response.Page{
+		Component:      "Page",
+		Props:          map[string]any{},
+		URL:            "/",
+		Version:        "v1",
+		EncryptHistory: true,
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"encryptHistory":true`) {
+		t.Errorf("missing encryptHistory:true in JSON: %s", body)
+	}
+}
+
+func TestWriteJSON_ClearHistoryTrue(t *testing.T) {
+	page := &response.Page{
+		Component:    "Page",
+		Props:        map[string]any{},
+		URL:          "/",
+		Version:      "v1",
+		ClearHistory: true,
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	if !contains(body, `"clearHistory":true`) {
+		t.Errorf("missing clearHistory:true in JSON: %s", body)
+	}
+}
+
+func TestWriteJSON_AllFieldsOmittedWhenEmpty(t *testing.T) {
+	page := &response.Page{
+		Component: "Page",
+		Props:     map[string]any{},
+		URL:       "/",
+		Version:   "v1",
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteJSON(w, page, &testMarshaler{})
+
+	body := w.Body.String()
+
+	for _, field := range []string{
+		`"encryptHistory"`, `"clearHistory"`,
+		`"mergeProps"`, `"deepMergeProps"`,
+		`"deferredProps"`, `"scrollProps"`, `"onceProps"`,
+	} {
+		if contains(body, field) {
+			t.Errorf("field %s should be omitted when empty: %s", field, body)
+		}
+	}
+}
+
+// --- WriteHTML Extended ---
+
+func TestWriteHTML_NilExtraDataHandled(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+
+	w := httptest.NewRecorder()
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
+
+	if err != nil {
+		t.Fatalf("WriteHTML with nil extraData should not panic: %v", err)
+	}
+}
+
+func TestWriteHTML_EmptyExtraData(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+
+	w := httptest.NewRecorder()
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}, ExtraData: httpx.TemplateData{}})
+
+	if err != nil {
+		t.Fatalf("WriteHTML with empty extraData: %v", err)
+	}
+}
+
+func TestWriteHTML_MultipleExtraDataKeys(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(
+		`{{ .inertia }}|{{ .keyA }}|{{ .keyB }}`,
+	))
+
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+	extra := httpx.TemplateData{"keyA": "valA", "keyB": "valB"}
+
+	w := httptest.NewRecorder()
+	err := response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}, ExtraData: extra})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := w.Body.String()
+
+	if !contains(body, "valA") || !contains(body, "valB") {
+		t.Errorf("extra data not rendered: %s", body)
+	}
+}
+
+func TestWriteHTML_EmbeddedJSONIsValid(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
+	page := &response.Page{
+		Component: "Page",
+		Props:     map[string]any{"key": "value"},
+		URL:       "/",
+		Version:   "v1",
+	}
+
+	w := httptest.NewRecorder()
+	response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
+
+	body := w.Body.String()
+
+	// Extract JSON between script tags.
+	start := `<script data-page="app" type="application/json">`
+	end := `</script>`
+
+	startIdx := len(start)
+	endIdx := len(body) - len(end) - len(`<div id="app"></div>`)
+
+	if startIdx >= endIdx || !contains(body, start) {
+		t.Fatalf("could not find script tags in: %s", body)
+	}
+
+	// Find actual indices.
+	jsonStart := -1
+	jsonEnd := -1
+
+	for i := 0; i <= len(body)-len(start); i++ {
+		if body[i:i+len(start)] == start {
+			jsonStart = i + len(start)
+
+			break
+		}
+	}
+
+	for i := jsonStart; i <= len(body)-len(end); i++ {
+		if body[i:i+len(end)] == end {
+			jsonEnd = i
+
+			break
+		}
+	}
+
+	if jsonStart < 0 || jsonEnd < 0 {
+		t.Fatalf("could not extract JSON from: %s", body)
+	}
+
+	// Unescape the <\/ back to </ for JSON parsing.
+	jsonStr := body[jsonStart:jsonEnd]
+
+	var parsed map[string]any
+
+	if err := json.Unmarshal([]byte(jsonStr), &parsed); err != nil {
+		t.Errorf("embedded JSON is invalid: %v (json: %s)", err, jsonStr)
+	}
+}
+
+func TestWriteHTML_InertiaHeadIsEmpty(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(`head=[{{ .inertiaHead }}]`))
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+
+	w := httptest.NewRecorder()
+	response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
+
+	body := w.Body.String()
+
+	if !contains(body, "head=[]") {
+		t.Errorf("inertiaHead should be empty, got: %s", body)
+	}
 }

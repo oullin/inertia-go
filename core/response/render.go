@@ -9,6 +9,15 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
+// HTMLConfig groups the rendering parameters for WriteHTML, keeping the
+// function signature small and making it easy to add fields later.
+type HTMLConfig struct {
+	Template    *template.Template
+	ContainerID string
+	Marshaler   httpx.JSONMarshaler
+	ExtraData   httpx.TemplateData
+}
+
 // WriteJSON writes an Inertia JSON response for XHR visits.
 // It sets the Content-Type and X-Inertia headers.
 func WriteJSON(w http.ResponseWriter, page *Page, marshaler httpx.JSONMarshaler) error {
@@ -31,15 +40,8 @@ func WriteJSON(w http.ResponseWriter, page *Page, marshaler httpx.JSONMarshaler)
 // visits. The page object is embedded as JSON inside a
 // <script type="application/json" data-page="ID"> element, followed by
 // an empty container div for client-side mounting.
-func WriteHTML(
-	w http.ResponseWriter,
-	tmpl *template.Template,
-	page *Page,
-	containerID string,
-	marshaler httpx.JSONMarshaler,
-	extraData httpx.TemplateData,
-) error {
-	data, err := marshaler.Marshal(page)
+func WriteHTML(w http.ResponseWriter, page *Page, cfg HTMLConfig) error {
+	data, err := cfg.Marshaler.Marshal(page)
 
 	if err != nil {
 		return fmt.Errorf("inertia: marshal page: %w", err)
@@ -52,9 +54,9 @@ func WriteHTML(
 
 	inertiaHTML := fmt.Sprintf(
 		`<script data-page="%s" type="application/json">%s</script><div id="%s"></div>`,
-		containerID,
+		cfg.ContainerID,
 		safeJSON,
-		containerID,
+		cfg.ContainerID,
 	)
 
 	templateData := map[string]any{
@@ -62,11 +64,11 @@ func WriteHTML(
 		"inertiaHead": template.HTML(""),
 	}
 
-	for k, v := range extraData {
+	for k, v := range cfg.ExtraData {
 		templateData[k] = v
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	return tmpl.Execute(w, templateData)
+	return cfg.Template.Execute(w, templateData)
 }
