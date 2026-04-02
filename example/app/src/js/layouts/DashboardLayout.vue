@@ -7,6 +7,7 @@ import FlashBanner from "@/js/components/dashboard/FlashBanner.vue";
 
 <template>
   <SidebarProvider
+    :default-open="true"
     :style="{
       '--sidebar-width': 'calc(var(--spacing) * 64)',
       '--header-height': 'calc(var(--spacing) * 12 + 1px)',

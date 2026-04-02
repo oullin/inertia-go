@@ -1,15 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { usePage } from "@inertiajs/vue3";
-import {
-  IconChartBar,
-  IconDashboard,
-  IconFolder,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconSettings,
-  IconUsers,
-} from "@tabler/icons-vue";
+import { IconDashboard, IconInnerShadowTop, IconListDetails } from "@tabler/icons-vue";
 import {
   Sidebar,
   SidebarContent,
@@ -20,7 +12,6 @@ import {
   SidebarMenuItem,
 } from "@/js/components/ui/sidebar";
 import NavMain from "./NavMain.vue";
-import NavSecondary from "./NavSecondary.vue";
 import NavUser from "./NavUser.vue";
 
 const page = usePage();
@@ -30,13 +21,20 @@ const user = computed(
 
 const navMain = [
   { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
-  { title: "Lifecycle", url: "/dashboard/navigation", icon: IconListDetails },
-  { title: "Analytics", url: "/dashboard/data", icon: IconChartBar },
-  { title: "Projects", url: "/dashboard/forms", icon: IconFolder },
-  { title: "Team", url: "/dashboard/feed", icon: IconUsers },
+  {
+    title: "Lifecycle",
+    icon: IconListDetails,
+    children: [
+      { title: "Navigation", url: "/dashboard/navigation" },
+      { title: "Scroll", url: "/dashboard/scroll" },
+      { title: "Redirects", url: "/dashboard/redirects" },
+      { title: "Data Loading", url: "/dashboard/data" },
+      { title: "Forms", url: "/dashboard/forms" },
+      { title: "Feed", url: "/dashboard/feed" },
+      { title: "State", url: "/dashboard/state" },
+    ],
+  },
 ];
-
-const navSecondary = [{ title: "Settings", url: "/dashboard/state", icon: IconSettings }];
 </script>
 
 <template>
@@ -55,7 +53,6 @@ const navSecondary = [{ title: "Settings", url: "/dashboard/state", icon: IconSe
     </SidebarHeader>
     <SidebarContent>
       <NavMain :items="navMain" />
-      <NavSecondary :items="navSecondary" />
     </SidebarContent>
     <SidebarFooter>
       <NavUser :user="user" />
