@@ -9,9 +9,9 @@ import (
 
 // Config holds the multilanguage configuration loaded from a YAML file.
 type Config struct {
-	DefaultLocale string                   `mapstructure:"default_locale"`
-	URLPrefix     bool                     `mapstructure:"url_prefix"`
-	Locales       map[string]*httpx.Locale `mapstructure:"locales"`
+	DefaultLocale string                   `yaml:"default_locale" mapstructure:"default_locale"`
+	URLPrefix     bool                     `yaml:"url_prefix"     mapstructure:"url_prefix"`
+	Locales       map[string]*httpx.Locale `yaml:"locales"        mapstructure:"locales"`
 }
 
 // LoadConfig reads a YAML i18n config file and applies env var overrides.

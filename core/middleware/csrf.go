@@ -16,11 +16,11 @@ import (
 
 // CSRFConfig holds configuration for the CSRF middleware.
 type CSRFConfig struct {
-	Secret     string `json:"secret"      mapstructure:"secret"`
-	CookieName string `json:"cookie_name" mapstructure:"cookie_name"`
-	HeaderName string `json:"header_name" mapstructure:"header_name"`
-	Secure     bool   `json:"secure"      mapstructure:"secure"`
-	SameSite   string `json:"same_site"   mapstructure:"same_site"`
+	Secret     string `json:"secret"      yaml:"secret"      mapstructure:"secret"`
+	CookieName string `json:"cookie_name" yaml:"cookie_name" mapstructure:"cookie_name"`
+	HeaderName string `json:"header_name" yaml:"header_name" mapstructure:"header_name"`
+	Secure     bool   `json:"secure"      yaml:"secure"      mapstructure:"secure"`
+	SameSite   string `json:"same_site"   yaml:"same_site"   mapstructure:"same_site"`
 }
 
 func (c *CSRFConfig) defaults() {
