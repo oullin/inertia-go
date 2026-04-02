@@ -1,33 +1,34 @@
 package middleware
 
 import (
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/oullin/inertia-go/core/config"
+	"github.com/oullin/inertia-go/core/cryptox"
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
-// CSRF returns an HTTP middleware that provides CSRF protection using
-// the double-submit cookie pattern. A random token is generated and
-// stored in an HTTP-only cookie; the same token is placed in the request
-// context so the Inertia Render method can emit it as a <meta> tag.
-// Mutation requests must include the token in the X-CSRF-TOKEN header.
-func CSRF(cfg config.CSRFConfig) func(http.Handler) http.Handler {
-	cfg.Defaults()
+// statusPageExpired is the 419 "Page Expired" status code used when
+// CSRF validation fails.
+const statusPageExpired = 419
 
-	secret := []byte(cfg.Secret)
+// CSRF returns an HTTP middleware that provides CSRF protection. A random
+// token is encrypted into an XSRF-TOKEN
+// cookie (not HTTP-only, so JavaScript can read it). The same raw token
+// is placed in the request context for the Inertia Render method to emit
+// as a <meta> tag. Mutation requests must present the token via one of
+// three sources: _token form field, X-CSRF-TOKEN header, or X-XSRF-TOKEN
+// header (the encrypted cookie value, auto-sent by Axios).
+func CSRF(cfg config.CSRFConfig, key []byte) func(http.Handler) http.Handler {
+	cfg.Defaults()
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Read existing token from cookie, or generate a new one.
-			token, err := tokenFromCookie(r, cfg.CookieName, secret)
+			token, err := tokenFromCookie(r, cfg.CookieName, key)
 
 			if err != nil {
 				token, err = generateToken()
@@ -38,7 +39,7 @@ func CSRF(cfg config.CSRFConfig) func(http.Handler) http.Handler {
 					return
 				}
 
-				setTokenCookie(w, cfg.CookieName, token, secret, cfg.Secure, cfg.SameSiteMode())
+				setTokenCookie(w, cfg.CookieName, token, key, cfg.Secure, cfg.SameSiteMode())
 			}
 
 			// Store the raw token in context so Render auto-appends
@@ -53,11 +54,11 @@ func CSRF(cfg config.CSRFConfig) func(http.Handler) http.Handler {
 				return
 			}
 
-			// Mutation requests must present the token in the header.
-			headerToken := r.Header.Get(cfg.HeaderName)
+			// Mutation requests must present the token.
+			submittedToken := extractToken(r, key)
 
-			if subtle.ConstantTimeCompare([]byte(token), []byte(headerToken)) != 1 {
-				http.Error(w, "csrf: token mismatch", http.StatusForbidden)
+			if subtle.ConstantTimeCompare([]byte(token), []byte(submittedToken)) != 1 {
+				http.Error(w, "csrf: token mismatch", statusPageExpired)
 
 				return
 			}
@@ -67,17 +68,28 @@ func CSRF(cfg config.CSRFConfig) func(http.Handler) http.Handler {
 	}
 }
 
-// CSRFFromFile reads a YAML config file and returns the CSRF middleware.
-// Defaults are applied first, then the file values are merged on top,
-// and finally env var overrides (INERTIA_CSRF_*) are applied.
-func CSRFFromFile(path string) (func(http.Handler) http.Handler, error) {
-	cfg, err := config.LoadCSRF(path)
+// CSRFFromFile reads YAML config files and returns the CSRF middleware.
+// It loads both the CSRF config and the crypto config (for the encryption key).
+func CSRFFromFile(csrfPath, cryptoPath string) (func(http.Handler) http.Handler, error) {
+	cfg, err := config.LoadCSRF(csrfPath)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return CSRF(cfg), nil
+	cryptoCfg, err := config.LoadCrypto(cryptoPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := cryptoCfg.DecodedKey()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return CSRF(cfg, key), nil
 }
 
 func generateToken() (string, error) {
@@ -90,47 +102,62 @@ func generateToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func signToken(token string, secret []byte) string {
-	mac := hmac.New(sha256.New, secret)
-	mac.Write([]byte(token))
+func setTokenCookie(w http.ResponseWriter, name, token string, key []byte, secure bool, sameSite http.SameSite) {
+	encrypted, err := cryptox.Encrypt(token, key)
 
-	return hex.EncodeToString(mac.Sum(nil))
-}
+	if err != nil {
+		http.Error(w, "csrf: failed to encrypt token", http.StatusInternalServerError)
 
-func setTokenCookie(w http.ResponseWriter, name, token string, secret []byte, secure bool, sameSite http.SameSite) {
-	signed := token + "." + signToken(token, secret)
+		return
+	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
-		Value:    signed,
+		Value:    encrypted,
 		Path:     "/",
-		HttpOnly: true,
+		HttpOnly: false,
 		Secure:   secure,
 		SameSite: sameSite,
 	})
 }
 
-func tokenFromCookie(r *http.Request, name string, secret []byte) (string, error) {
+func tokenFromCookie(r *http.Request, name string, key []byte) (string, error) {
 	cookie, err := r.Cookie(name)
 
 	if err != nil {
 		return "", err
 	}
 
-	parts := strings.SplitN(cookie.Value, ".", 2)
+	return cryptox.Decrypt(cookie.Value, key)
+}
 
-	if len(parts) != 2 {
-		return "", fmt.Errorf("csrf: invalid cookie format")
+// extractToken retrieves the submitted CSRF token from the request,
+// checking sources in order: _token form field, X-CSRF-TOKEN
+// header, then X-XSRF-TOKEN header. The X-XSRF-TOKEN value is the
+// encrypted cookie value (auto-sent by Axios) and must be decrypted.
+func extractToken(r *http.Request, key []byte) string {
+	// 1. _token POST form field (raw token from HTML forms).
+	if token := r.PostFormValue("_token"); token != "" {
+		return token
 	}
 
-	token, sig := parts[0], parts[1]
-	expected := signToken(token, secret)
-
-	if subtle.ConstantTimeCompare([]byte(sig), []byte(expected)) != 1 {
-		return "", fmt.Errorf("csrf: invalid signature")
+	// 2. X-CSRF-TOKEN header (raw token, typically from meta tag).
+	if token := r.Header.Get("X-CSRF-TOKEN"); token != "" {
+		return token
 	}
 
-	return token, nil
+	// 3. X-XSRF-TOKEN header (encrypted value from cookie, auto-sent by Axios).
+	if encrypted := r.Header.Get("X-XSRF-TOKEN"); encrypted != "" {
+		token, err := cryptox.Decrypt(encrypted, key)
+
+		if err != nil {
+			return ""
+		}
+
+		return token
+	}
+
+	return ""
 }
 
 func isSafeMethod(method string) bool {

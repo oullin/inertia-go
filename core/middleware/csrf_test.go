@@ -1,28 +1,46 @@
 package middleware_test
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/config"
+	"github.com/oullin/inertia-go/core/cryptox"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/middleware"
 )
 
-const testSecret = "test-secret-key-for-csrf"
+func testKey(t *testing.T) []byte {
+	t.Helper()
 
-func csrfMiddleware() func(http.Handler) http.Handler {
-	return middleware.CSRF(config.CSRFConfig{
-		Secret: testSecret,
-	})
+	key := make([]byte, 32)
+
+	if _, err := rand.Read(key); err != nil {
+		t.Fatal(err)
+	}
+
+	return key
+}
+
+func csrfMiddleware(t *testing.T) (func(http.Handler) http.Handler, []byte) {
+	t.Helper()
+
+	key := testKey(t)
+
+	return middleware.CSRF(config.CSRFConfig{}, key), key
 }
 
 func TestCSRF_SetsCookieOnGET(t *testing.T) {
-	handler := csrfMiddleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mw, _ := csrfMiddleware(t)
+
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -42,15 +60,11 @@ func TestCSRF_SetsCookieOnGET(t *testing.T) {
 	found := false
 
 	for _, c := range cookies {
-		if c.Name == "_csrf_token" {
+		if c.Name == "XSRF-TOKEN" {
 			found = true
 
-			if !c.HttpOnly {
-				t.Error("cookie should be HttpOnly")
-			}
-
-			if !strings.Contains(c.Value, ".") {
-				t.Error("cookie should contain signed token (token.sig)")
+			if c.HttpOnly {
+				t.Error("cookie should not be HttpOnly")
 			}
 		}
 	}
@@ -61,7 +75,9 @@ func TestCSRF_SetsCookieOnGET(t *testing.T) {
 }
 
 func TestCSRF_SafeMethodsPassThrough(t *testing.T) {
-	handler := csrfMiddleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mw, _ := csrfMiddleware(t)
+
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -76,8 +92,10 @@ func TestCSRF_SafeMethodsPassThrough(t *testing.T) {
 	}
 }
 
-func TestCSRF_POSTWithoutToken_403(t *testing.T) {
-	handler := csrfMiddleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestCSRF_POSTWithoutToken_419(t *testing.T) {
+	mw, _ := csrfMiddleware(t)
+
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -85,13 +103,13 @@ func TestCSRF_POSTWithoutToken_403(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if w.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusForbidden)
+	if w.Code != 419 {
+		t.Errorf("status = %d, want 419", w.Code)
 	}
 }
 
-func TestCSRF_POSTWithValidToken(t *testing.T) {
-	mw := csrfMiddleware()
+func TestCSRF_POSTWithValidToken_XCSRF(t *testing.T) {
+	mw, key := csrfMiddleware(t)
 
 	// Step 1: GET to obtain the cookie.
 	getHandler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -102,26 +120,16 @@ func TestCSRF_POSTWithValidToken(t *testing.T) {
 	getW := httptest.NewRecorder()
 	getHandler.ServeHTTP(getW, getReq)
 
-	cookies := getW.Result().Cookies()
+	tokenCookie := findCookie(t, getW, "XSRF-TOKEN")
 
-	var tokenCookie *http.Cookie
+	// Decrypt to get raw token.
+	rawToken, err := cryptox.Decrypt(tokenCookie.Value, key)
 
-	for _, c := range cookies {
-		if c.Name == "_csrf_token" {
-			tokenCookie = c
-
-			break
-		}
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	if tokenCookie == nil {
-		t.Fatal("no CSRF cookie set")
-	}
-
-	// Extract raw token (before the ".").
-	rawToken := strings.SplitN(tokenCookie.Value, ".", 2)[0]
-
-	// Step 2: POST with cookie + header.
+	// Step 2: POST with cookie + X-CSRF-TOKEN header (raw token).
 	postHandler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -138,8 +146,75 @@ func TestCSRF_POSTWithValidToken(t *testing.T) {
 	}
 }
 
-func TestCSRF_POSTWithWrongToken_403(t *testing.T) {
-	mw := csrfMiddleware()
+func TestCSRF_POSTWithValidToken_XXSRF(t *testing.T) {
+	mw, _ := csrfMiddleware(t)
+
+	// GET to obtain the cookie.
+	getReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	getW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(getW, getReq)
+
+	tokenCookie := findCookie(t, getW, "XSRF-TOKEN")
+
+	// POST with cookie + X-XSRF-TOKEN header (encrypted value from cookie).
+	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	postReq.AddCookie(tokenCookie)
+	postReq.Header.Set("X-XSRF-TOKEN", tokenCookie.Value)
+
+	postW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(postW, postReq)
+
+	if postW.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", postW.Code, http.StatusOK)
+	}
+}
+
+func TestCSRF_POSTWithFormField(t *testing.T) {
+	mw, key := csrfMiddleware(t)
+
+	// GET to obtain the cookie.
+	getReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	getW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(getW, getReq)
+
+	tokenCookie := findCookie(t, getW, "XSRF-TOKEN")
+
+	rawToken, err := cryptox.Decrypt(tokenCookie.Value, key)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// POST with _token form field.
+	form := url.Values{}
+	form.Set("_token", rawToken)
+
+	postReq := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(form.Encode()))
+	postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	postReq.AddCookie(tokenCookie)
+
+	postW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(postW, postReq)
+
+	if postW.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", postW.Code, http.StatusOK)
+	}
+}
+
+func TestCSRF_POSTWithWrongToken_419(t *testing.T) {
+	mw, _ := csrfMiddleware(t)
 
 	getReq := httptest.NewRequest(http.MethodGet, "/", nil)
 	getW := httptest.NewRecorder()
@@ -147,21 +222,7 @@ func TestCSRF_POSTWithWrongToken_403(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})).ServeHTTP(getW, getReq)
 
-	cookies := getW.Result().Cookies()
-
-	var tokenCookie *http.Cookie
-
-	for _, c := range cookies {
-		if c.Name == "_csrf_token" {
-			tokenCookie = c
-
-			break
-		}
-	}
-
-	if tokenCookie == nil {
-		t.Fatal("no CSRF cookie set")
-	}
+	tokenCookie := findCookie(t, getW, "XSRF-TOKEN")
 
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
 	postReq.AddCookie(tokenCookie)
@@ -172,13 +233,13 @@ func TestCSRF_POSTWithWrongToken_403(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})).ServeHTTP(postW, postReq)
 
-	if postW.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d", postW.Code, http.StatusForbidden)
+	if postW.Code != 419 {
+		t.Errorf("status = %d, want 419", postW.Code)
 	}
 }
 
 func TestCSRF_MutationMethods(t *testing.T) {
-	mw := csrfMiddleware()
+	mw, _ := csrfMiddleware(t)
 
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
 		r := httptest.NewRequest(method, "/", nil)
@@ -188,29 +249,43 @@ func TestCSRF_MutationMethods(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})).ServeHTTP(w, r)
 
-		if w.Code != http.StatusForbidden {
-			t.Errorf("%s: status = %d, want %d", method, w.Code, http.StatusForbidden)
+		if w.Code != 419 {
+			t.Errorf("%s: status = %d, want 419", method, w.Code)
 		}
 	}
 }
 
 func TestCSRFFromFile(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "csrf.yml")
+	csrfPath := filepath.Join(dir, "csrf.yml")
+	cryptoPath := filepath.Join(dir, "crypto.yml")
 
-	content := `
-secret: "file-secret"
+	// Generate a valid 32-byte key.
+	key := make([]byte, 32)
+
+	if _, err := rand.Read(key); err != nil {
+		t.Fatal(err)
+	}
+
+	csrfContent := `
 cookie_name: "_my_csrf"
-header_name: "X-MY-CSRF"
 secure: false
 same_site: "strict"
 `
 
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	cryptoContent := `
+key: "` + encodeKey(key) + `"
+`
+
+	if err := os.WriteFile(csrfPath, []byte(csrfContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	mw, err := middleware.CSRFFromFile(path)
+	if err := os.WriteFile(cryptoPath, []byte(cryptoContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	mw, err := middleware.CSRFFromFile(csrfPath, cryptoPath)
 
 	if err != nil {
 		t.Fatal(err)
@@ -243,33 +318,19 @@ same_site: "strict"
 }
 
 func TestCSRFFromFile_FileNotFound(t *testing.T) {
-	_, err := middleware.CSRFFromFile("/nonexistent/csrf.yml")
+	_, err := middleware.CSRFFromFile("/nonexistent/csrf.yml", "/nonexistent/crypto.yml")
 
 	if err == nil {
 		t.Error("expected error for missing file")
 	}
 }
 
-func TestCSRFFromFile_InvalidYAML(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "csrf.yml")
-
-	if err := os.WriteFile(path, []byte("secret: [\ninvalid"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err := middleware.CSRFFromFile(path)
-
-	if err == nil {
-		t.Error("expected error for invalid YAML")
-	}
-}
-
 func TestCSRF_SameSiteStrict(t *testing.T) {
+	key := testKey(t)
+
 	mw := middleware.CSRF(config.CSRFConfig{
-		Secret:   testSecret,
 		SameSite: "strict",
-	})
+	}, key)
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -285,11 +346,12 @@ func TestCSRF_SameSiteStrict(t *testing.T) {
 }
 
 func TestCSRF_SameSiteNone(t *testing.T) {
+	key := testKey(t)
+
 	mw := middleware.CSRF(config.CSRFConfig{
-		Secret:   testSecret,
 		SameSite: "none",
 		Secure:   true,
-	})
+	}, key)
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -304,29 +366,162 @@ func TestCSRF_SameSiteNone(t *testing.T) {
 	}
 }
 
+func TestCSRF_POSTWithMalformedCookie_RegeneratesToken(t *testing.T) {
+	mw, _ := csrfMiddleware(t)
+
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Send a GET with a cookie that has invalid encrypted value.
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.AddCookie(&http.Cookie{Name: "XSRF-TOKEN", Value: "not-valid-encrypted-payload"})
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	// Should succeed on GET (new token generated and cookie set).
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	// Should have set a new cookie.
+	cookies := w.Result().Cookies()
+	found := false
+
+	for _, c := range cookies {
+		if c.Name == "XSRF-TOKEN" && c.Value != "not-valid-encrypted-payload" {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Error("expected new CSRF cookie to be set after malformed cookie")
+	}
+}
+
+func TestCSRF_StoresTokenInContext(t *testing.T) {
+	mw, _ := csrfMiddleware(t)
+
+	var ctxToken string
+
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxToken = httpx.CSRFTokenFromContext(r.Context())
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	if ctxToken == "" {
+		t.Error("expected CSRF token to be stored in context")
+	}
+}
+
+func TestCSRF_POSTWithXXSRFToken_InvalidPayload_419(t *testing.T) {
+	mw, _ := csrfMiddleware(t)
+
+	// GET to get a valid cookie.
+	getReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	getW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(getW, getReq)
+
+	tokenCookie := findCookie(t, getW, "XSRF-TOKEN")
+
+	// POST with tampered X-XSRF-TOKEN header.
+	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	postReq.AddCookie(tokenCookie)
+	postReq.Header.Set("X-XSRF-TOKEN", "tampered-encrypted-value")
+
+	postW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(postW, postReq)
+
+	if postW.Code != 419 {
+		t.Errorf("status = %d, want 419", postW.Code)
+	}
+}
+
+func TestCSRF_TokenSourcePrecedence(t *testing.T) {
+	mw, key := csrfMiddleware(t)
+
+	// GET to obtain the cookie.
+	getReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	getW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(getW, getReq)
+
+	tokenCookie := findCookie(t, getW, "XSRF-TOKEN")
+
+	rawToken, err := cryptox.Decrypt(tokenCookie.Value, key)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// POST with valid _token form field and invalid X-CSRF-TOKEN header.
+	// The _token field should take precedence.
+	form := url.Values{}
+	form.Set("_token", rawToken)
+
+	postReq := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(form.Encode()))
+	postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	postReq.Header.Set("X-CSRF-TOKEN", "wrong-token")
+	postReq.AddCookie(tokenCookie)
+
+	postW := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(postW, postReq)
+
+	if postW.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (form field should take precedence)", postW.Code, http.StatusOK)
+	}
+}
+
 func TestCSRFFromFile_AllEnvOverrides(t *testing.T) {
-	t.Setenv("INERTIA_CSRF_SECRET", "env-secret")
 	t.Setenv("INERTIA_CSRF_COOKIE_NAME", "_env_csrf")
-	t.Setenv("INERTIA_CSRF_HEADER_NAME", "X-ENV-CSRF")
 	t.Setenv("INERTIA_CSRF_SECURE", "true")
 	t.Setenv("INERTIA_CSRF_SAME_SITE", "strict")
 
 	dir := t.TempDir()
-	path := filepath.Join(dir, "csrf.yml")
+	csrfPath := filepath.Join(dir, "csrf.yml")
+	cryptoPath := filepath.Join(dir, "crypto.yml")
 
-	content := `
-secret: "file-secret"
+	key := make([]byte, 32)
+
+	if _, err := rand.Read(key); err != nil {
+		t.Fatal(err)
+	}
+
+	csrfContent := `
 cookie_name: "_file_csrf"
-header_name: "X-FILE-CSRF"
 secure: false
 same_site: "lax"
 `
 
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	cryptoContent := `
+key: "` + encodeKey(key) + `"
+`
+
+	if err := os.WriteFile(csrfPath, []byte(csrfContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	mw, err := middleware.CSRFFromFile(path)
+	if err := os.WriteFile(cryptoPath, []byte(cryptoContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	mw, err := middleware.CSRFFromFile(csrfPath, cryptoPath)
 
 	if err != nil {
 		t.Fatal(err)
@@ -354,130 +549,22 @@ same_site: "lax"
 	}
 }
 
-func TestCSRF_POSTWithMalformedCookie_RegeneratesToken(t *testing.T) {
-	mw := csrfMiddleware()
+// --- helpers ---
 
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	// Send a POST with a cookie that has no "." separator (malformed).
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.AddCookie(&http.Cookie{Name: "_csrf_token", Value: "no-dot-separator"})
-
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, r)
-
-	// Should succeed on GET (new token generated and cookie set).
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-
-	// Should have set a new cookie.
-	cookies := w.Result().Cookies()
-	found := false
-
-	for _, c := range cookies {
-		if c.Name == "_csrf_token" && strings.Contains(c.Value, ".") {
-			found = true
-		}
-	}
-
-	if !found {
-		t.Error("expected new CSRF cookie to be set after malformed cookie")
-	}
-}
-
-func TestCSRF_POSTWithTamperedCookie_RegeneratesToken(t *testing.T) {
-	mw := csrfMiddleware()
-
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	// Send a GET with a cookie that has a valid format but wrong signature.
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.AddCookie(&http.Cookie{Name: "_csrf_token", Value: "fake-token.bad-signature"})
-
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-
-	// Should have set a new cookie (regenerated).
-	cookies := w.Result().Cookies()
-	found := false
-
-	for _, c := range cookies {
-		if c.Name == "_csrf_token" && c.Value != "fake-token.bad-signature" {
-			found = true
-		}
-	}
-
-	if !found {
-		t.Error("expected new CSRF cookie after tampered cookie")
-	}
-}
-
-func TestCSRF_StoresTokenInContext(t *testing.T) {
-	mw := csrfMiddleware()
-
-	var ctxToken string
-
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctxToken = httpx.CSRFTokenFromContext(r.Context())
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, r)
-
-	if ctxToken == "" {
-		t.Error("expected CSRF token to be stored in context")
-	}
-}
-
-func TestCSRFFromFile_EnvOverride(t *testing.T) {
-	t.Setenv("INERTIA_CSRF_COOKIE_NAME", "_env_csrf")
-
-	dir := t.TempDir()
-	path := filepath.Join(dir, "csrf.yml")
-
-	content := `
-secret: "file-secret"
-cookie_name: "_file_csrf"
-`
-
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	mw, err := middleware.CSRFFromFile(path)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, r)
-
-	found := false
+func findCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {
+	t.Helper()
 
 	for _, c := range w.Result().Cookies() {
-		if c.Name == "_env_csrf" {
-			found = true
+		if c.Name == name {
+			return c
 		}
 	}
 
-	if !found {
-		t.Error("expected env-overridden cookie name _env_csrf")
-	}
+	t.Fatalf("cookie %q not found", name)
+
+	return nil
+}
+
+func encodeKey(key []byte) string {
+	return base64.StdEncoding.EncodeToString(key)
 }

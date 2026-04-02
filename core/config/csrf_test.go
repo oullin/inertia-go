@@ -11,16 +11,8 @@ import (
 func TestDefaultCSRF(t *testing.T) {
 	cfg := config.DefaultCSRF()
 
-	if cfg.Secret != "" {
-		t.Errorf("Secret = %q, want empty", cfg.Secret)
-	}
-
-	if cfg.CookieName != "_csrf_token" {
-		t.Errorf("CookieName = %q, want %q", cfg.CookieName, "_csrf_token")
-	}
-
-	if cfg.HeaderName != "X-CSRF-TOKEN" {
-		t.Errorf("HeaderName = %q, want %q", cfg.HeaderName, "X-CSRF-TOKEN")
+	if cfg.CookieName != "XSRF-TOKEN" {
+		t.Errorf("CookieName = %q, want %q", cfg.CookieName, "XSRF-TOKEN")
 	}
 
 	if cfg.Secure {
@@ -37,7 +29,6 @@ func TestLoadCSRF(t *testing.T) {
 	path := filepath.Join(dir, "csrf.yml")
 
 	content := `
-secret: "my-secret"
 secure: true
 `
 
@@ -51,21 +42,13 @@ secure: true
 		t.Fatal(err)
 	}
 
-	if cfg.Secret != "my-secret" {
-		t.Errorf("Secret = %q, want %q", cfg.Secret, "my-secret")
-	}
-
 	if !cfg.Secure {
 		t.Error("Secure should be true (from file)")
 	}
 
 	// Defaults should be applied for fields not in the file.
-	if cfg.CookieName != "_csrf_token" {
-		t.Errorf("CookieName = %q, want %q (default)", cfg.CookieName, "_csrf_token")
-	}
-
-	if cfg.HeaderName != "X-CSRF-TOKEN" {
-		t.Errorf("HeaderName = %q, want %q (default)", cfg.HeaderName, "X-CSRF-TOKEN")
+	if cfg.CookieName != "XSRF-TOKEN" {
+		t.Errorf("CookieName = %q, want %q (default)", cfg.CookieName, "XSRF-TOKEN")
 	}
 
 	if cfg.SameSite != "lax" {
@@ -74,13 +57,13 @@ secure: true
 }
 
 func TestLoadCSRF_EnvOverride(t *testing.T) {
-	t.Setenv("INERTIA_CSRF_SECRET", "env-secret")
+	t.Setenv("INERTIA_CSRF_COOKIE_NAME", "MY-TOKEN")
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "csrf.yml")
 
 	content := `
-secret: "file-secret"
+cookie_name: "FILE-TOKEN"
 `
 
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -93,8 +76,8 @@ secret: "file-secret"
 		t.Fatal(err)
 	}
 
-	if cfg.Secret != "env-secret" {
-		t.Errorf("Secret = %q, want %q (env override)", cfg.Secret, "env-secret")
+	if cfg.CookieName != "MY-TOKEN" {
+		t.Errorf("CookieName = %q, want %q (env override)", cfg.CookieName, "MY-TOKEN")
 	}
 }
 

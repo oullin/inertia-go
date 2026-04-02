@@ -10,9 +10,7 @@ import (
 
 // CSRFConfig holds configuration for the CSRF middleware.
 type CSRFConfig struct {
-	Secret     string `json:"secret"      yaml:"secret"      mapstructure:"secret"`
 	CookieName string `json:"cookie_name" yaml:"cookie_name" mapstructure:"cookie_name"`
-	HeaderName string `json:"header_name" yaml:"header_name" mapstructure:"header_name"`
 	Secure     bool   `json:"secure"      yaml:"secure"      mapstructure:"secure"`
 	SameSite   string `json:"same_site"   yaml:"same_site"   mapstructure:"same_site"`
 }
@@ -20,8 +18,7 @@ type CSRFConfig struct {
 // DefaultCSRF returns a CSRFConfig with sensible defaults.
 func DefaultCSRF() CSRFConfig {
 	return CSRFConfig{
-		CookieName: "_csrf_token",
-		HeaderName: "X-CSRF-TOKEN",
+		CookieName: "XSRF-TOKEN",
 		Secure:     false,
 		SameSite:   "lax",
 	}
@@ -35,7 +32,6 @@ func LoadCSRF(path string) (CSRFConfig, error) {
 
 	v := viper.New()
 	v.SetDefault("cookie_name", defaults.CookieName)
-	v.SetDefault("header_name", defaults.HeaderName)
 	v.SetDefault("secure", defaults.Secure)
 	v.SetDefault("same_site", defaults.SameSite)
 
@@ -59,11 +55,7 @@ func LoadCSRF(path string) (CSRFConfig, error) {
 
 func (c *CSRFConfig) Defaults() {
 	if c.CookieName == "" {
-		c.CookieName = "_csrf_token"
-	}
-
-	if c.HeaderName == "" {
-		c.HeaderName = "X-CSRF-TOKEN"
+		c.CookieName = "XSRF-TOKEN"
 	}
 
 	if c.SameSite == "" {
