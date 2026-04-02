@@ -24,17 +24,12 @@ func (cfg *Config) Middleware(next http.Handler) http.Handler {
 			r.RequestURI = cleanPath + "?" + q
 		}
 
-		// Build locale head with auto-generated hreflang links.
-		localeHead := locale.Head
-		localeHead.Links = append(localeHead.Links, cfg.hreflangLinks(cleanPath)...)
+		// Build a shallow copy with auto-generated hreflang links appended.
+		resolved := *locale
+		resolved.Head.Links = append(resolved.Head.Links, cfg.hreflangLinks(cleanPath)...)
 
 		ctx := r.Context()
-		ctx = httpx.SetLocale(ctx, &httpx.Locale{
-			Code:      locale.Code,
-			Name:      locale.Name,
-			Direction: locale.Direction,
-			Head:      localeHead,
-		})
+		ctx = httpx.SetLocale(ctx, &resolved)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -43,7 +38,7 @@ func (cfg *Config) Middleware(next http.Handler) http.Handler {
 // resolve extracts the locale code from a URL-prefix path. Returns the
 // matching Locale and the path with the prefix stripped. Falls back to
 // the default locale when no prefix matches.
-func (cfg *Config) resolve(path string) (*Locale, string) {
+func (cfg *Config) resolve(path string) (*httpx.Locale, string) {
 	if !cfg.URLPrefix {
 		return cfg.Default(), path
 	}

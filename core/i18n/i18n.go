@@ -8,19 +8,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Locale holds locale information including per-locale SEO head defaults.
-type Locale struct {
-	Code      string     `yaml:"-"`
-	Name      string     `yaml:"name"`
-	Direction string     `yaml:"direction"`
-	Head      httpx.Head `yaml:"head"`
-}
-
 // Config holds the multilanguage configuration loaded from a YAML file.
 type Config struct {
-	DefaultLocale string             `yaml:"default_locale"`
-	URLPrefix     bool               `yaml:"url_prefix"`
-	Locales       map[string]*Locale `yaml:"locales"`
+	DefaultLocale string                   `yaml:"default_locale"`
+	URLPrefix     bool                     `yaml:"url_prefix"`
+	Locales       map[string]*httpx.Locale `yaml:"locales"`
 }
 
 // LoadConfig reads a YAML i18n config file and applies env var overrides.
@@ -48,12 +40,12 @@ func LoadConfig(path string) (*Config, error) {
 }
 
 // Lookup returns the Locale for the given code, or nil if not found.
-func (cfg *Config) Lookup(code string) *Locale {
+func (cfg *Config) Lookup(code string) *httpx.Locale {
 	return cfg.Locales[code]
 }
 
 // Default returns the default Locale.
-func (cfg *Config) Default() *Locale {
+func (cfg *Config) Default() *httpx.Locale {
 	return cfg.Locales[cfg.DefaultLocale]
 }
 

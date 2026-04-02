@@ -90,10 +90,10 @@ type Head struct {
 
 // Locale holds locale information resolved by the i18n middleware.
 type Locale struct {
-	Code      string
-	Name      string
-	Direction string
-	Head      Head
+	Code      string `yaml:"-"`
+	Name      string `yaml:"name"`
+	Direction string `yaml:"direction"`
+	Head      Head   `yaml:"head"`
 }
 
 type ctxKey struct{ name string }
