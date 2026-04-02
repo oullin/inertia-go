@@ -256,13 +256,13 @@ The root HTML template receives two special variables:
 </html>
 ```
 
-## Example App
+## Demo App
 
-The `example/` directory contains a full working app with Go + Vue 3 + Vite:
+The `demo/` directory contains a full working app with Go + Vue 3 + Vite:
 
 ```bash
 # From the repository root
-make example
+make demo
 ```
 
 Then visit `http://localhost:8080`.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oullin/inertia-go/example/api/internal/database"
+	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
 func Run(db *sql.DB) error {

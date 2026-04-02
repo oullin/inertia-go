@@ -37,10 +37,10 @@ storage/.pnpm-store/
 .turbo/
 
 # Build output
-example/dist/
-example/app/dist/
-example/api/dist/
-example/app/.turbo/
+demo/dist/
+demo/app/dist/
+demo/api/dist/
+demo/app/.turbo/
 
 # SQLite
 *.db
