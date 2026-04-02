@@ -10,17 +10,21 @@ import (
 
 // CSRFConfig holds configuration for the CSRF middleware.
 type CSRFConfig struct {
-	CookieName string `json:"cookie_name" yaml:"cookie_name" mapstructure:"cookie_name"`
-	Secure     bool   `json:"secure"      yaml:"secure"      mapstructure:"secure"`
-	SameSite   string `json:"same_site"   yaml:"same_site"   mapstructure:"same_site"`
+	CookieName    string `json:"cookie_name"    yaml:"cookie_name"    mapstructure:"cookie_name"`
+	Secure        bool   `json:"secure"         yaml:"secure"         mapstructure:"secure"`
+	SameSite      string `json:"same_site"      yaml:"same_site"      mapstructure:"same_site"`
+	OriginOnly    bool   `json:"origin_only"    yaml:"origin_only"    mapstructure:"origin_only"`
+	AllowSameSite bool   `json:"allow_same_site" yaml:"allow_same_site" mapstructure:"allow_same_site"`
 }
 
 // DefaultCSRF returns a CSRFConfig with sensible defaults.
 func DefaultCSRF() CSRFConfig {
 	return CSRFConfig{
-		CookieName: "XSRF-TOKEN",
-		Secure:     false,
-		SameSite:   "lax",
+		CookieName:    "XSRF-TOKEN",
+		Secure:        false,
+		SameSite:      "lax",
+		OriginOnly:    false,
+		AllowSameSite: false,
 	}
 }
 
@@ -34,6 +38,8 @@ func LoadCSRF(path string) (CSRFConfig, error) {
 	v.SetDefault("cookie_name", defaults.CookieName)
 	v.SetDefault("secure", defaults.Secure)
 	v.SetDefault("same_site", defaults.SameSite)
+	v.SetDefault("origin_only", defaults.OriginOnly)
+	v.SetDefault("allow_same_site", defaults.AllowSameSite)
 
 	v.SetConfigFile(path)
 

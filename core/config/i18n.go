@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/spf13/viper"
@@ -38,6 +39,8 @@ func LoadI18n(path string) (*I18nConfig, error) {
 	v := viper.New()
 	v.SetDefault("default_locale", "en")
 	v.SetDefault("url_prefix", false)
+	v.SetEnvPrefix("INERTIA_I18N")
+	v.AutomaticEnv()
 
 	v.SetConfigFile(path)
 
@@ -45,21 +48,49 @@ func LoadI18n(path string) (*I18nConfig, error) {
 		return nil, fmt.Errorf("i18n: read config: %w", err)
 	}
 
-	v.SetEnvPrefix("INERTIA_I18N")
-	v.AutomaticEnv()
+	cfg := DefaultI18n()
 
-	var cfg I18nConfig
-
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("i18n: parse config: %w", err)
+	if v.IsSet("default_locale") {
+		cfg.DefaultLocale = strings.TrimSpace(v.GetString("default_locale"))
 	}
 
-	// Backfill locale codes from map keys.
+	if v.IsSet("url_prefix") {
+		cfg.URLPrefix = v.GetBool("url_prefix")
+	}
+
+	if v.IsSet("locales") {
+		var locales map[string]*httpx.Locale
+
+		if err := v.UnmarshalKey("locales", &locales); err != nil {
+			return nil, fmt.Errorf("i18n: parse locales: %w", err)
+		}
+
+		for code, locale := range locales {
+			if locale == nil {
+				return nil, fmt.Errorf("i18n: locale %q is required", code)
+			}
+
+			cfg.Locales[code] = locale
+		}
+	}
+
 	for code, locale := range cfg.Locales {
+		if locale == nil {
+			return nil, fmt.Errorf("i18n: locale %q is required", code)
+		}
+
 		locale.Code = code
 	}
 
-	return &cfg, nil
+	if cfg.DefaultLocale == "" {
+		cfg.DefaultLocale = "en"
+	}
+
+	if cfg.Default() == nil {
+		return nil, fmt.Errorf("i18n: default locale %q is not configured", cfg.DefaultLocale)
+	}
+
+	return cfg, nil
 }
 
 // Lookup returns the Locale for the given code, or nil if not found.

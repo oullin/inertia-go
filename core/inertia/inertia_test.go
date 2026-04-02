@@ -1794,6 +1794,49 @@ func TestWithHeadFromFile_InvalidYAML(t *testing.T) {
 	}
 }
 
+func TestWithHead_ExplicitOptionWinsOverFileConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/seo.yml"
+
+	if err := os.WriteFile(path, []byte(`
+title: "YAML Title"
+meta:
+  - name: "description"
+    content: "From YAML"
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	i, err := inertia.New(tmpl,
+		inertia.WithHead(httpx.Head{
+			Title: "Explicit Title",
+			Meta: []httpx.MetaTag{
+				{Name: "description", Content: "Explicit desc"},
+			},
+		}),
+		inertia.WithHeadFromFile(path),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, "<title>Explicit Title</title>") {
+		t.Fatalf("expected explicit title to win, body = %s", body)
+	}
+
+	if contains(body, "YAML Title") {
+		t.Fatalf("did not expect YAML title override, body = %s", body)
+	}
+}
+
 func TestSetHead_OverridesDefault(t *testing.T) {
 	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
 	i, err := inertia.New(tmpl,

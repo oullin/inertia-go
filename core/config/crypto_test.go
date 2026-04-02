@@ -133,3 +133,20 @@ func TestCryptoConfig_DecodedKey_WrongLength(t *testing.T) {
 		t.Error("expected error for 16-byte key (need 32)")
 	}
 }
+
+func TestCryptoConfig_DecodedKey_LaravelBase64Prefix(t *testing.T) {
+	raw := make([]byte, 32)
+	cfg := config.CryptoConfig{
+		Key: "base64:" + base64.StdEncoding.EncodeToString(raw),
+	}
+
+	key, err := cfg.DecodedKey()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(key) != 32 {
+		t.Fatalf("key length = %d, want 32", len(key))
+	}
+}

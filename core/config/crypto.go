@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -23,6 +24,7 @@ func DefaultCrypto() CryptoConfig {
 // and finally environment variable overrides (INERTIA_CRYPTO_*) are applied.
 func LoadCrypto(path string) (CryptoConfig, error) {
 	v := viper.New()
+	v.SetDefault("key", "")
 
 	v.SetConfigFile(path)
 
@@ -50,7 +52,10 @@ func (c *CryptoConfig) DecodedKey() ([]byte, error) {
 		return nil, fmt.Errorf("crypto: key is required")
 	}
 
-	key, err := base64.StdEncoding.DecodeString(c.Key)
+	encoded := strings.TrimSpace(c.Key)
+	encoded = strings.TrimPrefix(encoded, "base64:")
+
+	key, err := base64.StdEncoding.DecodeString(encoded)
 
 	if err != nil {
 		return nil, fmt.Errorf("crypto: invalid base64 key: %w", err)

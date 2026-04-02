@@ -18,6 +18,7 @@ type payload struct {
 	IV    string `json:"iv"`
 	Value string `json:"value"`
 	MAC   string `json:"mac"`
+	Tag   string `json:"tag"`
 }
 
 // Encrypt encrypts plaintext using AES-256-CBC with HMAC-SHA256,
@@ -48,6 +49,7 @@ func Encrypt(plaintext string, key []byte) (string, error) {
 		IV:    ivB64,
 		Value: valueB64,
 		MAC:   hex.EncodeToString(mac),
+		Tag:   "",
 	}
 
 	js, err := json.Marshal(p)
@@ -91,6 +93,10 @@ func Decrypt(encoded string, key []byte) (string, error) {
 
 	if err != nil {
 		return "", fmt.Errorf("cryptox: iv base64: %w", err)
+	}
+
+	if len(iv) != aes.BlockSize {
+		return "", fmt.Errorf("cryptox: invalid IV length")
 	}
 
 	ciphertext, err := base64.StdEncoding.DecodeString(p.Value)

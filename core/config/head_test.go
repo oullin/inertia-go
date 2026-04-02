@@ -85,6 +85,18 @@ meta:
 	if head.Lang != "en" {
 		t.Errorf("Lang = %q, want %q (default)", head.Lang, "en")
 	}
+
+	found := false
+
+	for _, tag := range head.Meta {
+		if tag.Name == "robots" && tag.Content == "index, follow" {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Error("expected default robots tag to be preserved")
+	}
 }
 
 func TestLoadHead_FileNotFound(t *testing.T) {

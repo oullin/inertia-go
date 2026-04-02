@@ -8,8 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/httpx"
+	corei18n "github.com/oullin/inertia-go/core/i18n"
 	"github.com/oullin/inertia-go/core/inertia"
+	"github.com/oullin/inertia-go/core/middleware"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 	"github.com/oullin/inertia-go/demo/api/internal/seed"
 )
@@ -18,6 +21,7 @@ import (
 var rootTemplateFS embed.FS
 
 var i *inertia.Inertia
+var localeCfg *config.I18nConfig
 
 func main() {
 	tmpl, err := rootTemplateFS.ReadFile("resources/views/app.html")
@@ -32,9 +36,34 @@ func main() {
 		version = v
 	}
 
+	seoPath, err := resolveResourcePath("seo.yml")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	i, err = inertia.New(string(tmpl),
 		inertia.WithVersion(version),
-		inertia.WithHeadDefaults(),
+		inertia.WithHeadFromFile(seoPath),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	localeCfg, err = corei18n.LoadConfig(mustResolveResourcePath("i18n.yml"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// The demo keeps canonical, non-prefixed routes in the frontend while
+	// still consuming locale-driven head defaults from config.
+	localeCfg.URLPrefix = false
+
+	csrfMiddleware, err := middleware.CSRFFromFile(
+		mustResolveResourcePath("csrf.yml"),
+		mustResolveResourcePath("crypto.yml"),
 	)
 
 	if err != nil {
@@ -84,7 +113,9 @@ func main() {
 		http.StripPrefix("/assets/", http.FileServer(http.Dir(distPath))),
 	)
 
-	registerDashboardRoutes(mux)
+	appMux := http.NewServeMux()
+	registerDashboardRoutes(appMux)
+	mux.Handle("/", dashboardAppHandler(appMux, csrfMiddleware, localeCfg))
 
 	addr := ":8080"
 
@@ -115,4 +146,45 @@ func resolveDistPath() (string, error) {
 	}
 
 	return "", fmt.Errorf("failed to locate demo app dist directory")
+}
+
+func resolveResourcePath(name string) (string, error) {
+	candidates := []string{
+		filepath.Join("cmd", "resources", name),
+		filepath.Join("resources", name),
+	}
+
+	for _, candidate := range candidates {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return filepath.Clean(candidate), nil
+		}
+	}
+
+	return "", fmt.Errorf("failed to locate demo resource %q", name)
+}
+
+func mustResolveResourcePath(name string) string {
+	path, err := resolveResourcePath(name)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return path
+}
+
+func dashboardAppHandler(base http.Handler, csrfMiddleware func(http.Handler) http.Handler, cfg *config.I18nConfig) http.Handler {
+	handler := base
+
+	if cfg != nil {
+		handler = corei18n.Middleware(cfg, handler)
+	}
+
+	if csrfMiddleware != nil {
+		handler = csrfMiddleware(handler)
+	}
+
+	handler = middleware.Precognition()(handler)
+
+	return i.Middleware(handler)
 }

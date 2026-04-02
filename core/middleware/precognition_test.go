@@ -74,6 +74,10 @@ func TestPrecognition_SetsContextFlag(t *testing.T) {
 	if !isPrecognition {
 		t.Error("context should be marked as precognition")
 	}
+
+	if got := w.Header().Get(httpx.HeaderPrecognition); got != "true" {
+		t.Errorf("Precognition header = %q, want %q", got, "true")
+	}
 }
 
 func TestPrecognition_VaryHeader_AlwaysSet(t *testing.T) {

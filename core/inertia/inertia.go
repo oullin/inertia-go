@@ -28,6 +28,7 @@ type Inertia struct {
 	jsonMarshaler  httpx.JSONMarshaler
 	logger         httpx.Logger
 	head           httpx.Head
+	headSource     headSource
 	mu             sync.RWMutex
 }
 
@@ -121,13 +122,11 @@ func NewFromTemplate(t *template.Template, opts ...Option) (*Inertia, error) {
 }
 
 func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component string, pageProps ...httpx.Props) error {
-	ctx := r.Context()
-
-	// Precognition requests return validation-only responses.
-	if httpx.IsPrecognition(ctx) {
-		return i.renderPrecognition(w, r)
+	if handled, err := i.HandlePrecognition(w, r); handled {
+		return err
 	}
 
+	ctx := r.Context()
 	merged := i.mergeProps(r, pageProps...)
 
 	result, err := props.Resolve(r, component, merged)
@@ -193,8 +192,19 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 	})
 }
 
-func (i *Inertia) renderPrecognition(w http.ResponseWriter, r *http.Request) error {
+// HandlePrecognition writes the validation-only response for a precognitive
+// request. It returns handled=true when the request was precognitive.
+func (i *Inertia) HandlePrecognition(w http.ResponseWriter, r *http.Request) (handled bool, err error) {
+	if !httpx.IsPrecognition(r.Context()) {
+		return false, nil
+	}
+
+	return true, i.writePrecognitionResponse(w, r)
+}
+
+func (i *Inertia) writePrecognitionResponse(w http.ResponseWriter, r *http.Request) error {
 	errors := validationErrorsFromContext(r.Context())
+	w.Header().Set(httpx.HeaderPrecognition, "true")
 
 	// Filter errors to only requested fields when Validate-Only is present.
 	if only := httpx.ValidateOnly(r); len(only) > 0 && len(errors) > 0 {
@@ -224,7 +234,6 @@ func (i *Inertia) renderPrecognition(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	w.Header().Set(httpx.HeaderPrecognitionSuccess, "true")
 	w.WriteHeader(http.StatusNoContent)
 
 	return nil

@@ -16,6 +16,12 @@ func Middleware(cfg *config.I18nConfig, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		locale, cleanPath := resolve(cfg, r.URL.Path)
 
+		if locale == nil {
+			http.Error(w, "i18n: invalid configuration", http.StatusInternalServerError)
+
+			return
+		}
+
 		// Rewrite the URL path with the prefix stripped so downstream
 		// handlers see clean paths (e.g. /dashboard, not /es/dashboard).
 		r.URL.Path = cleanPath
@@ -27,6 +33,8 @@ func Middleware(cfg *config.I18nConfig, next http.Handler) http.Handler {
 
 		// Build a shallow copy with auto-generated hreflang links appended.
 		resolved := *locale
+		resolved.Head.Meta = append([]httpx.MetaTag(nil), locale.Head.Meta...)
+		resolved.Head.Links = append([]httpx.LinkTag(nil), locale.Head.Links...)
 		resolved.Head.Links = append(resolved.Head.Links, hreflangLinks(cfg, cleanPath)...)
 
 		ctx := r.Context()

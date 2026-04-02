@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/oullin/inertia-go/core/assert"
+	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
+	"github.com/oullin/inertia-go/core/middleware"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
@@ -67,6 +69,7 @@ func TestDashboardInviteValidationErrors(t *testing.T) {
 
 func TestDashboardInviteSuccessRedirectsWithFlashCookie(t *testing.T) {
 	testMux := newDashboardTestMux(t)
+	csrfCookie, rawToken := issueDashboardCSRFCookie(t, testMux)
 	body := strings.NewReader(url.Values{
 		"name":  {"Nina Patel"},
 		"email": {"nina@northstarhq.test"},
@@ -76,6 +79,8 @@ func TestDashboardInviteSuccessRedirectsWithFlashCookie(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/dashboard/forms/invite", body)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set(httpx.HeaderInertia, "true")
+	req.Header.Set("X-CSRF-TOKEN", rawToken)
+	req.AddCookie(csrfCookie)
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -94,6 +99,40 @@ func TestDashboardInviteSuccessRedirectsWithFlashCookie(t *testing.T) {
 
 	if len(cookies) == 0 {
 		t.Fatal("expected flash cookie to be set")
+	}
+}
+
+func TestDashboardInvitePrecognitionSkipsMutation(t *testing.T) {
+	testMux := newDashboardTestMux(t)
+	csrfCookie, rawToken := issueDashboardCSRFCookie(t, testMux)
+
+	before := database.InviteCount(db)
+
+	body := strings.NewReader(url.Values{
+		"name":  {"Nina Patel"},
+		"email": {"nina@northstarhq.test"},
+		"role":  {"Operator"},
+	}.Encode())
+
+	req := httptest.NewRequest(http.MethodPost, "/dashboard/forms/invite", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set(httpx.HeaderPrecognition, "true")
+	req.Header.Set("X-CSRF-TOKEN", rawToken)
+	req.AddCookie(csrfCookie)
+
+	w := httptest.NewRecorder()
+	testMux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusNoContent)
+	}
+
+	if got := w.Header().Get(httpx.HeaderPrecognition); got != "true" {
+		t.Fatalf("Precognition header = %q, want %q", got, "true")
+	}
+
+	if after := database.InviteCount(db); after != before {
+		t.Fatalf("invite count = %d, want %d", after, before)
 	}
 }
 
@@ -131,8 +170,11 @@ func TestDashboardFeedIncludesScrollMetadata(t *testing.T) {
 
 func TestSeedEndpointPopulatesState(t *testing.T) {
 	testMux := newDashboardTestMux(t)
+	csrfCookie, rawToken := issueDashboardCSRFCookie(t, testMux)
 
 	req := httptest.NewRequest(http.MethodPost, "/dashboard/seed", nil)
+	req.Header.Set("X-CSRF-TOKEN", rawToken)
+	req.AddCookie(csrfCookie)
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -160,7 +202,7 @@ func TestSeedEndpointPopulatesState(t *testing.T) {
 	}
 }
 
-func newDashboardTestMux(t *testing.T) *http.ServeMux {
+func newDashboardTestMux(t *testing.T) http.Handler {
 	t.Helper()
 
 	newDashboardTestInertia(t)
@@ -168,7 +210,24 @@ func newDashboardTestMux(t *testing.T) *http.ServeMux {
 	mux := http.NewServeMux()
 	registerDashboardRoutes(mux)
 
-	return mux
+	cfg := config.DefaultI18n()
+	cfg.URLPrefix = false
+
+	return dashboardAppHandler(
+		mux,
+		middleware.CSRF(config.CSRFConfig{}, []byte("0123456789abcdef0123456789abcdef")),
+		cfg,
+	)
+}
+
+func issueDashboardCSRFCookie(t *testing.T, handler http.Handler) (*http.Cookie, string) {
+	t.Helper()
+
+	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	return findCookie(t, w, "XSRF-TOKEN"), findCSRFMetaToken(t, w.Body.String())
 }
 
 func newDashboardTestInertia(t *testing.T) *inertia.Inertia {
@@ -239,4 +298,38 @@ func setupTestDB(t *testing.T) {
 
 func timeAgo(minutes int) time.Time {
 	return time.Now().Add(-time.Duration(minutes) * time.Minute)
+}
+
+func findCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {
+	t.Helper()
+
+	for _, c := range w.Result().Cookies() {
+		if c.Name == name {
+			return c
+		}
+	}
+
+	t.Fatalf("cookie %q not found", name)
+
+	return nil
+}
+
+func findCSRFMetaToken(t *testing.T, body string) string {
+	t.Helper()
+
+	const prefix = `name="csrf-token" content="`
+	start := strings.Index(body, prefix)
+
+	if start == -1 {
+		t.Fatal("csrf meta tag not found")
+	}
+
+	start += len(prefix)
+	end := strings.Index(body[start:], `"`)
+
+	if end == -1 {
+		t.Fatal("csrf meta token not terminated")
+	}
+
+	return body[start : start+end]
 }

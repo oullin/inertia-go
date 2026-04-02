@@ -1,10 +1,16 @@
 package middleware
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/subtle"
 	"encoding/hex"
+	"fmt"
+	"hash"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/cryptox"
@@ -39,7 +45,11 @@ func CSRF(cfg config.CSRFConfig, key []byte) func(http.Handler) http.Handler {
 					return
 				}
 
-				setTokenCookie(w, cfg.CookieName, token, key, cfg.Secure, cfg.SameSiteMode())
+				if err := setTokenCookie(w, cfg.CookieName, token, key, cfg.Secure, cfg.SameSiteMode()); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+
+					return
+				}
 			}
 
 			// Store the raw token in context so Render auto-appends
@@ -54,8 +64,26 @@ func CSRF(cfg config.CSRFConfig, key []byte) func(http.Handler) http.Handler {
 				return
 			}
 
+			if passesOriginVerification(r, cfg.AllowSameSite) {
+				next.ServeHTTP(w, r)
+
+				return
+			}
+
+			if cfg.OriginOnly {
+				http.Error(w, "csrf: origin verification failed", http.StatusForbidden)
+
+				return
+			}
+
 			// Mutation requests must present the token.
-			submittedToken := extractToken(r, key)
+			submittedToken, err := extractToken(r, cfg.CookieName, key)
+
+			if err != nil {
+				http.Error(w, "csrf: invalid token", statusPageExpired)
+
+				return
+			}
 
 			if subtle.ConstantTimeCompare([]byte(token), []byte(submittedToken)) != 1 {
 				http.Error(w, "csrf: token mismatch", statusPageExpired)
@@ -102,13 +130,11 @@ func generateToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func setTokenCookie(w http.ResponseWriter, name, token string, key []byte, secure bool, sameSite http.SameSite) {
-	encrypted, err := cryptox.Encrypt(token, key)
+func setTokenCookie(w http.ResponseWriter, name, token string, key []byte, secure bool, sameSite http.SameSite) error {
+	encrypted, err := cryptox.Encrypt(cookiePrefix(name, key)+token, key)
 
 	if err != nil {
-		http.Error(w, "csrf: failed to encrypt token", http.StatusInternalServerError)
-
-		return
+		return fmt.Errorf("csrf: failed to encrypt token: %w", err)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -119,6 +145,8 @@ func setTokenCookie(w http.ResponseWriter, name, token string, key []byte, secur
 		Secure:   secure,
 		SameSite: sameSite,
 	})
+
+	return nil
 }
 
 func tokenFromCookie(r *http.Request, name string, key []byte) (string, error) {
@@ -128,36 +156,48 @@ func tokenFromCookie(r *http.Request, name string, key []byte) (string, error) {
 		return "", err
 	}
 
-	return cryptox.Decrypt(cookie.Value, key)
+	token, err := cryptox.Decrypt(cookie.Value, key)
+
+	if err != nil {
+		return "", err
+	}
+
+	return stripCookiePrefix(name, token, key)
 }
 
 // extractToken retrieves the submitted CSRF token from the request,
 // checking sources in order: _token form field, X-CSRF-TOKEN
 // header, then X-XSRF-TOKEN header. The X-XSRF-TOKEN value is the
 // encrypted cookie value (auto-sent by Axios) and must be decrypted.
-func extractToken(r *http.Request, key []byte) string {
+func extractToken(r *http.Request, cookieName string, key []byte) (string, error) {
 	// 1. _token POST form field (raw token from HTML forms).
 	if token := r.PostFormValue("_token"); token != "" {
-		return token
+		return token, nil
 	}
 
 	// 2. X-CSRF-TOKEN header (raw token, typically from meta tag).
 	if token := r.Header.Get("X-CSRF-TOKEN"); token != "" {
-		return token
+		return token, nil
 	}
 
 	// 3. X-XSRF-TOKEN header (encrypted value from cookie, auto-sent by Axios).
 	if encrypted := r.Header.Get("X-XSRF-TOKEN"); encrypted != "" {
-		token, err := cryptox.Decrypt(encrypted, key)
+		decoded, err := url.QueryUnescape(encrypted)
 
 		if err != nil {
-			return ""
+			return "", err
 		}
 
-		return token
+		token, err := cryptox.Decrypt(decoded, key)
+
+		if err != nil {
+			return "", err
+		}
+
+		return stripCookiePrefix(cookieName, token, key)
 	}
 
-	return ""
+	return "", nil
 }
 
 func isSafeMethod(method string) bool {
@@ -167,4 +207,43 @@ func isSafeMethod(method string) bool {
 	default:
 		return false
 	}
+}
+
+func passesOriginVerification(r *http.Request, allowSameSite bool) bool {
+	switch strings.ToLower(strings.TrimSpace(r.Header.Get("Sec-Fetch-Site"))) {
+	case "same-origin":
+		return true
+	case "same-site":
+		return allowSameSite
+	default:
+		return false
+	}
+}
+
+func cookiePrefix(name string, key []byte) string {
+	mac := sha1.New
+	h := hmacSHA1(mac, []byte(name+"v2"), key)
+
+	return hex.EncodeToString(h) + "|"
+}
+
+func stripCookiePrefix(name, value string, key []byte) (string, error) {
+	expected := cookiePrefix(name, key)
+
+	if strings.HasPrefix(value, expected) {
+		return strings.TrimPrefix(value, expected), nil
+	}
+
+	if len(value) > len(expected) && value[40] == '|' {
+		return "", fmt.Errorf("csrf: invalid cookie prefix")
+	}
+
+	return value, nil
+}
+
+func hmacSHA1(newHash func() hash.Hash, message, key []byte) []byte {
+	mac := hmac.New(newHash, key)
+	_, _ = mac.Write(message)
+
+	return mac.Sum(nil)
 }

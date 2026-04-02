@@ -16,6 +16,6 @@ const (
 
 	// Precognition protocol headers.
 	HeaderPrecognition        = "Precognition"
-	HeaderPrecognitionSuccess = "Precognition-Success"
+	HeaderPrecognitionSuccess = HeaderPrecognition
 	HeaderValidateOnly        = "Validate-Only"
 )

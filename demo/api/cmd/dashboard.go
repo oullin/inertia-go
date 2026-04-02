@@ -28,21 +28,21 @@ const flashCookieName = "beacon_flash"
 var db *sql.DB
 
 func registerDashboardRoutes(mux *http.ServeMux) {
-	mux.Handle("/", i.Middleware(http.HandlerFunc(rootHandler)))
-	mux.Handle("/dashboard", i.Middleware(http.HandlerFunc(overviewHandler)))
-	mux.Handle("/dashboard/navigation", i.Middleware(http.HandlerFunc(navigationHandler)))
-	mux.Handle("/dashboard/scroll", i.Middleware(http.HandlerFunc(scrollHandler)))
-	mux.Handle("/dashboard/redirects", i.Middleware(http.HandlerFunc(redirectsHandler)))
-	mux.Handle("/dashboard/redirects/redirect", i.Middleware(http.HandlerFunc(redirectsRedirectHandler)))
-	mux.Handle("/dashboard/redirects/location", i.Middleware(http.HandlerFunc(redirectsLocationHandler)))
-	mux.Handle("/dashboard/forms", i.Middleware(http.HandlerFunc(formsHandler)))
-	mux.Handle("/dashboard/forms/invite", i.Middleware(http.HandlerFunc(inviteHandler)))
-	mux.Handle("/dashboard/forms/upload", i.Middleware(http.HandlerFunc(uploadHandler)))
-	mux.Handle("/dashboard/forms/escalate", i.Middleware(http.HandlerFunc(escalateHandler)))
+	mux.Handle("/", http.HandlerFunc(rootHandler))
+	mux.Handle("/dashboard", http.HandlerFunc(overviewHandler))
+	mux.Handle("/dashboard/navigation", http.HandlerFunc(navigationHandler))
+	mux.Handle("/dashboard/scroll", http.HandlerFunc(scrollHandler))
+	mux.Handle("/dashboard/redirects", http.HandlerFunc(redirectsHandler))
+	mux.Handle("/dashboard/redirects/redirect", http.HandlerFunc(redirectsRedirectHandler))
+	mux.Handle("/dashboard/redirects/location", http.HandlerFunc(redirectsLocationHandler))
+	mux.Handle("/dashboard/forms", http.HandlerFunc(formsHandler))
+	mux.Handle("/dashboard/forms/invite", http.HandlerFunc(inviteHandler))
+	mux.Handle("/dashboard/forms/upload", http.HandlerFunc(uploadHandler))
+	mux.Handle("/dashboard/forms/escalate", http.HandlerFunc(escalateHandler))
 	mux.Handle("/dashboard/forms/http-preview", http.HandlerFunc(httpPreviewHandler))
-	mux.Handle("/dashboard/data", i.Middleware(http.HandlerFunc(dataHandler)))
-	mux.Handle("/dashboard/feed", i.Middleware(http.HandlerFunc(feedHandler)))
-	mux.Handle("/dashboard/state", i.Middleware(http.HandlerFunc(stateHandler)))
+	mux.Handle("/dashboard/data", http.HandlerFunc(dataHandler))
+	mux.Handle("/dashboard/feed", http.HandlerFunc(feedHandler))
+	mux.Handle("/dashboard/state", http.HandlerFunc(stateHandler))
 	mux.Handle("/dashboard/state/error", http.HandlerFunc(stateErrorHandler))
 	mux.Handle("/dashboard/seed", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seed.Run(db)
@@ -137,6 +137,14 @@ func redirectsRedirectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if handled, err := i.HandlePrecognition(w, r); handled {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
+
 	setFlash(w, flashPayload{
 		Kind:    "success",
 		Title:   "Redirect completed",
@@ -149,6 +157,14 @@ func redirectsRedirectHandler(w http.ResponseWriter, r *http.Request) {
 func redirectsLocationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+
+		return
+	}
+
+	if handled, err := i.HandlePrecognition(w, r); handled {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
 		return
 	}
@@ -203,6 +219,14 @@ func inviteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if handled, err := i.HandlePrecognition(w, r); handled {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
+
 	id := fmt.Sprintf("invite_%03d", database.InviteCount(db)+200)
 	database.CreateInvite(db, id, name, email, role, "Pending")
 
@@ -251,6 +275,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if handled, err := i.HandlePrecognition(w, r); handled {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
+
 	id := fmt.Sprintf("upload_%02d", database.UploadCount(db)+50)
 	database.CreateUpload(db, id, label, header.Filename, humanSize(header.Size), "Queued")
 
@@ -266,6 +298,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 func escalateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+
+		return
+	}
+
+	if handled, err := i.HandlePrecognition(w, r); handled {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
 		return
 	}

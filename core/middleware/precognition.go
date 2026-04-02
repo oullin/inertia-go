@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
 )
@@ -13,7 +14,7 @@ import (
 func Precognition() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Vary", httpx.HeaderPrecognition)
+			appendVary(w.Header(), httpx.HeaderPrecognition)
 
 			if !httpx.IsPrecognitionRequest(r) {
 				next.ServeHTTP(w, r)
@@ -23,8 +24,31 @@ func Precognition() func(http.Handler) http.Handler {
 
 			ctx := httpx.SetPrecognition(r.Context())
 			r = r.WithContext(ctx)
+			w.Header().Set(httpx.HeaderPrecognition, "true")
 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func appendVary(h http.Header, value string) {
+	if value == "" {
+		return
+	}
+
+	existing := h.Get("Vary")
+
+	if existing == "" {
+		h.Set("Vary", value)
+
+		return
+	}
+
+	for _, part := range strings.Split(existing, ",") {
+		if strings.TrimSpace(part) == value {
+			return
+		}
+	}
+
+	h.Set("Vary", existing+", "+value)
 }

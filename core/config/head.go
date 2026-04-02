@@ -47,6 +47,8 @@ func DefaultHead() httpx.Head {
 func LoadHead(path string) (httpx.Head, error) {
 	v := viper.New()
 	v.SetDefault("lang", "en")
+	v.SetEnvPrefix("INERTIA_SEO")
+	v.AutomaticEnv()
 
 	v.SetConfigFile(path)
 
@@ -54,12 +56,13 @@ func LoadHead(path string) (httpx.Head, error) {
 		return httpx.Head{}, fmt.Errorf("head: read config: %w", err)
 	}
 
-	var head httpx.Head
+	var override httpx.Head
 
-	if err := v.Unmarshal(&head); err != nil {
+	if err := v.Unmarshal(&override); err != nil {
 		return httpx.Head{}, fmt.Errorf("head: parse config: %w", err)
 	}
 
+	head := httpx.MergeHead(DefaultHead(), override)
 	head.ApplyEnv()
 
 	return head, nil

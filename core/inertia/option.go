@@ -10,8 +10,16 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
+type headSource uint8
+
 // Option configures an Inertia instance during construction.
 type Option func(*Inertia) error
+
+const (
+	headSourceNone headSource = iota
+	headSourceConfig
+	headSourceExplicit
+)
 
 // WithVersion sets a static asset version string.
 func WithVersion(version string) Option {
@@ -94,6 +102,7 @@ func WithEncryptHistory() Option {
 func WithHead(head httpx.Head) Option {
 	return func(i *Inertia) error {
 		i.head = head
+		i.headSource = headSourceExplicit
 
 		return nil
 	}
@@ -104,7 +113,12 @@ func WithHead(head httpx.Head) Option {
 // with empty Content serve as placeholders and are excluded from rendering.
 func WithHeadDefaults() Option {
 	return func(i *Inertia) error {
+		if i.headSource == headSourceExplicit {
+			return nil
+		}
+
 		i.head = config.DefaultHead()
+		i.headSource = headSourceConfig
 
 		return nil
 	}
@@ -117,6 +131,10 @@ func WithHeadDefaults() Option {
 // excluded from rendering.
 func WithHeadFromFile(path string) Option {
 	return func(i *Inertia) error {
+		if i.headSource == headSourceExplicit {
+			return nil
+		}
+
 		head, err := config.LoadHead(path)
 
 		if err != nil {
@@ -124,6 +142,7 @@ func WithHeadFromFile(path string) Option {
 		}
 
 		i.head = head
+		i.headSource = headSourceConfig
 
 		return nil
 	}

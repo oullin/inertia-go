@@ -97,6 +97,9 @@ locales:
   en:
     name: "English"
     direction: "ltr"
+  es:
+    name: "Español"
+    direction: "ltr"
 `
 
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -111,6 +114,29 @@ locales:
 
 	if cfg.DefaultLocale != "es" {
 		t.Errorf("DefaultLocale = %q, want %q (env override)", cfg.DefaultLocale, "es")
+	}
+}
+
+func TestLoadI18n_InvalidDefaultLocale(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "i18n.yml")
+
+	content := `
+default_locale: "es"
+locales:
+  en:
+    name: "English"
+    direction: "ltr"
+`
+
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := config.LoadI18n(path)
+
+	if err == nil {
+		t.Fatal("expected error for missing default locale")
 	}
 }
 
