@@ -149,6 +149,12 @@ func SetCSRFToken(ctx context.Context, token string) context.Context {
 	return httpx.SetCSRFToken(ctx, token)
 }
 
+// SetPrecognition marks the request context as a precognition request.
+// Delegates to httpx.SetPrecognition.
+func SetPrecognition(ctx context.Context) context.Context {
+	return httpx.SetPrecognition(ctx)
+}
+
 // SetLocale stores the resolved locale in the request context. This is
 // typically called by the i18n middleware, not by application code.
 // Delegates to httpx.SetLocale.

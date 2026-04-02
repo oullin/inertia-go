@@ -121,6 +121,13 @@ func NewFromTemplate(t *template.Template, opts ...Option) (*Inertia, error) {
 }
 
 func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component string, pageProps ...httpx.Props) error {
+	ctx := r.Context()
+
+	// Precognition requests return validation-only responses.
+	if httpx.IsPrecognition(ctx) {
+		return i.renderPrecognition(w, r)
+	}
+
 	merged := i.mergeProps(r, pageProps...)
 
 	result, err := props.Resolve(r, component, merged)
@@ -155,8 +162,6 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 	finalHead := i.head
 	i.mu.RUnlock()
 
-	ctx := r.Context()
-
 	if locale := httpx.LocaleFromContext(ctx); locale != nil {
 		finalHead = httpx.MergeHead(finalHead, locale.Head)
 
@@ -186,6 +191,43 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 		ExtraData:   templateDataFromContext(ctx),
 		Head:        finalHead,
 	})
+}
+
+func (i *Inertia) renderPrecognition(w http.ResponseWriter, r *http.Request) error {
+	errors := validationErrorsFromContext(r.Context())
+
+	// Filter errors to only requested fields when Validate-Only is present.
+	if only := httpx.ValidateOnly(r); len(only) > 0 && len(errors) > 0 {
+		filtered := make(httpx.ValidationErrors, len(only))
+
+		for _, field := range only {
+			if v, ok := errors[field]; ok {
+				filtered[field] = v
+			}
+		}
+
+		errors = filtered
+	}
+
+	if len(errors) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+
+		data, err := i.jsonMarshaler.Marshal(map[string]any{"errors": errors})
+
+		if err != nil {
+			return fmt.Errorf("inertia: marshal precognition errors: %w", err)
+		}
+
+		_, err = w.Write(data)
+
+		return err
+	}
+
+	w.Header().Set(httpx.HeaderPrecognitionSuccess, "true")
+	w.WriteHeader(http.StatusNoContent)
+
+	return nil
 }
 
 func (i *Inertia) Middleware(next http.Handler) http.Handler {

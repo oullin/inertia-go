@@ -315,8 +315,9 @@ func (h *Head) ApplyEnv() {
 }
 
 var (
-	ctxKeyCSRFToken = &ctxKey{"csrfToken"}
-	ctxKeyLocale    = &ctxKey{"locale"}
+	ctxKeyCSRFToken    = &ctxKey{"csrfToken"}
+	ctxKeyLocale       = &ctxKey{"locale"}
+	ctxKeyPrecognition = &ctxKey{"precognition"}
 )
 
 // SetCSRFToken stores a CSRF token in the request context. When present,
@@ -349,4 +350,48 @@ func LocaleFromContext(ctx context.Context) *Locale {
 // client (i.e. it carries the X-Inertia header).
 func IsInertiaRequest(r *http.Request) bool {
 	return strings.TrimSpace(r.Header.Get(HeaderInertia)) == "true"
+}
+
+// SetPrecognition marks the request context as a precognition request.
+func SetPrecognition(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxKeyPrecognition, true)
+}
+
+// IsPrecognition reports whether the request context was marked as
+// a precognition request by the precognition middleware.
+func IsPrecognition(ctx context.Context) bool {
+	v, _ := ctx.Value(ctxKeyPrecognition).(bool)
+
+	return v
+}
+
+// IsPrecognitionRequest reports whether r carries the Precognition: true
+// header, indicating it is a precognition validation request.
+func IsPrecognitionRequest(r *http.Request) bool {
+	return strings.TrimSpace(r.Header.Get(HeaderPrecognition)) == "true"
+}
+
+// ValidateOnly returns the list of field names from the Validate-Only
+// header, or nil if the header is absent.
+func ValidateOnly(r *http.Request) []string {
+	header := strings.TrimSpace(r.Header.Get(HeaderValidateOnly))
+
+	if header == "" {
+		return nil
+	}
+
+	fields := strings.Split(header, ",")
+	result := make([]string, 0, len(fields))
+
+	for _, f := range fields {
+		if trimmed := strings.TrimSpace(f); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+
+	if len(result) == 0 {
+		return nil
+	}
+
+	return result
 }

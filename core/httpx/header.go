@@ -13,4 +13,9 @@ const (
 	HeaderRedirect         = "X-Inertia-Redirect"
 	HeaderErrorBag         = "X-Inertia-Error-Bag"
 	HeaderReset            = "X-Inertia-Reset"
+
+	// Precognition protocol headers.
+	HeaderPrecognition        = "Precognition"
+	HeaderPrecognitionSuccess = "Precognition-Success"
+	HeaderValidateOnly        = "Validate-Only"
 )
