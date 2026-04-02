@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/oullin/inertia-go/core/httpx"
+	"gopkg.in/yaml.v3"
 )
 
 // Option configures an Inertia instance during construction.
@@ -82,6 +83,42 @@ func WithTemplateFuncs(funcMap template.FuncMap) Option {
 func WithEncryptHistory() Option {
 	return func(i *Inertia) error {
 		i.encryptHistory = true
+
+		return nil
+	}
+}
+
+// WithHead sets default head elements rendered into {{ .inertiaHead }} on
+// every initial page load. Per-request head elements (set via SetHead,
+// SetTitle, or SetMeta) override these defaults.
+func WithHead(head httpx.Head) Option {
+	return func(i *Inertia) error {
+		i.head = head
+
+		return nil
+	}
+}
+
+// WithHeadFromFile reads a YAML file at path and sets the default head
+// elements. After parsing the YAML, environment variable overrides are
+// applied (see Head.ApplyEnv). Meta tags with empty Content serve as
+// placeholders and are excluded from rendering.
+func WithHeadFromFile(path string) Option {
+	return func(i *Inertia) error {
+		data, err := os.ReadFile(path)
+
+		if err != nil {
+			return fmt.Errorf("inertia: head file: %w", err)
+		}
+
+		var head httpx.Head
+
+		if err := yaml.Unmarshal(data, &head); err != nil {
+			return fmt.Errorf("inertia: parse head yaml: %w", err)
+		}
+
+		head.ApplyEnv()
+		i.head = head
 
 		return nil
 	}

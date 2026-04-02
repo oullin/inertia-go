@@ -16,6 +16,7 @@ type HTMLConfig struct {
 	ContainerID string
 	Marshaler   httpx.JSONMarshaler
 	ExtraData   httpx.TemplateData
+	Head        httpx.Head
 }
 
 // WriteJSON writes an Inertia JSON response for XHR visits.
@@ -61,7 +62,15 @@ func WriteHTML(w http.ResponseWriter, page *Page, cfg HTMLConfig) error {
 
 	templateData := map[string]any{
 		"inertia":     template.HTML(inertiaHTML),
-		"inertiaHead": template.HTML(""),
+		"inertiaHead": template.HTML(cfg.Head.RenderHTML()),
+	}
+
+	if cfg.Head.Lang != "" {
+		templateData["inertiaLang"] = cfg.Head.Lang
+	}
+
+	if cfg.Head.Direction != "" {
+		templateData["inertiaDir"] = cfg.Head.Direction
 	}
 
 	for k, v := range cfg.ExtraData {

@@ -27,6 +27,7 @@ type Inertia struct {
 	templateFuncs  template.FuncMap
 	jsonMarshaler  httpx.JSONMarshaler
 	logger         httpx.Logger
+	head           httpx.Head
 	mu             sync.RWMutex
 }
 
@@ -146,11 +147,44 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 		return response.WriteJSON(w, page, i.jsonMarshaler)
 	}
 
+	// Build the final head by merging three layers:
+	// 1. Global defaults (from WithHead / WithHeadFromFile)
+	// 2. Locale head (from i18n middleware via SetLocale)
+	// 3. Per-request context head (from SetHead / SetTitle / SetMeta)
+	i.mu.RLock()
+	finalHead := i.head
+	i.mu.RUnlock()
+
+	ctx := r.Context()
+
+	if locale := httpx.LocaleFromContext(ctx); locale != nil {
+		finalHead = httpx.MergeHead(finalHead, locale.Head)
+
+		if finalHead.Lang == "" {
+			finalHead.Lang = locale.Code
+		}
+
+		if finalHead.Direction == "" {
+			finalHead.Direction = locale.Direction
+		}
+	}
+
+	finalHead = httpx.MergeHead(finalHead, headFromContext(ctx))
+
+	// Auto-append CSRF token as a meta tag when present in context.
+	if token := httpx.CSRFTokenFromContext(ctx); token != "" {
+		finalHead.Meta = append(finalHead.Meta, httpx.MetaTag{
+			Name:    "csrf-token",
+			Content: token,
+		})
+	}
+
 	return response.WriteHTML(w, page, response.HTMLConfig{
 		Template:    i.rootTemplate,
 		ContainerID: i.containerID,
 		Marshaler:   i.jsonMarshaler,
-		ExtraData:   templateDataFromContext(r.Context()),
+		ExtraData:   templateDataFromContext(ctx),
+		Head:        finalHead,
 	})
 }
 
