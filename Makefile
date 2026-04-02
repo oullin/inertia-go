@@ -21,7 +21,7 @@ tidy:
 
 example:
 	pnpm turbo build --filter=@inertia-go/example
-	cd example/api && npx portless inertia-go go run ./cmd
+	cd example/api && npx portless inertia-go --force go run ./cmd
 
 seed:
 	curl -s -X POST http://localhost:8080/dashboard/seed | python3 -m json.tool

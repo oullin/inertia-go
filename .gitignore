@@ -40,6 +40,7 @@ storage/.pnpm-store/
 example/dist/
 example/app/dist/
 example/api/dist/
+example/app/.turbo/
 
 # SQLite
 *.db
@@ -56,4 +57,5 @@ example/api/dist/
 Thumbs.db
 
 .claude/settings.local.json
+.claude/.claude/launch.json
 !.claude/.gitkeep
