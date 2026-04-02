@@ -39,6 +39,35 @@ function runLocationVisit() {
       </div>
     </div>
 
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardContent class="py-4">
+          <p class="text-sm">
+            This page exercises two server-driven navigation patterns. The redirect demo sends a
+            POST that responds with a 302, which the Inertia adapter replays as a SPA visit with a
+            flash cookie. The location visit forces a full browser navigation, bypassing the XHR
+            layer entirely.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/redirects"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Redirects</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/flash-data"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Flash data</a
+            >
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
       <Card>
         <CardHeader>

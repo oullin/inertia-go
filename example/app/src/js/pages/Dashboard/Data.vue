@@ -114,6 +114,71 @@ function prefetchRoute(route) {
       </div>
     </div>
 
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardContent class="py-4">
+          <p class="text-sm">
+            This page demonstrates data loading strategies: shared props for global state, partial
+            reloads to update specific cards without replacing the full payload, deferred props that
+            resolve after the shell renders, once props that stay stable across reloads, polling for
+            live metrics, prefetching to warm routes, and load-when-visible for viewport-triggered
+            requests.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/shared-data"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Shared data</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/partial-reloads"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Partial reloads</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/deferred-props"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Deferred props</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/once-props"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Once props</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/polling"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Polling</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/prefetching"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Prefetching</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/load-when-visible"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Load when visible</a
+            >
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card class="p-4">
         <p class="text-lg font-semibold">{{ app?.name }}</p>

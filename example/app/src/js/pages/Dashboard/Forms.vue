@@ -101,6 +101,56 @@ function runOptimisticEscalation() {
       </div>
     </div>
 
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardContent class="py-4">
+          <p class="text-sm">
+            This page covers form handling with useForm for server validation error mapping,
+            multipart file uploads with redirect-back flows, useHttp for out-of-band JSON requests
+            that stay on the same page, and optimistic updates that reflect changes instantly before
+            the server confirms.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/forms"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Forms</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/validation"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Validation</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/file-uploads"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >File uploads</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/http-requests"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >HTTP requests</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/optimistic-updates"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Optimistic updates</a
+            >
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card class="p-4">
         <p class="text-2xl font-semibold">{{ approvalSummary.pending }}</p>

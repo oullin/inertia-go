@@ -45,6 +45,35 @@ function revisit(preserveMode) {
 
     <div class="px-4 lg:px-6">
       <Card>
+        <CardContent class="py-4">
+          <p class="text-sm">
+            This page tests the preserveScroll option on Inertia visits. Click "Preserve scroll" to
+            revisit the page while keeping your scroll position anchored, then click "Reset scroll"
+            to jump back to the top. The layout persistence notes show how shared layouts survive
+            page changes.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <a
+              href="https://inertiajs.com/docs/v3/advanced/scroll-management"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Scroll management</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/layouts"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Layouts</a
+            >
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <div class="px-4 lg:px-6">
+      <Card>
         <CardHeader>
           <div class="flex items-center justify-between">
             <div>

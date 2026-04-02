@@ -35,6 +35,41 @@ function setPane(nextPane) {
       <p class="text-muted-foreground text-sm">{{ pageSubtitle }}</p>
     </div>
 
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardContent class="py-4">
+          <p class="text-sm">
+            This page demonstrates declarative &lt;Link&gt; components with view transitions and
+            manual router.get() visits with preserveState and preserveScroll. Use the pane buttons
+            to see how query parameters update without a full page reload.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/links"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Links</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/manual-visits"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Manual visits</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/the-basics/view-transitions"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >View transitions</a
+            >
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card v-for="item in visitMatrix" :key="item.title">
         <CardHeader>

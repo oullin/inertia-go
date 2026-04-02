@@ -80,6 +80,56 @@ function setHistoryMode(mode) {
       </div>
     </div>
 
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardContent class="py-4">
+          <p class="text-sm">
+            This page exercises client state management and navigation lifecycle events. The
+            remembered UI controls persist locally with useRemember, once props stay stable across
+            partial reloads, and the event log captures inertia:start, success, finish, and navigate
+            as they fire. History encryption and clearing are toggled via context flags.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/remembering-state"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Remembering state</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/once-props"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Once props</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/advanced/events"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Events</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/security/history-encryption"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >History encryption</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/advanced/error-handling"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Error handling</a
+            >
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
       <Card>
         <CardHeader>

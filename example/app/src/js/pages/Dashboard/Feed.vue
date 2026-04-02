@@ -63,6 +63,49 @@ function applyFilters() {
       </div>
     </div>
 
+    <div class="px-4 lg:px-6">
+      <Card>
+        <CardContent class="py-4">
+          <p class="text-sm">
+            This page demonstrates infinite scrolling with merged props that append new items
+            without tearing the existing list. Filters are remembered locally with useRemember so
+            they survive page reloads, and partial reloads fetch only the feed data without
+            replacing the full page payload.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-3">
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/infinite-scroll"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Infinite scroll</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/merging-props"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Merging props</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/remembering-state"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Remembering state</a
+            >
+            <a
+              href="https://inertiajs.com/docs/v3/data-props/partial-reloads"
+              target="_blank"
+              rel="noreferrer"
+              class="text-sm underline"
+              >Partial reloads</a
+            >
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
