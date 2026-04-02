@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-cmd
+demo-api
 
 # Test binary, built with `go test -c`
 *.test
@@ -37,10 +37,10 @@ storage/.pnpm-store/
 .turbo/
 
 # Build output
-example/dist/
-example/app/dist/
-example/api/dist/
-example/app/.turbo/
+demo/dist/
+demo/app/dist/
+demo/api/dist/
+demo/app/.turbo/
 
 # SQLite
 *.db
@@ -56,6 +56,20 @@ example/app/.turbo/
 .DS_Store
 Thumbs.db
 
-.claude/settings.local.json
-.claude/.claude/launch.json
+.claude/*
 !.claude/.gitkeep
+
+storage/.turbo/*
+!storage/.turbo/.gitkeep
+
+storage/.cache/*
+!storage/.cache/.gitkeep
+
+storage/dist/api/*
+!storage/dist/api/.gitkeep
+
+storage/dist/app/*
+!storage/dist/app/.gitkeep
+
+.agents/*
+!.agents/.gitkeep

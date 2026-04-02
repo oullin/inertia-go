@@ -594,3 +594,121 @@ func TestWriteHTML_InertiaHeadIsEmpty(t *testing.T) {
 		t.Errorf("inertiaHead should be empty, got: %s", body)
 	}
 }
+
+func TestWriteHTML_WithHead(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(
+		`<head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body>`,
+	))
+
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+
+	w := httptest.NewRecorder()
+	err := response.WriteHTML(w, page, response.HTMLConfig{
+		Template:    tmpl,
+		ContainerID: "app",
+		Marshaler:   &testMarshaler{},
+		Head: httpx.Head{
+			Title: "Test Page",
+			Meta: []httpx.MetaTag{
+				{Name: "description", Content: "A test"},
+				{Property: "og:title", Content: "OG Test"},
+			},
+			Links: []httpx.LinkTag{
+				{Rel: "canonical", Href: "https://example.com"},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := w.Body.String()
+
+	if !contains(body, "<title>Test Page</title>") {
+		t.Errorf("missing title in head, body = %s", body)
+	}
+
+	if !contains(body, `name="description"`) {
+		t.Errorf("missing description meta, body = %s", body)
+	}
+
+	if !contains(body, `property="og:title"`) {
+		t.Errorf("missing og:title meta, body = %s", body)
+	}
+
+	if !contains(body, `rel="canonical"`) {
+		t.Errorf("missing canonical link, body = %s", body)
+	}
+}
+
+func TestWriteHTML_WithLang(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(
+		`<html lang="{{ .inertiaLang }}">{{ .inertia }}</html>`,
+	))
+
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+
+	w := httptest.NewRecorder()
+	err := response.WriteHTML(w, page, response.HTMLConfig{
+		Template:    tmpl,
+		ContainerID: "app",
+		Marshaler:   &testMarshaler{},
+		Head:        httpx.Head{Lang: "es"},
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := w.Body.String()
+
+	if !contains(body, `lang="es"`) {
+		t.Errorf("missing lang attribute, body = %s", body)
+	}
+}
+
+func TestWriteHTML_WithDir(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(
+		`<html dir="{{ .inertiaDir }}">{{ .inertia }}</html>`,
+	))
+
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+
+	w := httptest.NewRecorder()
+	err := response.WriteHTML(w, page, response.HTMLConfig{
+		Template:    tmpl,
+		ContainerID: "app",
+		Marshaler:   &testMarshaler{},
+		Head:        httpx.Head{Direction: "rtl"},
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := w.Body.String()
+
+	if !contains(body, `dir="rtl"`) {
+		t.Errorf("missing dir attribute, body = %s", body)
+	}
+}
+
+func TestWriteHTML_EmptyHeadBackwardCompat(t *testing.T) {
+	tmpl := template.Must(template.New("root").Parse(`head=[{{ .inertiaHead }}]`))
+	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
+
+	w := httptest.NewRecorder()
+	response.WriteHTML(w, page, response.HTMLConfig{
+		Template:    tmpl,
+		ContainerID: "app",
+		Marshaler:   &testMarshaler{},
+		Head:        httpx.Head{},
+	})
+
+	body := w.Body.String()
+
+	if !contains(body, "head=[]") {
+		t.Errorf("empty Head should render empty inertiaHead, got: %s", body)
+	}
+}

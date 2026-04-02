@@ -1,10 +1,5 @@
 package httpx
 
-import (
-	"net/http"
-	"strings"
-)
-
 // Props holds page properties passed to the frontend component.
 type Props map[string]any
 
@@ -28,10 +23,4 @@ type JSONMarshaler interface {
 // library's log.Logger and most structured logging packages.
 type Logger interface {
 	Printf(format string, v ...any)
-}
-
-// IsInertiaRequest reports whether r was initiated by the Inertia.js
-// client (i.e. it carries the X-Inertia header).
-func IsInertiaRequest(r *http.Request) bool {
-	return strings.TrimSpace(r.Header.Get(HeaderInertia)) == "true"
 }

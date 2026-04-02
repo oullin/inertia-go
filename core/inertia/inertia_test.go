@@ -1690,3 +1690,359 @@ func TestSetTemplateData_DoesNotAffectJSON(t *testing.T) {
 		t.Error("template data should not appear in XHR JSON response")
 	}
 }
+
+// --- Head management ---
+
+func TestWithHead_RendersDefaults(t *testing.T) {
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	i, err := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHead(httpx.Head{
+			Title: "Default Title",
+			Meta: []httpx.MetaTag{
+				{Name: "description", Content: "Default desc"},
+			},
+		}),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, "<title>Default Title</title>") {
+		t.Errorf("missing default title, body = %s", body)
+	}
+
+	if !contains(body, `name="description"`) {
+		t.Errorf("missing default description meta, body = %s", body)
+	}
+}
+
+func TestWithHeadFromFile(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/seo.yml"
+
+	os.WriteFile(path, []byte(`
+title: "YAML Title"
+lang: "en"
+meta:
+  - name: "description"
+    content: "From YAML"
+`), 0644)
+
+	tmpl := `<!DOCTYPE html><html lang="{{ .inertiaLang }}"><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	i, err := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHeadFromFile(path),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, "<title>YAML Title</title>") {
+		t.Errorf("missing YAML title, body = %s", body)
+	}
+
+	if !contains(body, `lang="en"`) {
+		t.Errorf("missing lang attribute, body = %s", body)
+	}
+
+	if !contains(body, "From YAML") {
+		t.Errorf("missing YAML description, body = %s", body)
+	}
+}
+
+func TestWithHeadFromFile_FileNotFound(t *testing.T) {
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	_, err := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHeadFromFile("/nonexistent/seo.yml"),
+	)
+
+	if err == nil {
+		t.Error("expected error for missing file")
+	}
+}
+
+func TestWithHeadFromFile_InvalidYAML(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/seo.yml"
+
+	os.WriteFile(path, []byte("title: [\ninvalid"), 0644)
+
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	_, err := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHeadFromFile(path),
+	)
+
+	if err == nil {
+		t.Error("expected error for invalid YAML")
+	}
+}
+
+func TestWithHead_ExplicitOptionWinsOverFileConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/seo.yml"
+
+	if err := os.WriteFile(path, []byte(`
+title: "YAML Title"
+meta:
+  - name: "description"
+    content: "From YAML"
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	i, err := inertia.New(tmpl,
+		inertia.WithHead(httpx.Head{
+			Title: "Explicit Title",
+			Meta: []httpx.MetaTag{
+				{Name: "description", Content: "Explicit desc"},
+			},
+		}),
+		inertia.WithHeadFromFile(path),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, "<title>Explicit Title</title>") {
+		t.Fatalf("expected explicit title to win, body = %s", body)
+	}
+
+	if contains(body, "YAML Title") {
+		t.Fatalf("did not expect YAML title override, body = %s", body)
+	}
+}
+
+func TestSetHead_OverridesDefault(t *testing.T) {
+	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	i, err := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHead(httpx.Head{
+			Title: "Default",
+			Meta: []httpx.MetaTag{
+				{Name: "description", Content: "Default desc"},
+				{Name: "robots", Content: "index, follow"},
+			},
+		}),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := inertia.SetTitle(r.Context(), "Override Title")
+	ctx = inertia.SetMeta(ctx, httpx.MetaTag{Name: "description", Content: "Override desc"})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, "<title>Override Title</title>") {
+		t.Errorf("title not overridden, body = %s", body)
+	}
+
+	if !contains(body, "Override desc") {
+		t.Errorf("description not overridden, body = %s", body)
+	}
+
+	// Robots should still be present from defaults.
+	if !contains(body, "index, follow") {
+		t.Errorf("default robots missing, body = %s", body)
+	}
+}
+
+func TestSetTitle(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := inertia.SetTitle(r.Context(), "My Title")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	if !contains(w.Body.String(), "<title>My Title</title>") {
+		t.Errorf("missing title, body = %s", w.Body.String())
+	}
+}
+
+func TestSetLang(t *testing.T) {
+	tmpl := `<!DOCTYPE html><html lang="{{ .inertiaLang }}"><body>{{ .inertia }}</body></html>`
+	i, _ := inertia.New(tmpl, inertia.WithVersion("v1"))
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := inertia.SetLang(r.Context(), "fr")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	if !contains(w.Body.String(), `lang="fr"`) {
+		t.Errorf("missing lang, body = %s", w.Body.String())
+	}
+}
+
+func TestSetMeta(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := inertia.SetMeta(r.Context(),
+		httpx.MetaTag{Property: "og:title", Content: "OG Test"},
+		httpx.MetaTag{Name: "twitter:card", Content: "summary"},
+	)
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, `property="og:title"`) {
+		t.Error("missing og:title")
+	}
+
+	if !contains(body, `name="twitter:card"`) {
+		t.Error("missing twitter:card")
+	}
+}
+
+func TestSetLinks(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := inertia.SetLinks(r.Context(),
+		httpx.LinkTag{Rel: "canonical", Href: "https://example.com/page"},
+	)
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	if !contains(w.Body.String(), `rel="canonical"`) {
+		t.Errorf("missing canonical link, body = %s", w.Body.String())
+	}
+}
+
+func TestCSRFTokenInHead(t *testing.T) {
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := inertia.SetCSRFToken(r.Context(), "test-csrf-token")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, `name="csrf-token"`) {
+		t.Errorf("missing csrf-token meta, body = %s", body)
+	}
+
+	if !contains(body, "test-csrf-token") {
+		t.Errorf("missing csrf token value, body = %s", body)
+	}
+}
+
+func TestLocaleHeadMerge(t *testing.T) {
+	tmpl := `<!DOCTYPE html><html lang="{{ .inertiaLang }}" dir="{{ .inertiaDir }}"><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+	i, _ := inertia.New(tmpl,
+		inertia.WithVersion("v1"),
+		inertia.WithHead(httpx.Head{
+			Title: "Global Default",
+			Meta: []httpx.MetaTag{
+				{Name: "robots", Content: "index, follow"},
+			},
+		}),
+	)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := inertia.SetLocale(r.Context(), &httpx.Locale{
+		Code:      "ar",
+		Name:      "Arabic",
+		Direction: "rtl",
+		Head: httpx.Head{
+			Title: "Arabic Title",
+			Meta: []httpx.MetaTag{
+				{Property: "og:locale", Content: "ar_SA"},
+			},
+		},
+	})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, `lang="ar"`) {
+		t.Errorf("missing lang=ar, body = %s", body)
+	}
+
+	if !contains(body, `dir="rtl"`) {
+		t.Errorf("missing dir=rtl, body = %s", body)
+	}
+
+	if !contains(body, "<title>Arabic Title</title>") {
+		t.Errorf("locale title not applied, body = %s", body)
+	}
+
+	// Global robots default should still be present.
+	if !contains(body, "index, follow") {
+		t.Errorf("global robots default missing, body = %s", body)
+	}
+
+	if !contains(body, "ar_SA") {
+		t.Errorf("locale og:locale missing, body = %s", body)
+	}
+}
+
+func TestHead_NotInJSON(t *testing.T) {
+	i, _ := inertia.New(testTemplate,
+		inertia.WithVersion("v1"),
+		inertia.WithHead(httpx.Head{Title: "Should Not Appear"}),
+	)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(httpx.HeaderInertia, "true")
+	r.Header.Set(httpx.HeaderVersion, "v1")
+
+	ctx := inertia.SetTitle(r.Context(), "Also Not Appear")
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if contains(body, "Should Not Appear") || contains(body, "Also Not Appear") {
+		t.Errorf("head should not appear in JSON response, body = %s", body)
+	}
+}

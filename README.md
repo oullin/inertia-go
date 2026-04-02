@@ -75,6 +75,27 @@ func main() {
 | `response/` | Page object and HTML/JSON response rendering |
 | `assert/` | `AssertableInertia` test helpers |
 
+## SEO / Head Management
+
+Server-rendered head content can be configured globally, per locale, and per request:
+
+```go
+i, err := inertia.New(templateHTML,
+    inertia.WithHeadDefaults(),
+    inertia.WithHeadFromFile("config/seo.yml"),
+)
+
+ctx := inertia.SetTitle(r.Context(), "Dashboard")
+ctx = inertia.SetMeta(ctx, httpx.MetaTag{Name: "description", Content: "Ops overview"})
+```
+
+Precedence is:
+
+- built-in defaults
+- file config
+- env overrides
+- explicit Go-side overrides (`WithHead`, `SetHead`, `SetTitle`, `SetMeta`, `SetLinks`)
+
 ## Rendering Pages
 
 ```go
@@ -174,6 +195,10 @@ Available helpers:
 | `SetClearHistory(ctx)` | Flag response to clear encrypted history |
 | `SetTemplateData(ctx, data)` | Extra data for the root HTML template |
 | `SetTemplateDatum(ctx, key, val)` | Add a single template data value |
+| `SetHead(ctx, head)` | Set per-request head tags and attributes |
+| `SetTitle(ctx, title)` | Set the page title |
+| `SetMeta(ctx, tags...)` | Add or override meta tags |
+| `SetLinks(ctx, links...)` | Add or override link tags |
 
 ## Redirects
 
@@ -185,6 +210,41 @@ i.Back(w, r)                           // Redirect to Referer (fallback: "/")
 
 i.Location(w, r, "https://external.com") // 409 + X-Inertia-Location for Inertia requests
 ```
+
+## Precognition
+
+Precognitive requests use the `Precognition: true` and `Validate-Only` headers. The middleware marks the request, while `Render` and `HandlePrecognition` write the validation-only response:
+
+```go
+handler := middleware.Precognition()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    if len(errors) > 0 {
+        ctx := inertia.SetValidationErrors(r.Context(), errors)
+        _ = i.Render(w, r.WithContext(ctx), "Users/Form")
+        return
+    }
+
+    if handled, err := i.HandlePrecognition(w, r); handled {
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+        }
+        return
+    }
+
+    // perform mutation side effects here
+}))
+```
+
+Use `HandlePrecognition` before mutating state in successful precognitive flows.
+
+## Request Forgery Protection
+
+The CSRF middleware now mirrors Laravel 13's two-layer approach:
+
+- allow same-origin requests immediately via `Sec-Fetch-Site`
+- optionally allow same-site requests
+- fall back to `_token`, `X-CSRF-TOKEN`, or `X-XSRF-TOKEN`
+
+`XSRF-TOKEN` cookies use Laravel-compatible encrypted values and accept URL-encoded `X-XSRF-TOKEN` headers.
 
 ## Options
 
@@ -239,7 +299,7 @@ result := assert.AssertFromReader(t, resp.Body)
 The root HTML template receives two special variables:
 
 - `{{ .inertia }}` -- A `<script type="application/json">` element with page data, followed by the container div
-- `{{ .inertiaHead }}` -- SSR head content (empty until SSR is configured)
+- `{{ .inertiaHead }}` -- Server-rendered head content assembled from defaults, locale config, and per-request overrides
 
 ```html
 <!DOCTYPE html>
@@ -256,13 +316,13 @@ The root HTML template receives two special variables:
 </html>
 ```
 
-## Example App
+## Demo App
 
-The `example/` directory contains a full working app with Go + Vue 3 + Vite:
+The `demo/` directory contains a full working app with Go + Vue 3 + Vite:
 
 ```bash
 # From the repository root
-make example
+make demo
 ```
 
 Then visit `http://localhost:8080`.

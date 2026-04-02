@@ -6,11 +6,20 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
+type headSource uint8
+
 // Option configures an Inertia instance during construction.
 type Option func(*Inertia) error
+
+const (
+	headSourceNone headSource = iota
+	headSourceConfig
+	headSourceExplicit
+)
 
 // WithVersion sets a static asset version string.
 func WithVersion(version string) Option {
@@ -82,6 +91,58 @@ func WithTemplateFuncs(funcMap template.FuncMap) Option {
 func WithEncryptHistory() Option {
 	return func(i *Inertia) error {
 		i.encryptHistory = true
+
+		return nil
+	}
+}
+
+// WithHead sets default head elements rendered into {{ .inertiaHead }} on
+// every initial page load. Per-request head elements (set via SetHead,
+// SetTitle, or SetMeta) override these defaults.
+func WithHead(head httpx.Head) Option {
+	return func(i *Inertia) error {
+		i.head = head
+		i.headSource = headSourceExplicit
+
+		return nil
+	}
+}
+
+// WithHeadDefaults sets default head elements from the built-in defaults.
+// Environment variable overrides (INERTIA_SEO_*) are applied. Meta tags
+// with empty Content serve as placeholders and are excluded from rendering.
+func WithHeadDefaults() Option {
+	return func(i *Inertia) error {
+		if i.headSource == headSourceExplicit {
+			return nil
+		}
+
+		i.head = config.DefaultHead()
+		i.headSource = headSourceConfig
+
+		return nil
+	}
+}
+
+// WithHeadFromFile reads a YAML file at path and sets the default head
+// elements. Defaults are applied first, then the file values are merged
+// on top, and finally environment variable overrides (INERTIA_SEO_*) are
+// applied. Meta tags with empty Content serve as placeholders and are
+// excluded from rendering.
+func WithHeadFromFile(path string) Option {
+	return func(i *Inertia) error {
+		if i.headSource == headSourceExplicit {
+			return nil
+		}
+
+		head, err := config.LoadHead(path)
+
+		if err != nil {
+			return fmt.Errorf("inertia: %w", err)
+		}
+
+		i.head = head
+		i.headSource = headSourceConfig
 
 		return nil
 	}

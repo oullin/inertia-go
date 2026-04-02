@@ -27,6 +27,8 @@ type Inertia struct {
 	templateFuncs  template.FuncMap
 	jsonMarshaler  httpx.JSONMarshaler
 	logger         httpx.Logger
+	head           httpx.Head
+	headSource     headSource
 	mu             sync.RWMutex
 }
 
@@ -120,6 +122,11 @@ func NewFromTemplate(t *template.Template, opts ...Option) (*Inertia, error) {
 }
 
 func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component string, pageProps ...httpx.Props) error {
+	if handled, err := i.HandlePrecognition(w, r); handled {
+		return err
+	}
+
+	ctx := r.Context()
 	merged := i.mergeProps(r, pageProps...)
 
 	result, err := props.Resolve(r, component, merged)
@@ -146,12 +153,90 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 		return response.WriteJSON(w, page, i.jsonMarshaler)
 	}
 
+	// Build the final head by merging three layers:
+	// 1. Global defaults (from WithHead / WithHeadFromFile)
+	// 2. Locale head (from i18n middleware via SetLocale)
+	// 3. Per-request context head (from SetHead / SetTitle / SetMeta)
+	i.mu.RLock()
+	finalHead := i.head
+	i.mu.RUnlock()
+
+	if locale := httpx.LocaleFromContext(ctx); locale != nil {
+		finalHead = httpx.MergeHead(finalHead, locale.Head)
+
+		if finalHead.Lang == "" {
+			finalHead.Lang = locale.Code
+		}
+
+		if finalHead.Direction == "" {
+			finalHead.Direction = locale.Direction
+		}
+	}
+
+	finalHead = httpx.MergeHead(finalHead, headFromContext(ctx))
+
+	// Auto-append CSRF token as a meta tag when present in context.
+	if token := httpx.CSRFTokenFromContext(ctx); token != "" {
+		finalHead.Meta = append(finalHead.Meta, httpx.MetaTag{
+			Name:    "csrf-token",
+			Content: token,
+		})
+	}
+
 	return response.WriteHTML(w, page, response.HTMLConfig{
 		Template:    i.rootTemplate,
 		ContainerID: i.containerID,
 		Marshaler:   i.jsonMarshaler,
-		ExtraData:   templateDataFromContext(r.Context()),
+		ExtraData:   templateDataFromContext(ctx),
+		Head:        finalHead,
 	})
+}
+
+// HandlePrecognition writes the validation-only response for a precognitive
+// request. It returns handled=true when the request was precognitive.
+func (i *Inertia) HandlePrecognition(w http.ResponseWriter, r *http.Request) (handled bool, err error) {
+	if !httpx.IsPrecognition(r.Context()) {
+		return false, nil
+	}
+
+	return true, i.writePrecognitionResponse(w, r)
+}
+
+func (i *Inertia) writePrecognitionResponse(w http.ResponseWriter, r *http.Request) error {
+	errors := validationErrorsFromContext(r.Context())
+	w.Header().Set(httpx.HeaderPrecognition, "true")
+
+	// Filter errors to only requested fields when Validate-Only is present.
+	if only := httpx.ValidateOnly(r); len(only) > 0 && len(errors) > 0 {
+		filtered := make(httpx.ValidationErrors, len(only))
+
+		for _, field := range only {
+			if v, ok := errors[field]; ok {
+				filtered[field] = v
+			}
+		}
+
+		errors = filtered
+	}
+
+	if len(errors) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+
+		data, err := i.jsonMarshaler.Marshal(map[string]any{"errors": errors})
+
+		if err != nil {
+			return fmt.Errorf("inertia: marshal precognition errors: %w", err)
+		}
+
+		_, err = w.Write(data)
+
+		return err
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
+	return nil
 }
 
 func (i *Inertia) Middleware(next http.Handler) http.Handler {

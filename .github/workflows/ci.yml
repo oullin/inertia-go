@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - run: cd core && go build ./...
+      - run: cd demo/api && go build ./...
+
+      - run: mkdir -p storage/.cache
+      - run: cd core && go test -race -coverprofile=${{ github.workspace }}/storage/.cache/coverage.out ./...
+      - run: cd demo/api && go test -race -coverprofile=${{ github.workspace }}/storage/.cache/coverage.out ./...
+
+      - uses: codecov/codecov-action@v4
+        with:
+          files: storage/.cache/coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}

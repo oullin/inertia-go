@@ -14,6 +14,7 @@ var (
 	ctxKeyValidationErrors = &contextKey{"validationErrors"}
 	ctxKeyEncryptHistory   = &contextKey{"encryptHistory"}
 	ctxKeyClearHistory     = &contextKey{"clearHistory"}
+	ctxKeyHead             = &contextKey{"head"}
 )
 
 // SetProp stores a single prop on the request context. Props set this
@@ -107,4 +108,64 @@ func templateDataFromContext(ctx context.Context) httpx.TemplateData {
 	}
 
 	return make(httpx.TemplateData)
+}
+
+// SetHead stores head elements on the request context. These are rendered
+// into {{ .inertiaHead }} on initial page loads. Per-request head elements
+// are merged with (and override) default head elements set via WithHead.
+func SetHead(ctx context.Context, head httpx.Head) context.Context {
+	existing := headFromContext(ctx)
+	merged := httpx.MergeHead(existing, head)
+
+	return context.WithValue(ctx, ctxKeyHead, merged)
+}
+
+// SetTitle is a convenience helper that sets only the <title> element
+// on the request context.
+func SetTitle(ctx context.Context, title string) context.Context {
+	return SetHead(ctx, httpx.Head{Title: title})
+}
+
+// SetLang is a convenience helper that sets only the lang attribute
+// on the request context.
+func SetLang(ctx context.Context, lang string) context.Context {
+	return SetHead(ctx, httpx.Head{Lang: lang})
+}
+
+// SetMeta is a convenience helper that adds meta tags to the request context.
+func SetMeta(ctx context.Context, tags ...httpx.MetaTag) context.Context {
+	return SetHead(ctx, httpx.Head{Meta: tags})
+}
+
+// SetLinks is a convenience helper that adds link tags to the request context.
+func SetLinks(ctx context.Context, links ...httpx.LinkTag) context.Context {
+	return SetHead(ctx, httpx.Head{Links: links})
+}
+
+// SetCSRFToken stores a CSRF token in the request context. When present,
+// Render automatically adds <meta name="csrf-token" content="TOKEN"> to
+// the head on initial page loads. Delegates to httpx.SetCSRFToken.
+func SetCSRFToken(ctx context.Context, token string) context.Context {
+	return httpx.SetCSRFToken(ctx, token)
+}
+
+// SetPrecognition marks the request context as a precognition request.
+// Delegates to httpx.SetPrecognition.
+func SetPrecognition(ctx context.Context) context.Context {
+	return httpx.SetPrecognition(ctx)
+}
+
+// SetLocale stores the resolved locale in the request context. This is
+// typically called by the i18n middleware, not by application code.
+// Delegates to httpx.SetLocale.
+func SetLocale(ctx context.Context, locale *httpx.Locale) context.Context {
+	return httpx.SetLocale(ctx, locale)
+}
+
+func headFromContext(ctx context.Context) httpx.Head {
+	if h, ok := ctx.Value(ctxKeyHead).(httpx.Head); ok {
+		return h
+	}
+
+	return httpx.Head{}
 }
