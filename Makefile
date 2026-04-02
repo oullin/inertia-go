@@ -6,18 +6,20 @@ GO_FMT := docker compose -f go-fmt.compose.yaml run --rm go-fmt
 format:
 	cd demo/app && npx oxfmt --write src
 	cd demo/app && npx oxlint --fix src
-	go vet $(ROOT_PATH)/...
+	go vet ./core/... ./demo/api/...
 	$(GO_FMT) format --host-path $(ROOT_PATH)/core
 	$(GO_FMT) format --host-path $(ROOT_PATH)/demo/api
 
 test:
-	go test $(ROOT_PATH)/...
+	go test ./core/... ./demo/api/...
 
 build:
-	go build $(ROOT_PATH)/...
+	go build ./core/... ./demo/api/...
 
 tidy:
-	go mod tidy
+	cd core && go mod tidy
+	cd demo/api && go mod tidy
+	go work sync
 
 demo:
 	pnpm turbo build --filter=@inertia-go/demo

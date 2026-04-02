@@ -59,3 +59,15 @@ Thumbs.db
 .claude/settings.local.json
 .claude/.claude/launch.json
 !.claude/.gitkeep
+
+storage/.turbo/*
+!storage/.turbo/.gitkeep
+
+storage/.cache/*
+!storage/.cache/.gitkeep
+
+storage/dist/api/*
+!storage/dist/api/.gitkeep
+
+storage/dist/app/*
+!storage/dist/app/.gitkeep
