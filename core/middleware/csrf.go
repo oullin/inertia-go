@@ -10,51 +10,17 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/httpx"
-	"github.com/spf13/viper"
 )
-
-// CSRFConfig holds configuration for the CSRF middleware.
-type CSRFConfig struct {
-	Secret     string `json:"secret"      yaml:"secret"      mapstructure:"secret"`
-	CookieName string `json:"cookie_name" yaml:"cookie_name" mapstructure:"cookie_name"`
-	HeaderName string `json:"header_name" yaml:"header_name" mapstructure:"header_name"`
-	Secure     bool   `json:"secure"      yaml:"secure"      mapstructure:"secure"`
-	SameSite   string `json:"same_site"   yaml:"same_site"   mapstructure:"same_site"`
-}
-
-func (c *CSRFConfig) defaults() {
-	if c.CookieName == "" {
-		c.CookieName = "_csrf_token"
-	}
-
-	if c.HeaderName == "" {
-		c.HeaderName = "X-CSRF-TOKEN"
-	}
-
-	if c.SameSite == "" {
-		c.SameSite = "lax"
-	}
-}
-
-func (c *CSRFConfig) sameSite() http.SameSite {
-	switch strings.ToLower(c.SameSite) {
-	case "strict":
-		return http.SameSiteStrictMode
-	case "none":
-		return http.SameSiteNoneMode
-	default:
-		return http.SameSiteLaxMode
-	}
-}
 
 // CSRF returns an HTTP middleware that provides CSRF protection using
 // the double-submit cookie pattern. A random token is generated and
 // stored in an HTTP-only cookie; the same token is placed in the request
 // context so the Inertia Render method can emit it as a <meta> tag.
 // Mutation requests must include the token in the X-CSRF-TOKEN header.
-func CSRF(cfg CSRFConfig) func(http.Handler) http.Handler {
-	cfg.defaults()
+func CSRF(cfg config.CSRFConfig) func(http.Handler) http.Handler {
+	cfg.Defaults()
 
 	secret := []byte(cfg.Secret)
 
@@ -72,7 +38,7 @@ func CSRF(cfg CSRFConfig) func(http.Handler) http.Handler {
 					return
 				}
 
-				setTokenCookie(w, cfg.CookieName, token, secret, cfg.Secure, cfg.sameSite())
+				setTokenCookie(w, cfg.CookieName, token, secret, cfg.Secure, cfg.SameSiteMode())
 			}
 
 			// Store the raw token in context so Render auto-appends
@@ -102,22 +68,13 @@ func CSRF(cfg CSRFConfig) func(http.Handler) http.Handler {
 }
 
 // CSRFFromFile reads a YAML config file and returns the CSRF middleware.
-// After parsing, env var overrides are applied via Viper's AutomaticEnv.
+// Defaults are applied first, then the file values are merged on top,
+// and finally env var overrides (INERTIA_CSRF_*) are applied.
 func CSRFFromFile(path string) (func(http.Handler) http.Handler, error) {
-	v := viper.New()
-	v.SetConfigFile(path)
+	cfg, err := config.LoadCSRF(path)
 
-	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("csrf: read config: %w", err)
-	}
-
-	v.SetEnvPrefix("INERTIA_CSRF")
-	v.AutomaticEnv()
-
-	var cfg CSRFConfig
-
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("csrf: parse config: %w", err)
+	if err != nil {
+		return nil, err
 	}
 
 	return CSRF(cfg), nil

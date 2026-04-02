@@ -158,7 +158,7 @@ func TestMiddleware_DetectsPrefix(t *testing.T) {
 
 	var capturedPath string
 
-	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -178,7 +178,7 @@ func TestMiddleware_DefaultLocale(t *testing.T) {
 
 	var capturedPath string
 
-	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -199,7 +199,7 @@ func TestMiddleware_StripsPrefixFromPath(t *testing.T) {
 
 	var capturedURI string
 
-	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedURI = r.RequestURI
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -220,7 +220,7 @@ func TestMiddleware_RootWithPrefix(t *testing.T) {
 
 	var capturedPath string
 
-	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -242,7 +242,7 @@ func TestMiddleware_UnknownPrefixFallsBackToDefault(t *testing.T) {
 
 	var capturedLocale *httpx.Locale
 
-	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		capturedLocale = httpx.LocaleFromContext(r.Context())
 		w.WriteHeader(http.StatusOK)
@@ -269,7 +269,7 @@ func TestMiddleware_HreflangTrimsTrailingSlash(t *testing.T) {
 
 	var capturedLocale *httpx.Locale
 
-	handler := cfg.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedLocale = httpx.LocaleFromContext(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))

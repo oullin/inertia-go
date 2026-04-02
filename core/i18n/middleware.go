@@ -5,15 +5,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
 // Middleware returns an HTTP middleware that detects the locale from the
 // URL prefix (e.g. /es/dashboard), strips the prefix, sets the locale
 // in context, and auto-generates hreflang alternate links.
-func (cfg *Config) Middleware(next http.Handler) http.Handler {
+func Middleware(cfg *config.I18nConfig, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		locale, cleanPath := cfg.resolve(r.URL.Path)
+		locale, cleanPath := resolve(cfg, r.URL.Path)
 
 		// Rewrite the URL path with the prefix stripped so downstream
 		// handlers see clean paths (e.g. /dashboard, not /es/dashboard).
@@ -26,7 +27,7 @@ func (cfg *Config) Middleware(next http.Handler) http.Handler {
 
 		// Build a shallow copy with auto-generated hreflang links appended.
 		resolved := *locale
-		resolved.Head.Links = append(resolved.Head.Links, cfg.hreflangLinks(cleanPath)...)
+		resolved.Head.Links = append(resolved.Head.Links, hreflangLinks(cfg, cleanPath)...)
 
 		ctx := r.Context()
 		ctx = httpx.SetLocale(ctx, &resolved)
@@ -38,7 +39,7 @@ func (cfg *Config) Middleware(next http.Handler) http.Handler {
 // resolve extracts the locale code from a URL-prefix path. Returns the
 // matching Locale and the path with the prefix stripped. Falls back to
 // the default locale when no prefix matches.
-func (cfg *Config) resolve(path string) (*httpx.Locale, string) {
+func resolve(cfg *config.I18nConfig, path string) (*httpx.Locale, string) {
 	if !cfg.URLPrefix {
 		return cfg.Default(), path
 	}
@@ -65,7 +66,7 @@ func (cfg *Config) resolve(path string) (*httpx.Locale, string) {
 
 // hreflangLinks builds <link rel="alternate" hreflang> tags for all
 // configured locales, using the given clean path.
-func (cfg *Config) hreflangLinks(cleanPath string) []httpx.LinkTag {
+func hreflangLinks(cfg *config.I18nConfig, cleanPath string) []httpx.LinkTag {
 	if len(cfg.Locales) <= 1 {
 		return nil
 	}

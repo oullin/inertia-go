@@ -32,11 +32,9 @@ func main() {
 		version = v
 	}
 
-	seoPath := resolveResourcePath("resources/seo.yml")
-
 	i, err = inertia.New(string(tmpl),
 		inertia.WithVersion(version),
-		inertia.WithHeadFromFile(seoPath),
+		inertia.WithHeadDefaults(),
 	)
 
 	if err != nil {
@@ -117,19 +115,4 @@ func resolveDistPath() (string, error) {
 	}
 
 	return "", fmt.Errorf("failed to locate demo app dist directory")
-}
-
-func resolveResourcePath(name string) string {
-	candidates := []string{
-		filepath.Join("demo", "api", "cmd", name),
-		name,
-	}
-
-	for _, candidate := range candidates {
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate
-		}
-	}
-
-	return name
 }

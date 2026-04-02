@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/middleware"
 )
@@ -15,7 +16,7 @@ import (
 const testSecret = "test-secret-key-for-csrf"
 
 func csrfMiddleware() func(http.Handler) http.Handler {
-	return middleware.CSRF(middleware.CSRFConfig{
+	return middleware.CSRF(config.CSRFConfig{
 		Secret: testSecret,
 	})
 }
@@ -265,7 +266,7 @@ func TestCSRFFromFile_InvalidYAML(t *testing.T) {
 }
 
 func TestCSRF_SameSiteStrict(t *testing.T) {
-	mw := middleware.CSRF(middleware.CSRFConfig{
+	mw := middleware.CSRF(config.CSRFConfig{
 		Secret:   testSecret,
 		SameSite: "strict",
 	})
@@ -284,7 +285,7 @@ func TestCSRF_SameSiteStrict(t *testing.T) {
 }
 
 func TestCSRF_SameSiteNone(t *testing.T) {
-	mw := middleware.CSRF(middleware.CSRFConfig{
+	mw := middleware.CSRF(config.CSRFConfig{
 		Secret:   testSecret,
 		SameSite: "none",
 		Secure:   true,

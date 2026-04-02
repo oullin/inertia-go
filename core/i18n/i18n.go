@@ -1,62 +1,12 @@
 package i18n
 
 import (
-	"fmt"
-
-	"github.com/oullin/inertia-go/core/httpx"
-	"github.com/spf13/viper"
+	"github.com/oullin/inertia-go/core/config"
 )
 
-// Config holds the multilanguage configuration loaded from a YAML file.
-type Config struct {
-	DefaultLocale string                   `yaml:"default_locale" mapstructure:"default_locale"`
-	URLPrefix     bool                     `yaml:"url_prefix"     mapstructure:"url_prefix"`
-	Locales       map[string]*httpx.Locale `yaml:"locales"        mapstructure:"locales"`
-}
-
-// LoadConfig reads a YAML i18n config file and applies env var overrides.
-func LoadConfig(path string) (*Config, error) {
-	v := viper.New()
-	v.SetConfigFile(path)
-
-	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("i18n: read config: %w", err)
-	}
-
-	v.SetEnvPrefix("INERTIA_I18N")
-	v.AutomaticEnv()
-
-	var cfg Config
-
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("i18n: parse config: %w", err)
-	}
-
-	// Backfill locale codes from map keys.
-	for code, locale := range cfg.Locales {
-		locale.Code = code
-	}
-
-	return &cfg, nil
-}
-
-// Lookup returns the Locale for the given code, or nil if not found.
-func (cfg *Config) Lookup(code string) *httpx.Locale {
-	return cfg.Locales[code]
-}
-
-// Default returns the default Locale.
-func (cfg *Config) Default() *httpx.Locale {
-	return cfg.Locales[cfg.DefaultLocale]
-}
-
-// Codes returns all configured locale codes.
-func (cfg *Config) Codes() []string {
-	codes := make([]string, 0, len(cfg.Locales))
-
-	for code := range cfg.Locales {
-		codes = append(codes, code)
-	}
-
-	return codes
+// LoadConfig reads a YAML i18n config file. Defaults are applied first,
+// then the file values are merged on top, and finally env var overrides
+// (INERTIA_I18N_*) are applied.
+func LoadConfig(path string) (*config.I18nConfig, error) {
+	return config.LoadI18n(path)
 }

@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/httpx"
-	"github.com/spf13/viper"
 )
 
 // Option configures an Inertia instance during construction.
@@ -99,26 +99,30 @@ func WithHead(head httpx.Head) Option {
 	}
 }
 
+// WithHeadDefaults sets default head elements from the built-in defaults.
+// Environment variable overrides (INERTIA_SEO_*) are applied. Meta tags
+// with empty Content serve as placeholders and are excluded from rendering.
+func WithHeadDefaults() Option {
+	return func(i *Inertia) error {
+		i.head = config.DefaultHead()
+
+		return nil
+	}
+}
+
 // WithHeadFromFile reads a YAML file at path and sets the default head
-// elements. After parsing the YAML, environment variable overrides are
-// applied (see Head.ApplyEnv). Meta tags with empty Content serve as
-// placeholders and are excluded from rendering.
+// elements. Defaults are applied first, then the file values are merged
+// on top, and finally environment variable overrides (INERTIA_SEO_*) are
+// applied. Meta tags with empty Content serve as placeholders and are
+// excluded from rendering.
 func WithHeadFromFile(path string) Option {
 	return func(i *Inertia) error {
-		v := viper.New()
-		v.SetConfigFile(path)
+		head, err := config.LoadHead(path)
 
-		if err := v.ReadInConfig(); err != nil {
-			return fmt.Errorf("inertia: head file: %w", err)
+		if err != nil {
+			return fmt.Errorf("inertia: %w", err)
 		}
 
-		var head httpx.Head
-
-		if err := v.Unmarshal(&head); err != nil {
-			return fmt.Errorf("inertia: parse head yaml: %w", err)
-		}
-
-		head.ApplyEnv()
 		i.head = head
 
 		return nil

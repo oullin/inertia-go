@@ -1,0 +1,84 @@
+package config
+
+import (
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/spf13/viper"
+)
+
+// CSRFConfig holds configuration for the CSRF middleware.
+type CSRFConfig struct {
+	Secret     string `json:"secret"      yaml:"secret"      mapstructure:"secret"`
+	CookieName string `json:"cookie_name" yaml:"cookie_name" mapstructure:"cookie_name"`
+	HeaderName string `json:"header_name" yaml:"header_name" mapstructure:"header_name"`
+	Secure     bool   `json:"secure"      yaml:"secure"      mapstructure:"secure"`
+	SameSite   string `json:"same_site"   yaml:"same_site"   mapstructure:"same_site"`
+}
+
+// DefaultCSRF returns a CSRFConfig with sensible defaults.
+func DefaultCSRF() CSRFConfig {
+	return CSRFConfig{
+		CookieName: "_csrf_token",
+		HeaderName: "X-CSRF-TOKEN",
+		Secure:     false,
+		SameSite:   "lax",
+	}
+}
+
+// LoadCSRF reads a YAML config file and returns a CSRFConfig. Defaults
+// are applied first, then the file values are merged on top, and finally
+// environment variable overrides (INERTIA_CSRF_*) are applied.
+func LoadCSRF(path string) (CSRFConfig, error) {
+	defaults := DefaultCSRF()
+
+	v := viper.New()
+	v.SetDefault("cookie_name", defaults.CookieName)
+	v.SetDefault("header_name", defaults.HeaderName)
+	v.SetDefault("secure", defaults.Secure)
+	v.SetDefault("same_site", defaults.SameSite)
+
+	v.SetConfigFile(path)
+
+	if err := v.ReadInConfig(); err != nil {
+		return CSRFConfig{}, fmt.Errorf("csrf: read config: %w", err)
+	}
+
+	v.SetEnvPrefix("INERTIA_CSRF")
+	v.AutomaticEnv()
+
+	var cfg CSRFConfig
+
+	if err := v.Unmarshal(&cfg); err != nil {
+		return CSRFConfig{}, fmt.Errorf("csrf: parse config: %w", err)
+	}
+
+	return cfg, nil
+}
+
+func (c *CSRFConfig) Defaults() {
+	if c.CookieName == "" {
+		c.CookieName = "_csrf_token"
+	}
+
+	if c.HeaderName == "" {
+		c.HeaderName = "X-CSRF-TOKEN"
+	}
+
+	if c.SameSite == "" {
+		c.SameSite = "lax"
+	}
+}
+
+// SameSiteMode returns the http.SameSite value for the configured SameSite string.
+func (c *CSRFConfig) SameSiteMode() http.SameSite {
+	switch strings.ToLower(c.SameSite) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
+	}
+}
