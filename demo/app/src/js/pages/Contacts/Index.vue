@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import { Badge } from "@/js/components/ui/badge";
 import { Button } from "@/js/components/ui/button";
@@ -22,6 +22,8 @@ const breadcrumbs = [{ title: "CRM" }, { title: "Contacts", href: contactRoutes.
 
 const search = ref(props.filters.search ?? "");
 const favoriteOnly = ref(Boolean(props.filters.favorite));
+const allContacts = ref([...props.contacts.data]);
+const nextCursor = ref(props.contacts.next_cursor);
 let searchTimeout;
 
 watch([search, favoriteOnly], () => {
@@ -35,26 +37,32 @@ watch([search, favoriteOnly], () => {
       only: ["contacts", "filters"],
       preserveState: true,
       preserveScroll: true,
-      reset: ["contacts"],
+      onSuccess(page) {
+        const fresh = page.props.contacts;
+        allContacts.value = [...fresh.data];
+        nextCursor.value = fresh.next_cursor;
+      },
     });
   }, 300);
 });
 
-const contactList = computed(() => props.contacts.data ?? []);
-const filteredCount = computed(() => contactList.value.length);
-
 function loadMore() {
-  if (!props.contacts.next_cursor) return;
+  if (!nextCursor.value) return;
 
   router.visit(contactRoutes.index().url, {
     data: {
       search: search.value || undefined,
       favorite: favoriteOnly.value ? "true" : undefined,
-      cursor: props.contacts.next_cursor,
+      cursor: nextCursor.value,
     },
     only: ["contacts"],
     preserveState: true,
     preserveScroll: true,
+    onSuccess(page) {
+      const fresh = page.props.contacts;
+      allContacts.value = [...allContacts.value, ...fresh.data];
+      nextCursor.value = fresh.next_cursor;
+    },
   });
 }
 </script>
@@ -65,7 +73,7 @@ function loadMore() {
       <div class="flex items-center justify-between gap-3">
         <div>
           <h2 class="text-2xl font-semibold tracking-tight">Contacts</h2>
-          <p class="text-muted-foreground text-sm">{{ filteredCount }} visible records</p>
+          <p class="text-muted-foreground text-sm">{{ allContacts.length }} visible records</p>
         </div>
         <Button as-child>
           <Link :href="contactRoutes.create().url">Add Contact</Link>
@@ -87,7 +95,7 @@ function loadMore() {
 
       <div class="space-y-2">
         <Link
-          v-for="contact in contactList"
+          v-for="contact in allContacts"
           :key="contact.id"
           :href="contactRoutes.show(contact.id).url"
           prefetch="hover"
@@ -112,12 +120,12 @@ function loadMore() {
           }}</Badge>
         </Link>
 
-        <div v-if="contactList.length === 0" class="text-muted-foreground py-12 text-center">
+        <div v-if="allContacts.length === 0" class="text-muted-foreground py-12 text-center">
           No contacts found.
         </div>
       </div>
 
-      <div v-if="contacts.next_cursor" class="flex justify-center py-4">
+      <div v-if="nextCursor" class="flex justify-center py-4">
         <Button variant="outline" @click="loadMore">Load more contacts...</Button>
       </div>
     </div>

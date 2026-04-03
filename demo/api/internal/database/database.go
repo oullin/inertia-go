@@ -116,6 +116,7 @@ func Truncate(db *sql.DB) error {
 		DELETE FROM uploads;
 		DELETE FROM approvals;
 		DELETE FROM counters;
+		DELETE FROM sqlite_sequence;
 	`)
 
 	return err

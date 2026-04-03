@@ -17,7 +17,7 @@ func (a app) useFormHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Forms/UseForm", httpx.Props{})
 	case http.MethodPost:
-		r.ParseForm()
+		httpx.ParseForm(r)
 		name := strings.TrimSpace(r.FormValue("name"))
 		email := strings.TrimSpace(r.FormValue("email"))
 
@@ -50,7 +50,7 @@ func (a app) formComponentHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Forms/FormComponent", httpx.Props{})
 	case http.MethodPost:
-		r.ParseForm()
+		httpx.ParseForm(r)
 		name := strings.TrimSpace(r.FormValue("name"))
 
 		errors := httpx.ValidationErrors{}
@@ -78,7 +78,7 @@ func (a app) fileUploadsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Forms/FileUploads", httpx.Props{})
 	case http.MethodPost:
-		r.ParseMultipartForm(32 << 20)
+		httpx.ParseForm(r)
 		files := r.MultipartForm.File["files"]
 		count := len(files)
 
@@ -98,7 +98,7 @@ func (a app) validationHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Forms/Validation", httpx.Props{})
 	case http.MethodPost:
-		r.ParseForm()
+		httpx.ParseForm(r)
 		errors := httpx.ValidationErrors{}
 
 		name := strings.TrimSpace(r.FormValue("name"))
@@ -140,7 +140,7 @@ func (a app) validationSecondaryHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	r.ParseForm()
+	httpx.ParseForm(r)
 	errors := httpx.ValidationErrors{}
 	feedback := strings.TrimSpace(r.FormValue("feedback"))
 
@@ -164,7 +164,7 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Forms/Precognition", httpx.Props{})
 	case http.MethodPost:
-		r.ParseForm()
+		httpx.ParseForm(r)
 		errors := httpx.ValidationErrors{}
 
 		username := strings.TrimSpace(r.FormValue("username"))
@@ -253,7 +253,7 @@ func (a app) dottedKeysHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Forms/DottedKeys", httpx.Props{})
 	case http.MethodPost:
-		r.ParseForm()
+		httpx.ParseForm(r)
 		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Dotted keys", Message: "Nested form data received."})
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.dotted-keys", nil))
 	default:

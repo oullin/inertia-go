@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { ref } from "vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import { Badge } from "@/js/components/ui/badge";
 import { Button } from "@/js/components/ui/button";
@@ -33,16 +33,22 @@ function submit() {
   form.post(organizationRoutes.update(props.organization.id).url);
 }
 
-const contactList = computed(() => props.contacts.data ?? []);
+const allContacts = ref([...props.contacts.data]);
+const nextCursor = ref(props.contacts.next_cursor);
 
 function loadMoreContacts() {
-  if (!props.contacts.next_cursor) return;
+  if (!nextCursor.value) return;
 
   router.visit(organizationRoutes.show(props.organization.id).url, {
-    data: { cursor: props.contacts.next_cursor },
+    data: { cursor: nextCursor.value },
     only: ["contacts"],
     preserveState: true,
     preserveScroll: true,
+    onSuccess(page) {
+      const fresh = page.props.contacts;
+      allContacts.value = [...allContacts.value, ...fresh.data];
+      nextCursor.value = fresh.next_cursor;
+    },
   });
 }
 </script>
@@ -50,6 +56,12 @@ function loadMoreContacts() {
 <template>
   <AppLayout :title="organization.name" :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-6 p-4">
+      <div>
+        <Button variant="outline" size="sm" as-child>
+          <Link :href="organizationRoutes.index().url">Back to organizations</Link>
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
           <div class="flex items-center justify-between gap-4">
@@ -77,16 +89,21 @@ function loadMoreContacts() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader class="flex flex-row items-center justify-between gap-4">
           <CardTitle>Members</CardTitle>
+          <Button size="sm" as-child>
+            <Link :href="`${contactRoutes.create().url}?organization_id=${organization.id}`"
+              >Add member</Link
+            >
+          </Button>
         </CardHeader>
         <CardContent>
-          <div v-if="contactList.length === 0" class="text-muted-foreground text-sm">
+          <div v-if="allContacts.length === 0" class="text-muted-foreground text-sm">
             No contacts in this organization.
           </div>
           <div v-else class="space-y-2">
             <Link
-              v-for="contact in contactList"
+              v-for="contact in allContacts"
               :key="contact.id"
               :href="contactRoutes.show(contact.id).url"
               class="flex items-center gap-3 rounded-lg bg-muted/30 p-3 hover:bg-muted/50"
@@ -105,7 +122,7 @@ function loadMoreContacts() {
             </Link>
           </div>
 
-          <div v-if="contacts.next_cursor" class="flex justify-center pt-4">
+          <div v-if="nextCursor" class="flex justify-center pt-4">
             <Button variant="outline" size="sm" @click="loadMoreContacts"
               >Load more members...</Button
             >

@@ -14,9 +14,9 @@ func TestContactFormValidate(t *testing.T) {
 			name: "missing required fields",
 			form: contactForm{},
 			want: map[string]string{
-				"first_name": "First name is required.",
-				"last_name":  "Last name is required.",
-				"email":      "A valid email address is required.",
+				"first_name": "The first name field is required.",
+				"last_name":  "The last name field is required.",
+				"email":      "The email field is required.",
 			},
 		},
 		{
@@ -27,7 +27,7 @@ func TestContactFormValidate(t *testing.T) {
 				Email:     "mina.example.test",
 			},
 			want: map[string]string{
-				"email": "A valid email address is required.",
+				"email": "The email field must be a valid email address.",
 			},
 		},
 		{
@@ -50,7 +50,7 @@ func TestContactFormValidate(t *testing.T) {
 			got := tt.form.validate()
 
 			if len(got) != len(tt.want) {
-				t.Fatalf("len(validate()) = %d, want %d", len(got), len(tt.want))
+				t.Fatalf("len(validate()) = %d, want %d; got=%v", len(got), len(tt.want), got)
 			}
 
 			for key, want := range tt.want {
@@ -65,7 +65,7 @@ func TestContactFormValidate(t *testing.T) {
 func TestOrganizationFormValidate(t *testing.T) {
 	t.Parallel()
 
-	if got := (organizationForm{}).validate()["name"]; got != "Organization name is required." {
+	if got := (organizationForm{}).validate()["name"]; got != "The name field is required." {
 		t.Fatalf("validate()[name] = %q", got)
 	}
 

@@ -459,13 +459,6 @@ func ListOrganizationsPaginated(db *sql.DB, search string, page int, perPage int
 	query := `
 		SELECT o.id, o.name, COUNT(c.id) AS contacts_count
 		FROM organizations o
-		LEFT JOIN contacts c ON c.id = o.id
-	`
-
-	// Actually, join on organization_id not id
-	query = `
-		SELECT o.id, o.name, COUNT(c.id) AS contacts_count
-		FROM organizations o
 		LEFT JOIN contacts c ON c.organization_id = o.id
 	`
 

@@ -21,16 +21,23 @@ const breadcrumbs = [
 ];
 
 const loading = ref(false);
+const allContacts = ref([...props.contacts.data]);
+const nextCursor = ref(props.contacts.next_cursor);
 
 function loadMore() {
-  if (!props.contacts.next_cursor || loading.value) return;
+  if (!nextCursor.value || loading.value) return;
 
   loading.value = true;
   router.reload({
-    data: { cursor: props.contacts.next_cursor },
+    data: { cursor: nextCursor.value },
     only: ["contacts"],
     preserveState: true,
     preserveScroll: true,
+    onSuccess(page) {
+      const fresh = page.props.contacts;
+      allContacts.value = [...allContacts.value, ...fresh.data];
+      nextCursor.value = fresh.next_cursor;
+    },
     onFinish() {
       loading.value = false;
     },
@@ -46,10 +53,10 @@ function loadMore() {
         description="Load more data incrementally using cursor-based pagination. Click the button below to fetch the next batch of contacts."
       />
 
-      <FeatureCard title="Contacts" :description="`Showing ${contacts.data.length} contacts`">
+      <FeatureCard title="Contacts" :description="`Showing ${allContacts.length} contacts`">
         <div class="space-y-2">
           <div
-            v-for="contact in contacts.data"
+            v-for="contact in allContacts"
             :key="contact.id ?? contact.email"
             class="flex items-center gap-3 rounded-md border p-3"
           >
@@ -67,22 +74,19 @@ function loadMore() {
             </Badge>
           </div>
 
-          <p
-            v-if="contacts.data.length === 0"
-            class="text-muted-foreground py-8 text-center text-sm"
-          >
+          <p v-if="allContacts.length === 0" class="text-muted-foreground py-8 text-center text-sm">
             No contacts found.
           </p>
         </div>
 
-        <div v-if="contacts.next_cursor" class="mt-4 flex justify-center">
+        <div v-if="nextCursor" class="mt-4 flex justify-center">
           <Button variant="outline" :disabled="loading" @click="loadMore">
             {{ loading ? "Loading..." : "Load More" }}
           </Button>
         </div>
 
         <p
-          v-else-if="contacts.data.length > 0"
+          v-else-if="allContacts.length > 0"
           class="text-muted-foreground mt-4 text-center text-sm"
         >
           All contacts loaded.

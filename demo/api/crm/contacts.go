@@ -38,8 +38,14 @@ func (a app) contactsCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	form := emptyContactForm()
+
+	if orgID := r.URL.Query().Get("organization_id"); orgID != "" {
+		form.OrganizationID = orgID
+	}
+
 	a.deps.Render(w, r, "Contacts/Create", httpx.Props{
-		"form":          contactFormProps(emptyContactForm()),
+		"form":          contactFormProps(form),
 		"organizations": organizationOptions(orgs),
 	})
 }
@@ -196,7 +202,7 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 }
 
 func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return
@@ -241,7 +247,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return
@@ -300,7 +306,7 @@ func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, conta
 }
 
 func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return

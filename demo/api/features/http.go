@@ -21,7 +21,7 @@ func (a app) useHttpApiHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.ParseForm()
+	httpx.ParseForm(r)
 	name := strings.TrimSpace(r.FormValue("name"))
 
 	if name == "" {

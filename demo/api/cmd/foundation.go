@@ -33,7 +33,7 @@ func initRoutes() {
 	routes.Group("organizations", "/organizations", func(g *wayfinder.Group) {
 		g.Add("index", "GET", "")
 		g.Add("show", "GET", "/{organization}")
-		g.Add("update", "PUT", "/{organization}")
+		g.Add("update", "POST", "/{organization}")
 	})
 
 	// Feature showcase routes

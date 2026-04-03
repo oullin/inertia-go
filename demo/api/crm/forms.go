@@ -3,24 +3,24 @@ package crm
 import (
 	"fmt"
 	"net/http"
-	"net/mail"
 	"strconv"
 	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
+	"github.com/oullin/inertia-go/core/validation"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
 type contactForm struct {
-	OrganizationID string
-	FirstName      string
-	LastName       string
-	Email          string
-	Phone          string
+	OrganizationID string `json:"organization_id"`
+	FirstName      string `json:"first_name" validate:"required,max=255"`
+	LastName       string `json:"last_name" validate:"required,max=255"`
+	Email          string `json:"email" validate:"required,email,max=255"`
+	Phone          string `json:"phone" validate:"omitempty,max=255"`
 }
 
 type organizationForm struct {
-	Name string
+	Name string `json:"name" validate:"required"`
 }
 
 func newContactForm(r *http.Request) contactForm {
@@ -53,33 +53,7 @@ func emptyContactForm() contactForm {
 }
 
 func (f contactForm) validate() httpx.ValidationErrors {
-	errors := httpx.ValidationErrors{}
-
-	if f.FirstName == "" {
-		errors["first_name"] = "First name is required."
-	} else if len(f.FirstName) > 255 {
-		errors["first_name"] = "First name must not exceed 255 characters."
-	}
-
-	if f.LastName == "" {
-		errors["last_name"] = "Last name is required."
-	} else if len(f.LastName) > 255 {
-		errors["last_name"] = "Last name must not exceed 255 characters."
-	}
-
-	if f.Email == "" {
-		errors["email"] = "A valid email address is required."
-	} else if len(f.Email) > 255 {
-		errors["email"] = "Email must not exceed 255 characters."
-	} else if _, err := mail.ParseAddress(f.Email); err != nil {
-		errors["email"] = "A valid email address is required."
-	}
-
-	if len(f.Phone) > 255 {
-		errors["phone"] = "Phone must not exceed 255 characters."
-	}
-
-	return errors
+	return validation.Validate(f)
 }
 
 func (f contactForm) record() database.Contact {
@@ -99,13 +73,7 @@ func newOrganizationForm(r *http.Request) organizationForm {
 }
 
 func (f organizationForm) validate() httpx.ValidationErrors {
-	errors := httpx.ValidationErrors{}
-
-	if f.Name == "" {
-		errors["name"] = "Organization name is required."
-	}
-
-	return errors
+	return validation.Validate(f)
 }
 
 func parseOrganizationID(raw string) *int64 {

@@ -97,7 +97,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 }
 
 func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, organizationID int64) {
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return
