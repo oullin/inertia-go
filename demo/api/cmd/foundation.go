@@ -1,21 +1,13 @@
 package main
 
 import (
-	"context"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
-	"github.com/oullin/inertia-go/demo/api/internal/database"
+	"github.com/oullin/inertia-go/demo/api/auth"
 )
-
-type ctxKey string
-
-const demoSessionCookieName = "inertia_go_demo_session"
-
-const currentUserKey ctxKey = "current_user"
 
 var demoRouteManifest = map[string]string{
 	"login":                "/login",
@@ -34,10 +26,10 @@ var demoRouteManifest = map[string]string{
 	"organizations.update": "/organizations/{organization}",
 }
 
-func withDemoProps(next http.Handler) http.Handler {
+func withDemoProps(authApp auth.App, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := loadCurrentUser(r)
-		ctx := context.WithValue(r.Context(), currentUserKey, user)
+		user := authApp.CurrentUser(r)
+		ctx := r.Context()
 		ctx = inertia.SetProps(ctx, httpx.Props{
 			"app": map[string]any{
 				"name":        "Inertia.js Kitchen Sink",
@@ -45,7 +37,7 @@ func withDemoProps(next http.Handler) http.Handler {
 				"environment": "Demo",
 			},
 			"auth": map[string]any{
-				"user": publicUser(user),
+				"user": authApp.PublicUser(user),
 			},
 			"workspace": map[string]any{
 				"name": "Inertia Go",
@@ -55,87 +47,6 @@ func withDemoProps(next http.Handler) http.Handler {
 		})
 
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func requireDemoAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if currentUser(r) == nil {
-			i.Redirect(w, r, routeURL("login", nil))
-
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func guestOnly(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if currentUser(r) != nil {
-			i.Redirect(w, r, routeURL("dashboard", nil))
-
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func currentUser(r *http.Request) *database.User {
-	if user, ok := r.Context().Value(currentUserKey).(*database.User); ok {
-		return user
-	}
-
-	return nil
-}
-
-func loadCurrentUser(r *http.Request) *database.User {
-	cookie, err := r.Cookie(demoSessionCookieName)
-
-	if err != nil || cookie.Value == "" || db == nil {
-		return nil
-	}
-
-	id, err := strconv.ParseInt(cookie.Value, 10, 64)
-
-	if err != nil {
-		return nil
-	}
-
-	user, err := database.FindUserByID(db, id)
-
-	if err != nil {
-		return nil
-	}
-
-	return user
-}
-
-func setDemoSession(w http.ResponseWriter, userID int64, remember bool) {
-	cookie := &http.Cookie{
-		Name:     demoSessionCookieName,
-		Value:    strconv.FormatInt(userID, 10),
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	}
-
-	if remember {
-		cookie.MaxAge = 60 * 60 * 24 * 30
-	}
-
-	http.SetCookie(w, cookie)
-}
-
-func clearDemoSession(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     demoSessionCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
 	})
 }
 
@@ -157,27 +68,6 @@ func renderPageWithContext(w http.ResponseWriter, r *http.Request, component str
 		default:
 			http.Error(w, "demo internal error", http.StatusInternalServerError)
 		}
-	}
-}
-
-func publicUser(user *database.User) any {
-	if user == nil {
-		return nil
-	}
-
-	initials := ""
-
-	for _, part := range strings.Fields(user.Name) {
-		if part != "" {
-			initials += strings.ToUpper(part[:1])
-		}
-	}
-
-	return map[string]any{
-		"id":       user.ID,
-		"name":     user.Name,
-		"email":    user.Email,
-		"initials": initials,
 	}
 }
 

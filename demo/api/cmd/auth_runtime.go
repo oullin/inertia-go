@@ -5,15 +5,13 @@ import (
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/demo/api/auth"
-	"github.com/oullin/inertia-go/demo/api/crm"
 	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
-func registerCRMRoutes(mux *http.ServeMux, authApp auth.App) {
-	crm.RegisterRoutes(mux, crm.Deps{
-		DB:          db,
-		RequireAuth: authApp.RequireAuth,
-		Render:      renderPage,
+func newAuthApp() auth.App {
+	return auth.New(auth.Deps{
+		DB:     db,
+		Render: renderPage,
 		RenderWithContext: func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
 			renderPageWithContext(w, r, component, pageProps)
 		},
@@ -21,13 +19,12 @@ func registerCRMRoutes(mux *http.ServeMux, authApp auth.App) {
 			i.Redirect(w, r, url)
 		},
 		RouteURL: routeURL,
-		SetFlash: func(w http.ResponseWriter, message flash.Message) {
+		SetFlash: func(w http.ResponseWriter, message auth.Flash) {
 			setFlash(w, flash.Message{
 				Kind:    message.Kind,
 				Title:   message.Title,
 				Message: message.Message,
 			})
 		},
-		CurrentUser: authApp.CurrentUser,
 	})
 }

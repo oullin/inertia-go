@@ -5,19 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-)
 
-type flashPayload struct {
-	Kind    string `json:"kind"`
-	Title   string `json:"title"`
-	Message string `json:"message"`
-}
+	"github.com/oullin/inertia-go/demo/api/internal/flash"
+)
 
 var db *sql.DB
 
 const flashCookieName = "beacon_flash"
 
-func setFlash(w http.ResponseWriter, flash flashPayload) {
+func setFlash(w http.ResponseWriter, flash flash.Message) {
 	data, _ := json.Marshal(flash)
 
 	http.SetCookie(w, &http.Cookie{
@@ -28,7 +24,7 @@ func setFlash(w http.ResponseWriter, flash flashPayload) {
 	})
 }
 
-func consumeFlash(w http.ResponseWriter, r *http.Request) map[string]any {
+func consumeFlash(w http.ResponseWriter, r *http.Request) *flash.Message {
 	cookie, err := r.Cookie(flashCookieName)
 
 	if err != nil {
@@ -48,11 +44,11 @@ func consumeFlash(w http.ResponseWriter, r *http.Request) map[string]any {
 		return nil
 	}
 
-	var payload map[string]any
+	var payload flash.Message
 
 	if err := json.Unmarshal([]byte(value), &payload); err != nil {
 		return nil
 	}
 
-	return payload
+	return &payload
 }

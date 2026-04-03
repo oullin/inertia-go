@@ -94,9 +94,10 @@ func main() {
 	)
 
 	appMux := http.NewServeMux()
-	registerAuthRoutes(appMux)
-	registerCRMRoutes(appMux)
-	mux.Handle("/", dashboardAppHandler(withDemoProps(appMux), csrfMiddleware, localeCfg))
+	authApp := newAuthApp()
+	authApp.RegisterRoutes(appMux)
+	registerCRMRoutes(appMux, authApp)
+	mux.Handle("/", dashboardAppHandler(authApp.WithCurrentUser(withDemoProps(authApp, appMux)), csrfMiddleware, localeCfg))
 
 	addr := ":8080"
 

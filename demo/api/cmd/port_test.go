@@ -12,6 +12,7 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/middleware"
+	"github.com/oullin/inertia-go/demo/api/auth"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 	"github.com/oullin/inertia-go/demo/api/internal/seed"
 )
@@ -62,7 +63,7 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 		t.Fatalf("location = %q, want %q", got, "/dashboard")
 	}
 
-	if findCookie(t, w, demoSessionCookieName).Value != "1" {
+	if findCookie(t, w, auth.SessionCookieName).Value != "1" {
 		t.Fatalf("expected session cookie for seeded user")
 	}
 }
@@ -125,7 +126,7 @@ func TestDashboardRendersForAuthenticatedUser(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 	req.Header.Set(httpx.HeaderInertia, "true")
 	req.RequestURI = "/dashboard"
-	req.AddCookie(&http.Cookie{Name: demoSessionCookieName, Value: "1"})
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -157,7 +158,7 @@ func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
-			req.AddCookie(&http.Cookie{Name: demoSessionCookieName, Value: "1"})
+			req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
 			w := httptest.NewRecorder()
 
 			testMux.ServeHTTP(w, req)
@@ -192,7 +193,7 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
 	req.AddCookie(csrfCookie)
-	req.AddCookie(&http.Cookie{Name: demoSessionCookieName, Value: "1"})
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -219,7 +220,7 @@ func TestStoreNoteAppendsActivity(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
 	req.AddCookie(csrfCookie)
-	req.AddCookie(&http.Cookie{Name: demoSessionCookieName, Value: "1"})
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -247,14 +248,15 @@ func newPortTestMux(t *testing.T) http.Handler {
 	t.Cleanup(func() { i = nil })
 
 	mux := http.NewServeMux()
-	registerAuthRoutes(mux)
-	registerCRMRoutes(mux)
+	authApp := newAuthApp()
+	authApp.RegisterRoutes(mux)
+	registerCRMRoutes(mux, authApp)
 
 	cfg := config.DefaultI18n()
 	cfg.URLPrefix = false
 
 	return dashboardAppHandler(
-		withDemoProps(mux),
+		authApp.WithCurrentUser(withDemoProps(authApp, mux)),
 		middleware.CSRF(config.CSRFConfig{}, []byte("0123456789abcdef0123456789abcdef")),
 		cfg,
 	)

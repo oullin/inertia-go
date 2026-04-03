@@ -8,6 +8,7 @@ import (
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
+	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
 func (a app) contactsHandler(w http.ResponseWriter, r *http.Request) {
@@ -209,7 +210,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.deps.SetFlash(w, Flash{
+	a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact created",
 		Message: "The CRM record is ready for follow-up.",
@@ -254,7 +255,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		return
 	}
 
-	a.deps.SetFlash(w, Flash{
+	a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact updated",
 		Message: "The CRM record now reflects the latest details.",
@@ -269,7 +270,7 @@ func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, conta
 		return
 	}
 
-	a.deps.SetFlash(w, Flash{
+	a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Favorite updated",
 		Message: "The contact pin state changed successfully.",
@@ -309,7 +310,7 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 		return
 	}
 
-	a.deps.SetFlash(w, Flash{
+	a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Note added",
 		Message: "Recent activity has been updated.",

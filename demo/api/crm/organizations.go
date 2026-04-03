@@ -7,6 +7,7 @@ import (
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
+	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
 func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +105,7 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 		return
 	}
 
-	a.deps.SetFlash(w, Flash{
+	a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Organization updated",
 		Message: "The company record was saved.",

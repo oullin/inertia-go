@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
 func TestSetFlashAndConsumeFlash(t *testing.T) {
 	w := httptest.NewRecorder()
-	setFlash(w, flashPayload{Kind: "success", Title: "Done", Message: "It worked"})
+	setFlash(w, flash.Message{Kind: "success", Title: "Done", Message: "It worked"})
 
 	flashCookie := findCookie(t, w, flashCookieName)
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
@@ -22,18 +25,40 @@ func TestSetFlashAndConsumeFlash(t *testing.T) {
 		t.Fatal("flash should be present")
 	}
 
-	if flash["kind"] != "success" {
-		t.Fatalf("kind = %v, want %q", flash["kind"], "success")
+	if flash.Kind != "success" {
+		t.Fatalf("Kind = %q, want %q", flash.Kind, "success")
 	}
 
-	if flash["title"] != "Done" {
-		t.Fatalf("title = %v, want %q", flash["title"], "Done")
+	if flash.Title != "Done" {
+		t.Fatalf("Title = %q, want %q", flash.Title, "Done")
+	}
+
+	if flash.Message != "It worked" {
+		t.Fatalf("Message = %q, want %q", flash.Message, "It worked")
 	}
 
 	cleared := findCookie(t, w2, flashCookieName)
 
 	if cleared.MaxAge != -1 {
 		t.Fatalf("MaxAge = %d, want -1", cleared.MaxAge)
+	}
+}
+
+func TestFlashMessageJSONUsesLowercaseKeys(t *testing.T) {
+	data, err := json.Marshal(flash.Message{
+		Kind:    "success",
+		Title:   "Done",
+		Message: "It worked",
+	})
+
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+
+	want := `{"kind":"success","title":"Done","message":"It worked"}`
+
+	if string(data) != want {
+		t.Fatalf("Marshal() = %s, want %s", data, want)
 	}
 }
 
