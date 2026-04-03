@@ -1,12 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { useDemoRoute } from "@/js/lib/routes";
 
-defineProps({
-  sourceTimestamp: { type: String, default: "" },
+withDefaults(defineProps<{ sourceTimestamp?: string }>(), {
+  sourceTimestamp: "",
 });
 
 const breadcrumbs = [{ title: "Features" }, { title: "Navigation" }, { title: "Instant Visits" }];
@@ -19,7 +19,7 @@ const targetRoute = useDemoRoute("features.navigation.instant-visit-target");
     <div class="flex flex-1 flex-col gap-6 p-4 lg:p-6">
       <FeatureHeader
         title="Instant Visits"
-        description="Instant visits start loading as soon as the user hovers over or focuses on a link, making navigation feel instantaneous. This is different from prefetching -- it fires the request immediately on mousedown."
+        description='Instant visits preload the target page as soon as the link renders, so navigation feels instantaneous. With prefetch="mount", the request fires immediately when the component mounts — the response is often cached before the user even clicks.'
       />
 
       <p class="text-muted-foreground text-sm">
@@ -30,7 +30,7 @@ const targetRoute = useDemoRoute("features.navigation.instant-visit-target");
       <div class="grid gap-6 lg:grid-cols-2">
         <FeatureCard
           title="Instant Visit Link"
-          description="This link fires the request on mousedown rather than waiting for click."
+          description="This link prefetches the request on mount so it's ready before you click."
         >
           <div class="flex flex-wrap gap-3">
             <Link

@@ -1,14 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import PersistentDemoLayout from "@/js/layouts/PersistentDemoLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
-function featureRoute(name) {
+function featureRoute(name: string): string {
   return page.props.routes?.[name] ?? "/";
 }
 

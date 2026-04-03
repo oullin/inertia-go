@@ -103,7 +103,7 @@ func TestRender_JSONResponse(t *testing.T) {
 	}
 
 	if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q", ct)
+		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
 	}
 
 	if resp.Header.Get(httpx.HeaderInertia) != "true" {
@@ -117,15 +117,15 @@ func TestRender_JSONResponse(t *testing.T) {
 	}
 
 	if page.Component != "Users/Index" {
-		t.Errorf("component = %q", page.Component)
+		t.Errorf("component = %q, want %q", page.Component, "Users/Index")
 	}
 
 	if page.URL != "/users" {
-		t.Errorf("url = %q", page.URL)
+		t.Errorf("url = %q, want %q", page.URL, "/users")
 	}
 
 	if page.Version != "v1" {
-		t.Errorf("version = %q", page.Version)
+		t.Errorf("version = %q, want %q", page.Version, "v1")
 	}
 }
 
@@ -149,7 +149,7 @@ func TestRender_HTMLResponse(t *testing.T) {
 	defer resp.Body.Close()
 
 	if ct := resp.Header.Get("Content-Type"); ct != "text/html; charset=utf-8" {
-		t.Errorf("Content-Type = %q", ct)
+		t.Errorf("Content-Type = %q, want %q", ct, "text/html; charset=utf-8")
 	}
 
 	body := w.Body.String()
@@ -184,7 +184,7 @@ func TestRender_NoProps(t *testing.T) {
 	}
 
 	if page.Component != "Dashboard" {
-		t.Errorf("component = %q", page.Component)
+		t.Errorf("component = %q, want %q", page.Component, "Dashboard")
 	}
 }
 
@@ -196,11 +196,11 @@ func TestSharedProps(t *testing.T) {
 	shared := i.SharedProps()
 
 	if shared["app_name"] != "TestApp" {
-		t.Errorf("app_name = %v", shared["app_name"])
+		t.Errorf("app_name = %v, want %v", shared["app_name"], "TestApp")
 	}
 
 	if shared["version"] != "1.0" {
-		t.Errorf("version = %v", shared["version"])
+		t.Errorf("version = %v, want %v", shared["version"], "1.0")
 	}
 }
 
@@ -226,11 +226,11 @@ func TestSharedProps_MergedInRender(t *testing.T) {
 	}
 
 	if page.Props["app_name"] != "TestApp" {
-		t.Errorf("shared prop app_name = %v", page.Props["app_name"])
+		t.Errorf("shared prop app_name = %v, want %v", page.Props["app_name"], "TestApp")
 	}
 
 	if page.Props["title"] != "Hello" {
-		t.Errorf("prop title = %v", page.Props["title"])
+		t.Errorf("prop title = %v, want %v", page.Props["title"], "Hello")
 	}
 }
 
@@ -259,7 +259,7 @@ func TestContextProps_MergedInRender(t *testing.T) {
 	}
 
 	if page.Props["user"] != "alice" {
-		t.Errorf("context prop user = %v", page.Props["user"])
+		t.Errorf("context prop user = %v, want %v", page.Props["user"], "alice")
 	}
 
 	if page.Props["errors"] == nil {
@@ -391,7 +391,7 @@ func TestLocation_InertiaRequest(t *testing.T) {
 	}
 
 	if loc := w.Header().Get(httpx.HeaderLocation); loc != "https://external.com" {
-		t.Errorf("X-Inertia-Location = %q", loc)
+		t.Errorf("X-Inertia-Location = %q, want %q", loc, "https://external.com")
 	}
 }
 
@@ -420,7 +420,7 @@ func TestNewFromFile(t *testing.T) {
 	}
 
 	if i.Version() != "v1" {
-		t.Errorf("Version() = %q", i.Version())
+		t.Errorf("Version() = %q, want %q", i.Version(), "v1")
 	}
 }
 
@@ -442,7 +442,7 @@ func TestNewFromReader(t *testing.T) {
 	}
 
 	if i.Version() != "v1" {
-		t.Errorf("Version() = %q", i.Version())
+		t.Errorf("Version() = %q, want %q", i.Version(), "v1")
 	}
 }
 
@@ -464,7 +464,7 @@ func TestNewFromTemplate(t *testing.T) {
 	}
 
 	if i.Version() != "v1" {
-		t.Errorf("Version() = %q", i.Version())
+		t.Errorf("Version() = %q, want %q", i.Version(), "v1")
 	}
 }
 
@@ -604,11 +604,11 @@ func TestSetProps(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&page)
 
 	if page.Props["a"] != "1" {
-		t.Errorf("prop a = %v", page.Props["a"])
+		t.Errorf("prop a = %v, want %v", page.Props["a"], "1")
 	}
 
 	if page.Props["b"] != "2" {
-		t.Errorf("prop b = %v", page.Props["b"])
+		t.Errorf("prop b = %v, want %v", page.Props["b"], "2")
 	}
 }
 
@@ -677,7 +677,7 @@ func TestSetTemplateData(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, "custom-value") {
-		t.Errorf("template data not rendered, body = %s", body)
+		t.Errorf("template data not rendered, want body to contain %q, got %s", "custom-value", body)
 	}
 }
 
@@ -702,7 +702,7 @@ func TestSetTemplateDatum(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, "single-value") {
-		t.Errorf("template datum not rendered, body = %s", body)
+		t.Errorf("template datum not rendered, want body to contain %q, got %s", "single-value", body)
 	}
 }
 
@@ -1078,11 +1078,11 @@ func TestValidationErrors_MultipleFields(t *testing.T) {
 	}
 
 	if errors["name"] != "required" {
-		t.Errorf("errors.name = %v", errors["name"])
+		t.Errorf("errors.name = %v, want %v", errors["name"], "required")
 	}
 
 	if errors["email"] != "invalid" {
-		t.Errorf("errors.email = %v", errors["email"])
+		t.Errorf("errors.email = %v, want %v", errors["email"], "invalid")
 	}
 }
 
@@ -1152,7 +1152,7 @@ func TestValidationErrors_OverridesRenderErrors(t *testing.T) {
 	}
 
 	if errors["field"] != "required" {
-		t.Errorf("errors.field = %v", errors["field"])
+		t.Errorf("errors.field = %v, want %v", errors["field"], "required")
 	}
 }
 
@@ -1428,20 +1428,20 @@ func TestRender_ScrollPropsAllFieldsInJSON(t *testing.T) {
 	scroll := page.ScrollProps["feed"]
 
 	if scroll.PageName != "feedPage" {
-		t.Errorf("pageName = %q", scroll.PageName)
+		t.Errorf("pageName = %q, want %q", scroll.PageName, "feedPage")
 	}
 
 	// JSON numbers decode as float64.
 	if scroll.CurrentPage != float64(2) {
-		t.Errorf("currentPage = %v", scroll.CurrentPage)
+		t.Errorf("currentPage = %v, want %v", scroll.CurrentPage, float64(2))
 	}
 
 	if scroll.PreviousPage != float64(1) {
-		t.Errorf("previousPage = %v", scroll.PreviousPage)
+		t.Errorf("previousPage = %v, want %v", scroll.PreviousPage, float64(1))
 	}
 
 	if scroll.NextPage != float64(3) {
-		t.Errorf("nextPage = %v", scroll.NextPage)
+		t.Errorf("nextPage = %v, want %v", scroll.NextPage, float64(3))
 	}
 }
 
@@ -1506,11 +1506,11 @@ func TestRender_OncePropsMetadataInJSON(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&page)
 
 	if page.OnceProps["notes"].Prop != "notes" {
-		t.Errorf("onceProps[notes].prop = %q", page.OnceProps["notes"].Prop)
+		t.Errorf("onceProps[notes].prop = %q, want %q", page.OnceProps["notes"].Prop, "notes")
 	}
 
 	if page.Props["notes"] != "snapshot" {
-		t.Errorf("notes = %v", page.Props["notes"])
+		t.Errorf("notes = %v, want %v", page.Props["notes"], "snapshot")
 	}
 }
 
@@ -1615,11 +1615,11 @@ func TestSetProp_MultipleCalls_Accumulate(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&page)
 
 	if page.Props["a"] != "1" {
-		t.Errorf("a = %v", page.Props["a"])
+		t.Errorf("a = %v, want %v", page.Props["a"], "1")
 	}
 
 	if page.Props["b"] != "2" {
-		t.Errorf("b = %v", page.Props["b"])
+		t.Errorf("b = %v, want %v", page.Props["b"], "2")
 	}
 }
 
@@ -1716,11 +1716,11 @@ func TestWithHead_RendersDefaults(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, "<title>Default Title</title>") {
-		t.Errorf("missing default title, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>Default Title</title>", body)
 	}
 
 	if !contains(body, `name="description"`) {
-		t.Errorf("missing default description meta, body = %s", body)
+		t.Errorf("body missing %q, got %s", `name="description"`, body)
 	}
 }
 
@@ -1753,15 +1753,15 @@ meta:
 	body := w.Body.String()
 
 	if !contains(body, "<title>YAML Title</title>") {
-		t.Errorf("missing YAML title, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>YAML Title</title>", body)
 	}
 
 	if !contains(body, `lang="en"`) {
-		t.Errorf("missing lang attribute, body = %s", body)
+		t.Errorf("body missing %q, got %s", `lang="en"`, body)
 	}
 
 	if !contains(body, "From YAML") {
-		t.Errorf("missing YAML description, body = %s", body)
+		t.Errorf("body missing %q, got %s", "From YAML", body)
 	}
 }
 
@@ -1829,11 +1829,11 @@ meta:
 	body := w.Body.String()
 
 	if !contains(body, "<title>Explicit Title</title>") {
-		t.Fatalf("expected explicit title to win, body = %s", body)
+		t.Fatalf("body missing %q, got %s", "<title>Explicit Title</title>", body)
 	}
 
 	if contains(body, "YAML Title") {
-		t.Fatalf("did not expect YAML title override, body = %s", body)
+		t.Fatalf("body should not contain %q, got %s", "YAML Title", body)
 	}
 }
 
@@ -1865,16 +1865,16 @@ func TestSetHead_OverridesDefault(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, "<title>Override Title</title>") {
-		t.Errorf("title not overridden, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>Override Title</title>", body)
 	}
 
 	if !contains(body, "Override desc") {
-		t.Errorf("description not overridden, body = %s", body)
+		t.Errorf("body missing %q, got %s", "Override desc", body)
 	}
 
 	// Robots should still be present from defaults.
 	if !contains(body, "index, follow") {
-		t.Errorf("default robots missing, body = %s", body)
+		t.Errorf("body missing %q, got %s", "index, follow", body)
 	}
 }
 
@@ -1889,7 +1889,7 @@ func TestSetTitle(t *testing.T) {
 	i.Render(w, r, "Page")
 
 	if !contains(w.Body.String(), "<title>My Title</title>") {
-		t.Errorf("missing title, body = %s", w.Body.String())
+		t.Errorf("body missing %q, got %s", "<title>My Title</title>", w.Body.String())
 	}
 }
 
@@ -1905,7 +1905,7 @@ func TestSetLang(t *testing.T) {
 	i.Render(w, r, "Page")
 
 	if !contains(w.Body.String(), `lang="fr"`) {
-		t.Errorf("missing lang, body = %s", w.Body.String())
+		t.Errorf("body missing %q, got %s", `lang="fr"`, w.Body.String())
 	}
 }
 
@@ -1946,7 +1946,7 @@ func TestSetLinks(t *testing.T) {
 	i.Render(w, r, "Page")
 
 	if !contains(w.Body.String(), `rel="canonical"`) {
-		t.Errorf("missing canonical link, body = %s", w.Body.String())
+		t.Errorf("body missing %q, got %s", `rel="canonical"`, w.Body.String())
 	}
 }
 
@@ -1963,11 +1963,11 @@ func TestCSRFTokenInHead(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `name="csrf-token"`) {
-		t.Errorf("missing csrf-token meta, body = %s", body)
+		t.Errorf("body missing %q, got %s", `name="csrf-token"`, body)
 	}
 
 	if !contains(body, "test-csrf-token") {
-		t.Errorf("missing csrf token value, body = %s", body)
+		t.Errorf("body missing %q, got %s", "test-csrf-token", body)
 	}
 }
 
@@ -2003,24 +2003,24 @@ func TestLocaleHeadMerge(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `lang="ar"`) {
-		t.Errorf("missing lang=ar, body = %s", body)
+		t.Errorf("body missing %q, got %s", `lang="ar"`, body)
 	}
 
 	if !contains(body, `dir="rtl"`) {
-		t.Errorf("missing dir=rtl, body = %s", body)
+		t.Errorf("body missing %q, got %s", `dir="rtl"`, body)
 	}
 
 	if !contains(body, "<title>Arabic Title</title>") {
-		t.Errorf("locale title not applied, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>Arabic Title</title>", body)
 	}
 
 	// Global robots default should still be present.
 	if !contains(body, "index, follow") {
-		t.Errorf("global robots default missing, body = %s", body)
+		t.Errorf("body missing %q, got %s", "index, follow", body)
 	}
 
 	if !contains(body, "ar_SA") {
-		t.Errorf("locale og:locale missing, body = %s", body)
+		t.Errorf("body missing %q, got %s", "ar_SA", body)
 	}
 }
 
@@ -2043,6 +2043,6 @@ func TestHead_NotInJSON(t *testing.T) {
 	body := w.Body.String()
 
 	if contains(body, "Should Not Appear") || contains(body, "Also Not Appear") {
-		t.Errorf("head should not appear in JSON response, body = %s", body)
+		t.Errorf("head data should not appear in JSON response, got %s", body)
 	}
 }

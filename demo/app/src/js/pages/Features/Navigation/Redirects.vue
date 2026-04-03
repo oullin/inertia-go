@@ -1,28 +1,35 @@
-<script setup>
+<script setup lang="ts">
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-defineProps({
-  timestamp: { type: String, default: "" },
+withDefaults(defineProps<{ timestamp?: string }>(), {
+  timestamp: "",
 });
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Navigation" }, { title: "Redirects" }];
 
+function actionUrl(suffix: string): string {
+  const url = new URL(page.url, window.location.origin);
+  url.pathname = url.pathname.replace(/\/?$/, "/") + suffix;
+  return url.pathname;
+}
+
 function redirectBack() {
-  router.post(page.url.replace(/\/?$/, "/") + "back");
+  router.post(actionUrl("back"));
 }
 
 function redirectToRoute() {
-  router.post(page.url.replace(/\/?$/, "/") + "to-route");
+  router.post(actionUrl("to-route"));
 }
 
 function externalRedirect() {
-  router.post(page.url.replace(/\/?$/, "/") + "external");
+  router.post(actionUrl("external"));
 }
 </script>
 

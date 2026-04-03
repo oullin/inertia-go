@@ -14,10 +14,12 @@ type loginForm struct {
 }
 
 func newLoginForm(r *http.Request) loginForm {
+	remember := r.FormValue("remember")
+
 	return loginForm{
 		Email:    strings.TrimSpace(r.FormValue("email")),
 		Password: r.FormValue("password"),
-		Remember: r.FormValue("remember") == "on" || r.FormValue("remember") == "true" || r.FormValue("remember") == "1",
+		Remember: remember == "on" || remember == "true" || remember == "1",
 	}
 }
 

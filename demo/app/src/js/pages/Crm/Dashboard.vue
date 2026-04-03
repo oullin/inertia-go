@@ -1,28 +1,25 @@
-<script setup>
+<script setup lang="ts">
 import { Deferred, Link, usePoll } from "@inertiajs/vue3";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/js/components/ui/card";
 import { Skeleton } from "@/js/components/ui/skeleton";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { appRoutes, contactRoutes } from "@/js/lib/routes";
+import type { Note } from "@/js/types";
 
-defineProps({
-  totalContacts: {
-    type: Number,
-    default: undefined,
+withDefaults(
+  defineProps<{
+    totalContacts?: number;
+    totalOrganizations?: number;
+    recentNotesCount?: number;
+    recentActivity?: Note[];
+  }>(),
+  {
+    totalContacts: undefined,
+    totalOrganizations: undefined,
+    recentNotesCount: undefined,
+    recentActivity: () => [],
   },
-  totalOrganizations: {
-    type: Number,
-    default: undefined,
-  },
-  recentNotesCount: {
-    type: Number,
-    default: undefined,
-  },
-  recentActivity: {
-    type: Array,
-    default: () => [],
-  },
-});
+);
 
 usePoll(30000, { only: ["recentActivity"] });
 

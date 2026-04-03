@@ -1,15 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-defineProps({
-  timestamp: { type: String, default: "" },
-  items: { type: Array, default: () => [] },
+withDefaults(defineProps<{ timestamp?: string; items?: Array<{ id: number; title: string }> }>(), {
+  timestamp: "",
+  items: () => [],
 });
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [
   { title: "Features" },

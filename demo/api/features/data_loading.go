@@ -2,6 +2,7 @@ package features
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -19,8 +20,14 @@ func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
 		"slowStats": props.Defer(func() any {
 			time.Sleep(800 * time.Millisecond)
 
+			totalContacts, err := database.CountContacts(a.deps.DB)
+
+			if err != nil {
+				slog.Error("count contacts", "error", err)
+			}
+
 			return map[string]any{
-				"totalContacts":  database.CountContacts(a.deps.DB),
+				"totalContacts":  totalContacts,
 				"totalFavorites": 12,
 			}
 		}, "slow"),
@@ -59,7 +66,7 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 		cursor = &c
 	}
 
-	page, _ := database.ListContactsPaginated(a.deps.DB, "", false, cursor, 15)
+	page, _ := database.ListContactsPaginated(a.deps.DB, "", false, cursor, "next", 15)
 
 	items := make([]map[string]any, 0, len(page.Data))
 
@@ -108,10 +115,16 @@ func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) pollingHandler(w http.ResponseWriter, r *http.Request) {
+	contactCount, err := database.CountContacts(a.deps.DB)
+
+	if err != nil {
+		slog.Error("count contacts", "error", err)
+	}
+
 	a.deps.Render(w, r, "Features/DataLoading/Polling", httpx.Props{
 		"currentTime":  time.Now().Format(time.RFC3339),
 		"randomNumber": rand.Intn(1000),
-		"contactCount": database.CountContacts(a.deps.DB),
+		"contactCount": contactCount,
 	})
 }
 

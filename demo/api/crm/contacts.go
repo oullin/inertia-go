@@ -114,7 +114,9 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 		cursor = &c
 	}
 
-	page, err := a.service.listContactsPaginated(search, favoriteOnly, cursor)
+	direction := r.URL.Query().Get("direction")
+
+	page, err := a.service.listContactsPaginated(search, favoriteOnly, cursor, direction)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -221,7 +223,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
-		a.deps.RenderWithContext(w, r.WithContext(ctx), "Contacts/Create", httpx.Props{
+		a.deps.Render(w, r.WithContext(ctx), "Contacts/Create", httpx.Props{
 			"form":          contactFormProps(form),
 			"organizations": organizationOptions(orgs),
 		})
@@ -267,7 +269,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		}
 
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
-		a.deps.RenderWithContext(w, r.WithContext(ctx), "Contacts/Edit", httpx.Props{
+		a.deps.Render(w, r.WithContext(ctx), "Contacts/Edit", httpx.Props{
 			"contact":       contactPropValue(existing),
 			"form":          contactFormProps(form),
 			"organizations": organizationOptions(orgs),

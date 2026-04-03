@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -6,16 +6,18 @@ import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Errors" }, { title: "HTTP Exceptions" }];
 
-const lastException = ref(null);
-let removeListener;
+const lastException = ref<{ status: number; time: string } | null>(null);
+let removeListener: (() => void) | undefined;
 
 onMounted(() => {
-  removeListener = router.on("invalid", (event) => {
+  // "invalid" event exists at runtime but is not in Inertia's GlobalEventsMap types
+  removeListener = (router as any).on("invalid", (event: any) => {
     lastException.value = {
       status: event.detail?.response?.status,
       time: new Date().toLocaleTimeString(),

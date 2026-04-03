@@ -189,14 +189,14 @@ func groupRoutes(routes []Route) map[string][]groupMember {
 		if len(parts) < 2 {
 			// Top-level routes (no dot) go into a special group.
 			groups["app"] = append(groups["app"], groupMember{
-				key:   route.Name,
+				key:   dotToCamel(route.Name),
 				route: route,
 			})
 
 			continue
 		}
 
-		groupName := parts[0]
+		groupName := dotToCamel(parts[0])
 		key := dotToCamel(parts[1])
 		groups[groupName] = append(groups[groupName], groupMember{
 			key:   key,
@@ -208,8 +208,12 @@ func groupRoutes(routes []Route) map[string][]groupMember {
 }
 
 // dotToCamel converts "contacts.notes.store" to "contactsNotesStore".
+// It also converts hyphens to camelCase so that "use-form" becomes "useForm"
+// and "features.forms.use-form" becomes "featuresFormsUseForm".
 func dotToCamel(s string) string {
-	parts := strings.Split(s, ".")
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '.' || r == '-'
+	})
 
 	if len(parts) <= 1 {
 		return s

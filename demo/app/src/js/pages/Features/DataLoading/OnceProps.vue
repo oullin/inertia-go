@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { router } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -6,24 +6,20 @@ import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 
-defineProps({
-  page: {
-    type: String,
-    default: "",
+withDefaults(
+  defineProps<{
+    page?: string;
+    staticData?: Record<string, unknown>;
+    freshData?: Record<string, unknown>;
+    dynamicData?: Record<string, unknown>;
+  }>(),
+  {
+    page: "",
+    staticData: () => ({}),
+    freshData: () => ({}),
+    dynamicData: () => ({}),
   },
-  staticData: {
-    type: Object,
-    default: () => ({}),
-  },
-  freshData: {
-    type: Object,
-    default: () => ({}),
-  },
-  dynamicData: {
-    type: Object,
-    default: () => ({}),
-  },
-});
+);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Data Loading" }, { title: "Once Props" }];
 

@@ -163,6 +163,24 @@ func TestServiceCreateNoteRequiresUser(t *testing.T) {
 	}
 }
 
+func TestServiceCreateNoteRejectsEmptyBody(t *testing.T) {
+	t.Parallel()
+
+	h := newServiceTestHarness(t)
+
+	user, err := database.FindUserByID(h.db, 1)
+
+	if err != nil {
+		t.Fatalf("FindUserByID() error = %v", err)
+	}
+
+	err = h.svc.createNote(3, user, "   ")
+
+	if !errors.Is(err, errEmptyNoteBody) {
+		t.Fatalf("createNote() error = %v, want errEmptyNoteBody", err)
+	}
+}
+
 func TestServiceCreateNote(t *testing.T) {
 	t.Parallel()
 

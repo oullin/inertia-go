@@ -21,7 +21,12 @@ func (a app) useHttpApiHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.ParseForm(r)
+	if err := httpx.ParseForm(r); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+
+		return
+	}
+
 	name := strings.TrimSpace(r.FormValue("name"))
 
 	if name == "" {
@@ -29,8 +34,13 @@ func (a app) useHttpApiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"greeting":  fmt.Sprintf("Hello, %s!", name),
 		"timestamp": time.Now().Format(time.RFC3339),
-	})
+	}); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+
+		return
+	}
 }

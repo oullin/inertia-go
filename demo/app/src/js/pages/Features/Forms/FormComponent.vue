@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -16,8 +16,9 @@ import {
   SelectValue,
 } from "@/js/components/ui/select";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "Form Component" }];
 
@@ -30,7 +31,7 @@ const formData = ref({
 });
 
 const processing = ref(false);
-const errors = ref({});
+const errors = ref<Record<string, string>>({});
 const wasSuccessful = ref(false);
 
 function submit() {

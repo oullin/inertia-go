@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import { Badge } from "@/js/components/ui/badge";
@@ -6,17 +6,18 @@ import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { organizationRoutes } from "@/js/lib/routes";
+import type { OffsetPaginated, Organization } from "@/js/types";
 
-const props = defineProps({
-  organizations: {
-    type: Object,
-    default: () => ({ data: [], total: 0, per_page: 20, current_page: 1, last_page: 1 }),
+const props = withDefaults(
+  defineProps<{
+    organizations?: OffsetPaginated<Organization>;
+    filters?: { search: string };
+  }>(),
+  {
+    organizations: () => ({ data: [], total: 0, per_page: 20, current_page: 1, last_page: 1 }),
+    filters: () => ({ search: "" }),
   },
-  filters: {
-    type: Object,
-    default: () => ({ search: "" }),
-  },
-});
+);
 
 const breadcrumbs = [
   { title: "CRM" },
@@ -24,7 +25,7 @@ const breadcrumbs = [
 ];
 
 const search = ref(props.filters.search ?? "");
-let timeout;
+let timeout: ReturnType<typeof setTimeout> | undefined;
 
 watch(search, (value) => {
   clearTimeout(timeout);
@@ -42,14 +43,14 @@ watch(search, (value) => {
 const orgList = computed(() => props.organizations.data ?? []);
 
 const pages = computed(() => {
-  const result = [];
+  const result: number[] = [];
   for (let i = 1; i <= props.organizations.last_page; i++) {
     result.push(i);
   }
   return result;
 });
 
-function goToPage(page) {
+function goToPage(page: number) {
   router.visit(organizationRoutes.index().url, {
     data: {
       search: search.value || undefined,

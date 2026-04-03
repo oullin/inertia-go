@@ -1,9 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/js/components/ui/card";
 
-defineProps({
-  title: { type: String, required: true },
-  description: { type: String, default: "" },
+withDefaults(defineProps<{ title: string; description?: string }>(), {
+  description: "",
 });
 </script>
 

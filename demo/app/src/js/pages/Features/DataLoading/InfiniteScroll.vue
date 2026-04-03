@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { router } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -6,12 +6,10 @@ import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { Contact, CursorPaginated } from "@/js/types";
 
-const props = defineProps({
-  contacts: {
-    type: Object,
-    default: () => ({ data: [], next_cursor: null }),
-  },
+const props = withDefaults(defineProps<{ contacts?: CursorPaginated<Contact> }>(), {
+  contacts: () => ({ data: [], next_cursor: null }),
 });
 
 const breadcrumbs = [
@@ -21,8 +19,8 @@ const breadcrumbs = [
 ];
 
 const loading = ref(false);
-const allContacts = ref([...props.contacts.data]);
-const nextCursor = ref(props.contacts.next_cursor);
+const allContacts = ref<Contact[]>([...props.contacts.data]);
+const nextCursor = ref<string | null>(props.contacts.next_cursor);
 
 function loadMore() {
   if (!nextCursor.value || loading.value) return;
@@ -34,14 +32,14 @@ function loadMore() {
     preserveState: true,
     preserveScroll: true,
     onSuccess(page) {
-      const fresh = page.props.contacts;
+      const fresh = page.props.contacts as CursorPaginated<Contact>;
       allContacts.value = [...allContacts.value, ...fresh.data];
       nextCursor.value = fresh.next_cursor;
     },
     onFinish() {
       loading.value = false;
     },
-  });
+  } as never);
 }
 </script>
 

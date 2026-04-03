@@ -82,7 +82,9 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 		cursor = &c
 	}
 
-	contactsPage, err := a.service.listContactsByOrgPaginated(organizationID, cursor)
+	direction := r.URL.Query().Get("direction")
+
+	contactsPage, err := a.service.listContactsByOrgPaginated(organizationID, cursor, direction)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

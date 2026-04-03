@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 import { Head, Link, usePage } from "@inertiajs/vue3";
 import { IconDashboard, IconUsers, IconCode, IconFileText } from "@tabler/icons-vue";
@@ -20,23 +20,18 @@ import {
   SidebarTrigger,
 } from "@/js/components/ui/sidebar";
 import { appRoutes, contactRoutes, organizationRoutes } from "@/js/lib/routes";
+import type { Breadcrumb, NavGroup, SharedPageProps } from "@/js/types";
 
-const props = defineProps({
-  title: {
-    type: String,
-    default: "",
-  },
-  breadcrumbs: {
-    type: Array,
-    default: () => [],
-  },
+const props = withDefaults(defineProps<{ title?: string; breadcrumbs?: Breadcrumb[] }>(), {
+  title: "",
+  breadcrumbs: () => [],
 });
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 const currentPath = computed(() => String(page.url ?? "/").split("?")[0]);
 const user = computed(() => page.props.auth?.user ?? null);
 
-function featureRoute(name) {
+function featureRoute(name: string): string {
   return page.props.routes?.[name] ?? "/";
 }
 

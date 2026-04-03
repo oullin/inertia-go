@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { router } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -6,20 +6,18 @@ import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 
-defineProps({
-  notifications: {
-    type: Array,
-    default: () => [],
+withDefaults(
+  defineProps<{
+    notifications?: Array<{ id?: number; title?: string; body?: string }>;
+    activities?: Array<{ id?: number; type?: string; description?: string }>;
+    timestamp?: string;
+  }>(),
+  {
+    notifications: () => [],
+    activities: () => [],
+    timestamp: "",
   },
-  activities: {
-    type: Array,
-    default: () => [],
-  },
-  timestamp: {
-    type: String,
-    default: "",
-  },
-});
+);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Data Loading" }, { title: "Prop Merging" }];
 

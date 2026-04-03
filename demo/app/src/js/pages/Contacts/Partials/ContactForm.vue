@@ -1,4 +1,5 @@
-<script setup>
+<script setup lang="ts">
+import type { InertiaForm } from "@inertiajs/vue3";
 import InputError from "@/js/components/app/InputError.vue";
 import { Button } from "@/js/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/js/components/ui/card";
@@ -13,25 +14,20 @@ import {
 } from "@/js/components/ui/select";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { contactRoutes } from "@/js/lib/routes";
+import type { Contact, ContactFormData, SelectOption } from "@/js/types";
 
-const props = defineProps({
-  mode: {
-    type: String,
-    required: true,
+const props = withDefaults(
+  defineProps<{
+    mode: "create" | "edit";
+    form: InertiaForm<ContactFormData>;
+    contact?: Contact | null;
+    organizations?: SelectOption[];
+  }>(),
+  {
+    contact: null,
+    organizations: () => [],
   },
-  form: {
-    type: Object,
-    required: true,
-  },
-  contact: {
-    type: Object,
-    default: null,
-  },
-  organizations: {
-    type: Array,
-    default: () => [],
-  },
-});
+);
 
 const isEdit = props.mode === "edit";
 const breadcrumbs = isEdit

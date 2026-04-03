@@ -1,15 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/js/components/ui/card";
 
-defineProps({
-  title: {
-    type: String,
-    default: "Inertia.js Kitchen Sink",
-  },
-  description: {
-    type: String,
-    default: "",
-  },
+withDefaults(defineProps<{ title?: string; description?: string }>(), {
+  title: "Inertia.js Kitchen Sink",
+  description: "",
 });
 </script>
 

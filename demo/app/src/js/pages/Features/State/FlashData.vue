@@ -1,16 +1,17 @@
-<script setup>
+<script setup lang="ts">
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "State" }, { title: "Flash Data" }];
 
-function triggerFlash(kind) {
+function triggerFlash(kind: string) {
   router.post(page.url, { kind }, { preserveScroll: true });
 }
 </script>

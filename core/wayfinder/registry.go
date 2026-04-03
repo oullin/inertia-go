@@ -2,6 +2,7 @@ package wayfinder
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"sync"
 )
@@ -24,7 +25,7 @@ type Registry struct {
 // name (dot-separated) and the URL pattern.
 
 // URL resolves a named route with the given parameters. Unknown route
-// names return "/". Parameters replace {param} placeholders.
+// names return a non-navigating fallback and log a warning. Parameters replace {param} placeholders.
 
 // Manifest returns a name-to-pattern map suitable for sharing as
 // Inertia props.
@@ -89,7 +90,9 @@ func (r *Registry) URL(name string, params map[string]string) string {
 	r.mu.RUnlock()
 
 	if !ok {
-		return "/"
+		log.Printf("wayfinder: unknown route %q, returning fallback", name)
+
+		return "#!wayfinder:unknown-route"
 	}
 
 	result := route.Pattern

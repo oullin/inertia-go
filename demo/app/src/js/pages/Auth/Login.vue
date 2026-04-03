@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3";
 import InputError from "@/js/components/app/InputError.vue";
 import { Button } from "@/js/components/ui/button";
@@ -8,11 +8,8 @@ import { Label } from "@/js/components/ui/label";
 import AuthLayout from "@/js/layouts/AuthLayout.vue";
 import { appRoutes } from "@/js/lib/routes";
 
-defineProps({
-  status: {
-    type: String,
-    default: "",
-  },
+withDefaults(defineProps<{ status?: string }>(), {
+  status: "",
 });
 
 const form = useForm({

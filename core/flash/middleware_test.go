@@ -11,16 +11,12 @@ import (
 func TestMiddlewareConsumesFlash(t *testing.T) {
 	s := NewCookieStore(WithCookieName("test_flash"))
 
-	var capturedFlash any
-
 	handler := Middleware(s)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The middleware should have set the flash prop on the context.
 		// We can't directly access context props without importing inertia internals,
 		// so we verify via the cookie lifecycle instead.
 		w.WriteHeader(http.StatusOK)
 	}))
-
-	_ = capturedFlash
 
 	msg := Message{Kind: "success", Title: "Done", Message: "Created."}
 	data, _ := json.Marshal(msg)
@@ -74,6 +70,23 @@ func TestMiddlewareNoFlash(t *testing.T) {
 		if c.Name == "test_flash" {
 			t.Error("expected no flash cookie manipulation when no flash exists")
 		}
+	}
+}
+
+func TestMiddlewareNilStoreNoOp(t *testing.T) {
+	called := false
+
+	handler := Middleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if !called {
+		t.Error("expected handler to be called with nil store (no-op middleware)")
 	}
 }
 

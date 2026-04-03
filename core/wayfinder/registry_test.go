@@ -1,7 +1,11 @@
 package wayfinder
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -118,12 +122,22 @@ func TestURL(t *testing.T) {
 }
 
 func TestURLUnknownRoute(t *testing.T) {
+	var buf bytes.Buffer
+
+	log.SetOutput(&buf)
+
+	defer log.SetOutput(os.Stderr)
+
 	reg := New()
 
 	url := reg.URL("nonexistent", nil)
 
-	if url != "/" {
-		t.Errorf("expected /, got %s", url)
+	if url != "#!wayfinder:unknown-route" {
+		t.Errorf("expected #!wayfinder:unknown-route, got %s", url)
+	}
+
+	if !strings.Contains(buf.String(), `wayfinder: unknown route "nonexistent"`) {
+		t.Errorf("expected warning log, got %q", buf.String())
 	}
 }
 

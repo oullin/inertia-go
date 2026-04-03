@@ -39,7 +39,11 @@ func parseJSONForm(r *http.Request) error {
 	r.Form = make(url.Values)
 
 	if r.URL != nil {
-		qs, _ := url.ParseQuery(r.URL.RawQuery)
+		qs, err := url.ParseQuery(r.URL.RawQuery)
+
+		if err != nil {
+			return err
+		}
 
 		for k, v := range qs {
 			r.Form[k] = v

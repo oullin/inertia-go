@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { usePoll } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -6,20 +6,14 @@ import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 
-defineProps({
-  currentTime: {
-    type: String,
-    default: "",
+withDefaults(
+  defineProps<{ currentTime?: string; randomNumber?: number; contactCount?: number }>(),
+  {
+    currentTime: "",
+    randomNumber: 0,
+    contactCount: 0,
   },
-  randomNumber: {
-    type: Number,
-    default: 0,
-  },
-  contactCount: {
-    type: Number,
-    default: 0,
-  },
-});
+);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Data Loading" }, { title: "Polling" }];
 

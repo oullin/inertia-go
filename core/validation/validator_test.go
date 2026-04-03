@@ -132,6 +132,55 @@ func TestValidate_FallsBackToFormTag(t *testing.T) {
 	}
 }
 
+func TestValidate_MaxLength_AtBoundary(t *testing.T) {
+	boundary := make([]byte, 255)
+
+	for i := range boundary {
+		boundary[i] = 'a'
+	}
+
+	form := testForm{
+		Name:  string(boundary),
+		Email: "valid@example.com",
+	}
+
+	errors := Validate(form)
+
+	if errors != nil {
+		t.Errorf("expected no errors for 255-char name, got %v", errors)
+	}
+}
+
+func TestValidate_MaxLength_Phone(t *testing.T) {
+	long := make([]byte, 256)
+
+	for i := range long {
+		long[i] = '5'
+	}
+
+	form := testForm{
+		Name:  "John",
+		Email: "john@example.com",
+		Phone: string(long),
+	}
+
+	errors := Validate(form)
+
+	if errors == nil {
+		t.Fatal("expected errors for 256-char phone, got nil")
+	}
+
+	msg, ok := errors["phone"].(string)
+
+	if !ok {
+		t.Fatalf("expected string error for phone, got %T", errors["phone"])
+	}
+
+	if msg != "The phone field must not exceed 255 characters." {
+		t.Errorf("unexpected message: %s", msg)
+	}
+}
+
 func TestValidate_ReturnsNilForValidStruct(t *testing.T) {
 	form := testForm{
 		Name:  "Valid",

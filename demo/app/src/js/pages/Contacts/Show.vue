@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Link, Deferred, router, useForm } from "@inertiajs/vue3";
 import InputError from "@/js/components/app/InputError.vue";
 import { Badge } from "@/js/components/ui/badge";
@@ -8,16 +8,10 @@ import { Skeleton } from "@/js/components/ui/skeleton";
 import { Textarea } from "@/js/components/ui/textarea";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { contactRoutes } from "@/js/lib/routes";
+import type { Contact, Note } from "@/js/types";
 
-const props = defineProps({
-  contact: {
-    type: Object,
-    required: true,
-  },
-  notes: {
-    type: Array,
-    default: undefined,
-  },
+const props = withDefaults(defineProps<{ contact: Contact; notes?: Note[] }>(), {
+  notes: undefined,
 });
 
 const breadcrumbs = [

@@ -1,6 +1,9 @@
 package wayfinder
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 // Handler returns an http.Handler that serves the registry's routes
 // as JSON. This is useful as a development endpoint for Vite plugins
@@ -16,6 +19,9 @@ func Handler(reg *Registry) http.Handler {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
+
+		if _, err = w.Write(data); err != nil {
+			log.Printf("wayfinder: failed to write response: %v", err)
+		}
 	})
 }

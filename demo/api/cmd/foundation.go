@@ -139,10 +139,6 @@ func withDemoProps(authApp auth.App, next http.Handler) http.Handler {
 }
 
 func renderPage(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
-	renderPageWithContext(w, r, component, pageProps)
-}
-
-func renderPageWithContext(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
 	ctx := r.Context()
 
 	if err := i.Render(w, r.WithContext(ctx), component, pageProps); err != nil {

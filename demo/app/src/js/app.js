@@ -6,8 +6,8 @@ createInertiaApp({
   title: (title) => (title ? `${title} - Inertia.js Kitchen Sink` : "Inertia.js Kitchen Sink"),
   defaults: {
     visitOptions: (_href, options) => ({
-      preserveScroll: options?.preserveScroll ?? "errors",
       ...options,
+      preserveScroll: options?.preserveScroll ?? "errors",
     }),
   },
   resolve: (name) => {

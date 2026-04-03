@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";

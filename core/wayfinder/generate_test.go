@@ -203,6 +203,9 @@ func TestDotToCamel(t *testing.T) {
 		{"contacts.notes.store", "contactsNotesStore"},
 		{"login", "login"},
 		{"a.b.c.d", "aBCD"},
+		{"use-form", "useForm"},
+		{"forms.use-form", "formsUseForm"},
+		{"data-loading.deferred-props", "dataLoadingDeferredProps"},
 	}
 
 	for _, tt := range tests {
@@ -211,6 +214,38 @@ func TestDotToCamel(t *testing.T) {
 		if got != tt.expected {
 			t.Errorf("dotToCamel(%q) = %q, want %q", tt.input, got, tt.expected)
 		}
+	}
+}
+
+func TestGenerateHyphenatedRoutes(t *testing.T) {
+	reg := New()
+	reg.Add("features.forms.use-form", "GET", "/features/forms/use-form")
+	reg.Add("use-http", "GET", "/use-http")
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{TypeScript: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "export function featuresFormsUseForm(): RouteResult {") {
+		t.Error("expected hyphenated flat function name to be camelCased")
+	}
+
+	if !strings.Contains(output, "export function useHttp(): RouteResult {") {
+		t.Error("expected top-level hyphenated flat function name to be camelCased")
+	}
+
+	if !strings.Contains(output, "formsUseForm: (): RouteResult =>") {
+		t.Error("expected hyphenated nested key to be camelCased")
+	}
+
+	if !strings.Contains(output, "useHttp: (): RouteResult =>") {
+		t.Error("expected top-level hyphenated route in app group to be camelCased")
 	}
 }
 

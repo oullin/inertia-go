@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -7,16 +7,17 @@ import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "HTTP" }, { title: "useHttp" }];
 
 const name = ref("");
 const email = ref("");
-const response = ref(null);
+const response = ref<Record<string, unknown> | null>(null);
 const loading = ref(false);
-const error = ref(null);
+const error = ref<string | Record<string, string | string[]> | null>(null);
 
 async function submitForm() {
   loading.value = true;
@@ -37,21 +38,27 @@ async function submitForm() {
       }),
     });
 
-    const data = await res.json();
+    const contentType = res.headers.get("content-type") ?? "";
 
     if (!res.ok) {
-      error.value = data.errors ?? data.message ?? "Request failed";
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        error.value = data.errors ?? data.message ?? "Request failed";
+      } else {
+        error.value = (await res.text()) || "Request failed";
+      }
     } else {
+      const data = await res.json();
       response.value = data;
     }
   } catch (err) {
-    error.value = err.message;
+    error.value = (err as Error).message;
   } finally {
     loading.value = false;
   }
 }
 
-function getCookie(name) {
+function getCookie(cookieName: string): string {
   const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   return match ? decodeURIComponent(match[2]) : "";
 }

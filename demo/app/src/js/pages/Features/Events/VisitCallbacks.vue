@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -6,14 +6,21 @@ import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+interface CallbackLogEntry {
+  id: number;
+  name: string;
+  time: string;
+}
+
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Events" }, { title: "Visit Callbacks" }];
 
-const callbackLog = ref([]);
+const callbackLog = ref<CallbackLogEntry[]>([]);
 
-function logCallback(name) {
+function logCallback(name: string) {
   callbackLog.value.unshift({
     id: Date.now(),
     name,

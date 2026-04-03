@@ -294,7 +294,7 @@ key: "` + encodeKey(key) + `"
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status = %d", w.Code)
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 
 	// Check that it used the custom cookie name.

@@ -33,7 +33,7 @@ func (a app) useFormHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
-			a.deps.RenderWithContext(w, r.WithContext(ctx), "Features/Forms/UseForm", httpx.Props{})
+			a.deps.Render(w, r.WithContext(ctx), "Features/Forms/UseForm", httpx.Props{})
 
 			return
 		}
@@ -61,7 +61,7 @@ func (a app) formComponentHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
-			a.deps.RenderWithContext(w, r.WithContext(ctx), "Features/Forms/FormComponent", httpx.Props{})
+			a.deps.Render(w, r.WithContext(ctx), "Features/Forms/FormComponent", httpx.Props{})
 
 			return
 		}
@@ -121,7 +121,7 @@ func (a app) validationHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
-			a.deps.RenderWithContext(w, r.WithContext(ctx), "Features/Forms/Validation", httpx.Props{})
+			a.deps.Render(w, r.WithContext(ctx), "Features/Forms/Validation", httpx.Props{})
 
 			return
 		}
@@ -150,7 +150,7 @@ func (a app) validationSecondaryHandler(w http.ResponseWriter, r *http.Request) 
 
 	if len(errors) > 0 {
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
-		a.deps.RenderWithContext(w, r.WithContext(ctx), "Features/Forms/Validation", httpx.Props{})
+		a.deps.Render(w, r.WithContext(ctx), "Features/Forms/Validation", httpx.Props{})
 
 		return
 	}
@@ -190,7 +190,7 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
-			a.deps.RenderWithContext(w, r.WithContext(ctx), "Features/Forms/Precognition", httpx.Props{})
+			a.deps.Render(w, r.WithContext(ctx), "Features/Forms/Precognition", httpx.Props{})
 
 			return
 		}

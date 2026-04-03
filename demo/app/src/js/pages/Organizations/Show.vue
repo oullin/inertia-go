@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import { Badge } from "@/js/components/ui/badge";
@@ -7,17 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/js/components/ui/car
 import { Input } from "@/js/components/ui/input";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { contactRoutes, organizationRoutes } from "@/js/lib/routes";
+import type { Contact, CursorPaginated, Organization } from "@/js/types";
 
-const props = defineProps({
-  organization: {
-    type: Object,
-    required: true,
+const props = withDefaults(
+  defineProps<{ organization: Organization; contacts?: CursorPaginated<Contact> }>(),
+  {
+    contacts: () => ({ data: [], next_cursor: null }),
   },
-  contacts: {
-    type: Object,
-    default: () => ({ data: [], next_cursor: null }),
-  },
-});
+);
 
 const breadcrumbs = [
   { title: "CRM" },
@@ -33,8 +30,8 @@ function submit() {
   form.post(organizationRoutes.update(props.organization.id).url);
 }
 
-const allContacts = ref([...props.contacts.data]);
-const nextCursor = ref(props.contacts.next_cursor);
+const allContacts = ref<Contact[]>([...props.contacts.data]);
+const nextCursor = ref<string | null>(props.contacts.next_cursor);
 
 function loadMoreContacts() {
   if (!nextCursor.value) return;
@@ -45,7 +42,7 @@ function loadMoreContacts() {
     preserveState: true,
     preserveScroll: true,
     onSuccess(page) {
-      const fresh = page.props.contacts;
+      const fresh = page.props.contacts as CursorPaginated<Contact>;
       allContacts.value = [...allContacts.value, ...fresh.data];
       nextCursor.value = fresh.next_cursor;
     },

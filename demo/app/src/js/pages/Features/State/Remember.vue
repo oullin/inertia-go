@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useRemember, router, Link, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -7,10 +7,11 @@ import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
-function featureRoute(name) {
+function featureRoute(name: string): string {
   return page.props.routes?.[name] ?? "/";
 }
 
@@ -22,7 +23,7 @@ const formState = useRemember({
   message: "",
 });
 
-const counter = ref(router.restore("counter") ?? 0);
+const counter = ref<number>((router.restore("counter") as number) ?? 0);
 
 function incrementCounter() {
   counter.value++;

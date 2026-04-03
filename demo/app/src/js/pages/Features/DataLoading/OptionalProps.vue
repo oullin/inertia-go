@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Deferred, router } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -7,20 +7,18 @@ import { Badge } from "@/js/components/ui/badge";
 import { Skeleton } from "@/js/components/ui/skeleton";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 
-defineProps({
-  regularData: {
-    type: Object,
-    default: () => ({}),
+withDefaults(
+  defineProps<{
+    regularData?: Record<string, unknown>;
+    optionalData?: Record<string, unknown>;
+    deferredData?: Record<string, unknown>;
+  }>(),
+  {
+    regularData: () => ({}),
+    optionalData: undefined,
+    deferredData: undefined,
   },
-  optionalData: {
-    type: Object,
-    default: undefined,
-  },
-  deferredData: {
-    type: Object,
-    default: undefined,
-  },
-});
+);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Data Loading" }, { title: "Optional Props" }];
 

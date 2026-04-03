@@ -19,11 +19,13 @@ func Run(db *sql.DB) error {
 		return fmt.Errorf("seed users: %w", err)
 	}
 
-	if err := seedOrganizations(db); err != nil {
+	orgIDs, err := seedOrganizations(db)
+
+	if err != nil {
 		return fmt.Errorf("seed organizations: %w", err)
 	}
 
-	if err := seedContacts(db); err != nil {
+	if err := seedContacts(db, orgIDs); err != nil {
 		return fmt.Errorf("seed contacts: %w", err)
 	}
 
@@ -69,7 +71,7 @@ func seedUsers(db *sql.DB, now time.Time) error {
 	return nil
 }
 
-func seedOrganizations(db *sql.DB) error {
+func seedOrganizations(db *sql.DB) ([]int64, error) {
 	orgs := []string{
 		"Acme Ventures",
 		"Northstar Logistics",
@@ -88,16 +90,22 @@ func seedOrganizations(db *sql.DB) error {
 		"Beacon Industries",
 	}
 
+	ids := make([]int64, 0, len(orgs))
+
 	for _, org := range orgs {
-		if _, err := database.CreateOrganization(db, org); err != nil {
-			return err
+		id, err := database.CreateOrganization(db, org)
+
+		if err != nil {
+			return nil, err
 		}
+
+		ids = append(ids, id)
 	}
 
-	return nil
+	return ids, nil
 }
 
-func seedContacts(db *sql.DB) error {
+func seedContacts(db *sql.DB, orgIDs []int64) error {
 	type contactSeed struct {
 		firstName string
 		lastName  string
@@ -107,30 +115,30 @@ func seedContacts(db *sql.DB) error {
 		favorite  bool
 	}
 
-	org := func(id int64) *int64 { return &id }
+	org := func(index int) *int64 { return &orgIDs[index] }
 
 	contacts := []contactSeed{
-		// Acme Ventures (1)
-		{"Alicia", "Keys", "alicia@acme.test", "+1 555 0100", org(1), true},
-		{"Brandon", "Lee", "brandon@acme.test", "+1 555 0106", org(1), false},
-		{"Carmen", "Diaz", "carmen@acme.test", "+1 555 0107", org(1), false},
-		{"David", "Chen", "david@acme.test", "+1 555 0108", org(1), true},
-		{"Elena", "Rossi", "elena@acme.test", "+1 555 0109", org(1), false},
-		// Northstar Logistics (2)
-		{"Marcus", "Tan", "marcus@northstar.test", "+1 555 0101", org(2), false},
-		{"Fatima", "Al-Rashid", "fatima@northstar.test", "+1 555 0110", org(2), true},
-		{"George", "Nakamura", "george@northstar.test", "+1 555 0111", org(2), false},
-		{"Hannah", "Johansson", "hannah@northstar.test", "+1 555 0112", org(2), false},
-		{"Isaac", "Mbeki", "isaac@northstar.test", "+1 555 0113", org(2), false},
-		{"Jana", "Kowalski", "jana@northstar.test", "+1 555 0114", org(2), false},
-		// Juniper Labs (3)
-		{"Priya", "Singh", "priya@juniper.test", "+1 555 0102", org(3), true},
-		{"Kai", "Tanaka", "kai@juniper.test", "+1 555 0115", org(3), false},
-		{"Lena", "Vogt", "lena@juniper.test", "+1 555 0116", org(3), false},
-		{"Mateo", "Garcia", "mateo@juniper.test", "+1 555 0117", org(3), false},
-		{"Nina", "Petrov", "nina@juniper.test", "+1 555 0118", org(3), true},
-		{"Oscar", "Fernandez", "oscar@juniper.test", "+1 555 0119", org(3), false},
-		{"Paloma", "Reyes", "paloma@juniper.test", "+1 555 0120", org(3), false},
+		// Acme Ventures
+		{"Alicia", "Keys", "alicia@acme.test", "+1 555 0100", org(0), true},
+		{"Brandon", "Lee", "brandon@acme.test", "+1 555 0106", org(0), false},
+		{"Carmen", "Diaz", "carmen@acme.test", "+1 555 0107", org(0), false},
+		{"David", "Chen", "david@acme.test", "+1 555 0108", org(0), true},
+		{"Elena", "Rossi", "elena@acme.test", "+1 555 0109", org(0), false},
+		// Northstar Logistics
+		{"Marcus", "Tan", "marcus@northstar.test", "+1 555 0101", org(1), false},
+		{"Fatima", "Al-Rashid", "fatima@northstar.test", "+1 555 0110", org(1), true},
+		{"George", "Nakamura", "george@northstar.test", "+1 555 0111", org(1), false},
+		{"Hannah", "Johansson", "hannah@northstar.test", "+1 555 0112", org(1), false},
+		{"Isaac", "Mbeki", "isaac@northstar.test", "+1 555 0113", org(1), false},
+		{"Jana", "Kowalski", "jana@northstar.test", "+1 555 0114", org(1), false},
+		// Juniper Labs
+		{"Priya", "Singh", "priya@juniper.test", "+1 555 0102", org(2), true},
+		{"Kai", "Tanaka", "kai@juniper.test", "+1 555 0115", org(2), false},
+		{"Lena", "Vogt", "lena@juniper.test", "+1 555 0116", org(2), false},
+		{"Mateo", "Garcia", "mateo@juniper.test", "+1 555 0117", org(2), false},
+		{"Nina", "Petrov", "nina@juniper.test", "+1 555 0118", org(2), true},
+		{"Oscar", "Fernandez", "oscar@juniper.test", "+1 555 0119", org(2), false},
+		{"Paloma", "Reyes", "paloma@juniper.test", "+1 555 0120", org(2), false},
 		// Summit Advisory (4)
 		{"Jules", "Martin", "jules@summit.test", "+1 555 0103", org(4), false},
 		{"Quinn", "O'Brien", "quinn@summit.test", "+1 555 0121", org(4), false},
@@ -196,17 +204,17 @@ func seedContacts(db *sql.DB) error {
 		{"Rosa", "Engström", "rosa@bluebird.test", "+1 555 0171", org(13), false},
 		{"Simon", "Katz", "simon@bluebird.test", "+1 555 0172", org(13), false},
 		// Mistral Consulting (14)
-		{"Thea", "Andersen", "thea@mistral.test", "+1 555 0173", org(14), false},
-		{"Ulrich", "Bauer", "ulrich@mistral.test", "+1 555 0174", org(14), true},
-		{"Vera", "Sousa", "vera@mistral.test", "+1 555 0175", org(14), false},
-		{"Walter", "Ng", "walter@mistral.test", "+1 555 0176", org(14), false},
-		{"Ximena", "Cruz", "ximena@mistral.test", "+1 555 0177", org(14), false},
-		// Beacon Industries (15)
-		{"Yolanda", "Fischer", "yolanda@beacon.test", "+1 555 0178", org(15), false},
-		{"Zayn", "Ali", "zayn@beacon.test", "+1 555 0179", org(15), true},
-		{"Amara", "Okonkwo", "amara@beacon.test", "+1 555 0180", org(15), false},
-		{"Boris", "Volkov", "boris@beacon.test", "+1 555 0181", org(15), false},
-		{"Celine", "Morel", "celine@beacon.test", "+1 555 0182", org(15), false},
+		{"Thea", "Andersen", "thea@mistral.test", "+1 555 0173", org(13), false},
+		{"Ulrich", "Bauer", "ulrich@mistral.test", "+1 555 0174", org(13), true},
+		{"Vera", "Sousa", "vera@mistral.test", "+1 555 0175", org(13), false},
+		{"Walter", "Ng", "walter@mistral.test", "+1 555 0176", org(13), false},
+		{"Ximena", "Cruz", "ximena@mistral.test", "+1 555 0177", org(13), false},
+		// Beacon Industries
+		{"Yolanda", "Fischer", "yolanda@beacon.test", "+1 555 0178", org(14), false},
+		{"Zayn", "Ali", "zayn@beacon.test", "+1 555 0179", org(14), true},
+		{"Amara", "Okonkwo", "amara@beacon.test", "+1 555 0180", org(14), false},
+		{"Boris", "Volkov", "boris@beacon.test", "+1 555 0181", org(14), false},
+		{"Celine", "Morel", "celine@beacon.test", "+1 555 0182", org(14), false},
 		// No organization
 		{"Leo", "Park", "leo@example.test", "+1 555 0105", nil, false},
 		{"Mila", "Novak", "mila@example.test", "+1 555 0183", nil, false},
@@ -364,13 +372,7 @@ func seedNotes(db *sql.DB, now time.Time) error {
 	}
 
 	for _, note := range notes {
-		if _, err := db.Exec(
-			"INSERT INTO notes (contact_id, user_id, body, created_at) VALUES (?, ?, ?, ?)",
-			note.contactID,
-			note.userID,
-			note.body,
-			now.Add(-note.ago),
-		); err != nil {
+		if _, err := database.CreateNoteAt(db, note.contactID, note.userID, note.body, now.Add(-note.ago)); err != nil {
 			return err
 		}
 	}

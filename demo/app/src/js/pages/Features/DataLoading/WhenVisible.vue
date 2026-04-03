@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Deferred, WhenVisible } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -6,20 +6,18 @@ import { Skeleton } from "@/js/components/ui/skeleton";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 
-defineProps({
-  section1: {
-    type: Object,
-    default: undefined,
+withDefaults(
+  defineProps<{
+    section1?: Record<string, unknown>;
+    section2?: Record<string, unknown>;
+    section3?: Record<string, unknown>;
+  }>(),
+  {
+    section1: undefined,
+    section2: undefined,
+    section3: undefined,
   },
-  section2: {
-    type: Object,
-    default: undefined,
-  },
-  section3: {
-    type: Object,
-    default: undefined,
-  },
-});
+);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Data Loading" }, { title: "When Visible" }];
 </script>

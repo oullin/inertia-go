@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 import { useForm, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -7,17 +7,18 @@ import InputError from "@/js/components/app/InputError.vue";
 import { Button } from "@/js/components/ui/button";
 import { Label } from "@/js/components/ui/label";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "File Uploads" }];
 
 const form = useForm({
-  photo: null,
-  documents: [],
+  photo: null as File | null,
+  documents: [] as File[],
 });
 
-function formatSize(bytes) {
+function formatSize(bytes: number): string {
   if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -28,18 +29,18 @@ const photoName = computed(() => (form.photo ? form.photo.name : null));
 const photoSize = computed(() => (form.photo ? formatSize(form.photo.size) : null));
 
 const documentList = computed(() =>
-  Array.from(form.documents).map((f) => ({
+  Array.from(form.documents).map((f: File) => ({
     name: f.name,
     size: formatSize(f.size),
   })),
 );
 
-function onPhotoChange(e) {
-  form.photo = e.target.files[0] || null;
+function onPhotoChange(e: Event) {
+  form.photo = (e.target as HTMLInputElement).files?.[0] || null;
 }
 
-function onDocumentsChange(e) {
-  form.documents = e.target.files;
+function onDocumentsChange(e: Event) {
+  form.documents = Array.from((e.target as HTMLInputElement).files || []);
 }
 
 function submit() {

@@ -56,7 +56,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := inertia.SetValidationErrors(r.Context(), errorsByField)
-	a.deps.RenderWithContext(w, r.WithContext(ctx), "Auth/Login", httpx.Props{})
+	a.deps.Render(w, r.WithContext(ctx), "Auth/Login", httpx.Props{})
 }
 
 func (a App) logoutHandler(w http.ResponseWriter, r *http.Request) {

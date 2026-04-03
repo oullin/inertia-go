@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import { Badge } from "@/js/components/ui/badge";
@@ -6,25 +6,26 @@ import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { contactRoutes } from "@/js/lib/routes";
+import type { Contact, CursorPaginated } from "@/js/types";
 
-const props = defineProps({
-  contacts: {
-    type: Object,
-    default: () => ({ data: [], next_cursor: null, prev_cursor: null }),
+const props = withDefaults(
+  defineProps<{
+    contacts?: CursorPaginated<Contact>;
+    filters?: { search: string; favorite: boolean };
+  }>(),
+  {
+    contacts: () => ({ data: [], next_cursor: null }),
+    filters: () => ({ search: "", favorite: false }),
   },
-  filters: {
-    type: Object,
-    default: () => ({ search: "", favorite: false }),
-  },
-});
+);
 
 const breadcrumbs = [{ title: "CRM" }, { title: "Contacts", href: contactRoutes.index().url }];
 
 const search = ref(props.filters.search ?? "");
 const favoriteOnly = ref(Boolean(props.filters.favorite));
-const allContacts = ref([...props.contacts.data]);
-const nextCursor = ref(props.contacts.next_cursor);
-let searchTimeout;
+const allContacts = ref<Contact[]>([...props.contacts.data]);
+const nextCursor = ref<string | null>(props.contacts.next_cursor);
+let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
 watch([search, favoriteOnly], () => {
   clearTimeout(searchTimeout);
@@ -38,7 +39,7 @@ watch([search, favoriteOnly], () => {
       preserveState: true,
       preserveScroll: true,
       onSuccess(page) {
-        const fresh = page.props.contacts;
+        const fresh = page.props.contacts as CursorPaginated<Contact>;
         allContacts.value = [...fresh.data];
         nextCursor.value = fresh.next_cursor;
       },
@@ -59,7 +60,7 @@ function loadMore() {
     preserveState: true,
     preserveScroll: true,
     onSuccess(page) {
-      const fresh = page.props.contacts;
+      const fresh = page.props.contacts as CursorPaginated<Contact>;
       allContacts.value = [...allContacts.value, ...fresh.data];
       nextCursor.value = fresh.next_cursor;
     },

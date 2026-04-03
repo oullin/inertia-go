@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from "vue";
 import { useForm, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -8,8 +8,17 @@ import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
 import { Label } from "@/js/components/ui/label";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+type FieldName = "username" | "email" | "password" | "password_confirmation";
+
+interface FieldState {
+  touched: boolean;
+  validating: boolean;
+  valid: boolean | null;
+}
+
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "Precognition" }];
 
@@ -20,21 +29,21 @@ const form = useForm({
   password_confirmation: "",
 });
 
-const fieldStates = ref({
+const fieldStates = ref<Record<FieldName, FieldState>>({
   username: { touched: false, validating: false, valid: null },
   email: { touched: false, validating: false, valid: null },
   password: { touched: false, validating: false, valid: null },
   password_confirmation: { touched: false, validating: false, valid: null },
 });
 
-function markTouched(field) {
+function markTouched(field: FieldName) {
   fieldStates.value[field].touched = true;
 }
 
 watch(
   () => form.errors,
   (errors) => {
-    for (const field of Object.keys(fieldStates.value)) {
+    for (const field of Object.keys(fieldStates.value) as FieldName[]) {
       if (fieldStates.value[field].touched) {
         fieldStates.value[field].valid = !errors[field];
       }
@@ -47,7 +56,7 @@ function submit() {
   form.post(page.url);
 }
 
-function fieldClass(field) {
+function fieldClass(field: FieldName): string {
   const state = fieldStates.value[field];
   if (!state.touched) return "";
   if (form.errors[field]) return "border-red-500";

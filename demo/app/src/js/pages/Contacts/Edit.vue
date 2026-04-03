@@ -1,21 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { useForm } from "@inertiajs/vue3";
 import ContactForm from "./Partials/ContactForm.vue";
+import type { Contact, ContactFormData, SelectOption } from "@/js/types";
 
-const props = defineProps({
-  contact: {
-    type: Object,
-    required: true,
+const props = withDefaults(
+  defineProps<{ contact: Contact; form: ContactFormData; organizations?: SelectOption[] }>(),
+  {
+    organizations: () => [],
   },
-  form: {
-    type: Object,
-    required: true,
-  },
-  organizations: {
-    type: Array,
-    default: () => [],
-  },
-});
+);
 
 const form = useForm({ ...props.form });
 </script>

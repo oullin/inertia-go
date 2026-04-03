@@ -76,15 +76,15 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	if en.Code != "en" {
-		t.Errorf("en.Code = %q", en.Code)
+		t.Errorf("en.Code = %q, want %q", en.Code, "en")
 	}
 
 	if en.Name != "English" {
-		t.Errorf("en.Name = %q", en.Name)
+		t.Errorf("en.Name = %q, want %q", en.Name, "English")
 	}
 
 	if en.Head.Title != "My App" {
-		t.Errorf("en.Head.Title = %q", en.Head.Title)
+		t.Errorf("en.Head.Title = %q, want %q", en.Head.Title, "My App")
 	}
 
 	ar := cfg.Lookup("ar")
@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	if ar.Direction != "rtl" {
-		t.Errorf("ar.Direction = %q", ar.Direction)
+		t.Errorf("ar.Direction = %q, want %q", ar.Direction, "rtl")
 	}
 }
 
@@ -259,7 +259,7 @@ func TestMiddleware_UnknownPrefixFallsBackToDefault(t *testing.T) {
 	}
 
 	if capturedLocale == nil || capturedLocale.Code != "en" {
-		t.Errorf("expected default locale en, got %v", capturedLocale)
+		t.Errorf("locale = %v, want default locale with code %q", capturedLocale, "en")
 	}
 }
 

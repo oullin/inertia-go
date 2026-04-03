@@ -63,14 +63,8 @@ func TestSetAndConsume(t *testing.T) {
 	rec := httptest.NewRecorder()
 	s.Set(rec, msg)
 
-	cookies := rec.Result().Cookies()
-
-	if len(cookies) == 0 {
-		t.Fatal("expected a cookie to be set")
-	}
-
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.AddCookie(cookies[0])
+	req.AddCookie(findCookie(t, rec, "test_flash"))
 
 	rec2 := httptest.NewRecorder()
 	got := s.Consume(rec2, req)
@@ -91,14 +85,8 @@ func TestSetAndConsume(t *testing.T) {
 		t.Errorf("expected Message %q, got %q", msg.Message, got.Message)
 	}
 
-	deleteCookies := rec2.Result().Cookies()
-
-	if len(deleteCookies) == 0 {
-		t.Fatal("expected a delete cookie to be set")
-	}
-
-	if deleteCookies[0].MaxAge != -1 {
-		t.Errorf("expected MaxAge -1 (delete), got %d", deleteCookies[0].MaxAge)
+	if dc := findCookie(t, rec2, "test_flash"); dc.MaxAge != -1 {
+		t.Errorf("expected MaxAge -1 (delete), got %d", dc.MaxAge)
 	}
 }
 
@@ -134,9 +122,8 @@ func TestConsumeAfterConsumeReturnsNil(t *testing.T) {
 	rec := httptest.NewRecorder()
 	s.Set(rec, msg)
 
-	cookies := rec.Result().Cookies()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.AddCookie(cookies[0])
+	req.AddCookie(findCookie(t, rec, "test_flash"))
 
 	rec2 := httptest.NewRecorder()
 	first := s.Consume(rec2, req)
@@ -152,4 +139,18 @@ func TestConsumeAfterConsumeReturnsNil(t *testing.T) {
 	if second != nil {
 		t.Errorf("expected second consume to return nil, got %+v", second)
 	}
+}
+
+func findCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {
+	t.Helper()
+
+	for _, c := range w.Result().Cookies() {
+		if c.Name == name {
+			return c
+		}
+	}
+
+	t.Fatalf("cookie %q not found", name)
+
+	return nil
 }

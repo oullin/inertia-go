@@ -63,6 +63,8 @@ type Note struct {
 }
 
 func CreateUser(db *sql.DB, name, email, password string, verifiedAt *time.Time) (int64, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if err != nil {
@@ -85,6 +87,8 @@ func CreateUser(db *sql.DB, name, email, password string, verifiedAt *time.Time)
 }
 
 func FindUserByEmail(db *sql.DB, email string) (*User, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+
 	row := db.QueryRow(`
 		SELECT id, name, email, password, verified_at
 		FROM users
@@ -183,12 +187,12 @@ func UpdateOrganization(db *sql.DB, id int64, name string) error {
 	return err
 }
 
-func CountOrganizations(db *sql.DB) int {
+func CountOrganizations(db *sql.DB) (int, error) {
 	var count int
 
-	db.QueryRow("SELECT COUNT(*) FROM organizations").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM organizations").Scan(&count)
 
-	return count
+	return count, err
 }
 
 func ListContacts(db *sql.DB, search string, favoritesOnly bool) ([]Contact, error) {
@@ -384,7 +388,11 @@ func DeleteContact(db *sql.DB, id int64) error {
 	return tx.Commit()
 }
 
-func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor *string, perPage int) (CursorPage[Contact], error) {
+func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor *string, direction string, perPage int) (CursorPage[Contact], error) {
+	if perPage <= 0 {
+		return CursorPage[Contact]{}, fmt.Errorf("perPage must be greater than 0, got %d", perPage)
+	}
+
 	query := `
 		SELECT
 			c.id, c.organization_id, COALESCE(o.name, ''),
@@ -415,11 +423,21 @@ func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor
 	}
 
 	if cursor != nil && *cursor != "" {
-		query += " AND c.id > ?"
+		if direction == "prev" {
+			query += " AND c.id < ?"
+		} else {
+			query += " AND c.id > ?"
+		}
+
 		args = append(args, *cursor)
 	}
 
-	query += " ORDER BY c.id ASC LIMIT ?"
+	if direction == "prev" {
+		query += " ORDER BY c.id DESC LIMIT ?"
+	} else {
+		query += " ORDER BY c.id ASC LIMIT ?"
+	}
+
 	args = append(args, perPage+1)
 
 	rows, err := db.Query(query, args...)
@@ -434,23 +452,40 @@ func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor
 		return scanContact(scan)
 	})
 
-	page := CursorPage[Contact]{Data: all}
+	hasExtra := len(all) > perPage
 
-	if len(all) > perPage {
-		page.Data = all[:perPage]
-		next := fmt.Sprintf("%d", all[perPage-1].ID)
-		page.NextCursor = &next
+	if hasExtra {
+		all = all[:perPage]
 	}
 
-	if cursor != nil && *cursor != "" {
-		prev := *cursor
-		page.PrevCursor = &prev
+	if direction == "prev" {
+		for i, j := 0, len(all)-1; i < j; i, j = i+1, j-1 {
+			all[i], all[j] = all[j], all[i]
+		}
+	}
+
+	page := CursorPage[Contact]{Data: all}
+
+	if len(all) > 0 {
+		if (direction != "prev" && hasExtra) || (direction == "prev" && cursor != nil && *cursor != "") {
+			next := fmt.Sprintf("%d", all[len(all)-1].ID)
+			page.NextCursor = &next
+		}
+
+		if (direction == "prev" && hasExtra) || (direction != "prev" && cursor != nil && *cursor != "") {
+			prev := fmt.Sprintf("%d", all[0].ID)
+			page.PrevCursor = &prev
+		}
 	}
 
 	return page, nil
 }
 
 func ListOrganizationsPaginated(db *sql.DB, search string, page int, perPage int) (OffsetPage[Organization], error) {
+	if perPage <= 0 {
+		return OffsetPage[Organization]{}, fmt.Errorf("perPage must be greater than 0, got %d", perPage)
+	}
+
 	countQuery := `
 		SELECT COUNT(*)
 		FROM organizations o
@@ -520,7 +555,11 @@ func ListOrganizationsPaginated(db *sql.DB, search string, page int, perPage int
 	}, nil
 }
 
-func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string, perPage int) (CursorPage[Contact], error) {
+func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string, direction string, perPage int) (CursorPage[Contact], error) {
+	if perPage <= 0 {
+		return CursorPage[Contact]{}, fmt.Errorf("perPage must be greater than 0, got %d", perPage)
+	}
+
 	query := `
 		SELECT
 			c.id, c.organization_id, COALESCE(o.name, ''),
@@ -534,11 +573,21 @@ func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string
 	args := []any{organizationID}
 
 	if cursor != nil && *cursor != "" {
-		query += " AND c.id > ?"
+		if direction == "prev" {
+			query += " AND c.id < ?"
+		} else {
+			query += " AND c.id > ?"
+		}
+
 		args = append(args, *cursor)
 	}
 
-	query += " ORDER BY c.id ASC LIMIT ?"
+	if direction == "prev" {
+		query += " ORDER BY c.id DESC LIMIT ?"
+	} else {
+		query += " ORDER BY c.id ASC LIMIT ?"
+	}
+
 	args = append(args, perPage+1)
 
 	rows, err := db.Query(query, args...)
@@ -553,28 +602,41 @@ func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string
 		return scanContact(scan)
 	})
 
-	result := CursorPage[Contact]{Data: all}
+	hasExtra := len(all) > perPage
 
-	if len(all) > perPage {
-		result.Data = all[:perPage]
-		next := fmt.Sprintf("%d", all[perPage-1].ID)
-		result.NextCursor = &next
+	if hasExtra {
+		all = all[:perPage]
 	}
 
-	if cursor != nil && *cursor != "" {
-		prev := *cursor
-		result.PrevCursor = &prev
+	if direction == "prev" {
+		for i, j := 0, len(all)-1; i < j; i, j = i+1, j-1 {
+			all[i], all[j] = all[j], all[i]
+		}
+	}
+
+	result := CursorPage[Contact]{Data: all}
+
+	if len(all) > 0 {
+		if (direction != "prev" && hasExtra) || (direction == "prev" && cursor != nil && *cursor != "") {
+			next := fmt.Sprintf("%d", all[len(all)-1].ID)
+			result.NextCursor = &next
+		}
+
+		if (direction == "prev" && hasExtra) || (direction != "prev" && cursor != nil && *cursor != "") {
+			prev := fmt.Sprintf("%d", all[0].ID)
+			result.PrevCursor = &prev
+		}
 	}
 
 	return result, nil
 }
 
-func CountContacts(db *sql.DB) int {
+func CountContacts(db *sql.DB) (int, error) {
 	var count int
 
-	db.QueryRow("SELECT COUNT(*) FROM contacts").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM contacts").Scan(&count)
 
-	return count
+	return count, err
 }
 
 func CreateNote(db *sql.DB, contactID, userID int64, body string) (int64, error) {
@@ -583,6 +645,22 @@ func CreateNote(db *sql.DB, contactID, userID int64, body string) (int64, error)
 		contactID,
 		userID,
 		strings.TrimSpace(body),
+	)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return result.LastInsertId()
+}
+
+func CreateNoteAt(db *sql.DB, contactID, userID int64, body string, createdAt time.Time) (int64, error) {
+	result, err := db.Exec(
+		"INSERT INTO notes (contact_id, user_id, body, created_at) VALUES (?, ?, ?, ?)",
+		contactID,
+		userID,
+		strings.TrimSpace(body),
+		createdAt,
 	)
 
 	if err != nil {
@@ -676,12 +754,12 @@ func ListRecentNotes(db *sql.DB, limit int) ([]Note, error) {
 	}), nil
 }
 
-func CountNotes(db *sql.DB) int {
+func CountNotes(db *sql.DB) (int, error) {
 	var count int
 
-	db.QueryRow("SELECT COUNT(*) FROM notes").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM notes").Scan(&count)
 
-	return count
+	return count, err
 }
 
 func scanUser(row interface{ Scan(...any) error }) (*User, error) {

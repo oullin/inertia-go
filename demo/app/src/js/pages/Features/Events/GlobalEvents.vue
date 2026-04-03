@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
@@ -6,17 +6,26 @@ import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+interface LogEntry {
+  id: number;
+  name: string;
+  detail: string;
+  time: string;
+}
+
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Events" }, { title: "Global Events" }];
 
-const eventLog = ref([]);
-const removers = [];
+let idCounter = 0;
+const eventLog = ref<LogEntry[]>([]);
+const removers: Array<() => void> = [];
 
-function logEvent(name, detail) {
+function logEvent(name: string, detail: string | object) {
   eventLog.value.unshift({
-    id: Date.now(),
+    id: ++idCounter,
     name,
     detail: typeof detail === "object" ? JSON.stringify(detail) : String(detail ?? ""),
     time: new Date().toLocaleTimeString(),

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Badge } from "@/js/components/ui/badge";

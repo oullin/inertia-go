@@ -12,6 +12,7 @@ type service struct {
 }
 
 var errUnauthorized = errors.New("crm: current user required")
+var errEmptyNoteBody = errors.New("crm: note body required")
 
 func newService(repo databaseRepository) service {
 	return service{repo: repo}
@@ -21,15 +22,15 @@ func (s service) recentActivity(limit int) ([]database.Note, error) {
 	return s.repo.ListRecentNotes(limit)
 }
 
-func (s service) countContacts() int {
+func (s service) countContacts() (int, error) {
 	return s.repo.CountContacts()
 }
 
-func (s service) countOrganizations() int {
+func (s service) countOrganizations() (int, error) {
 	return s.repo.CountOrganizations()
 }
 
-func (s service) countNotes() int {
+func (s service) countNotes() (int, error) {
 	return s.repo.CountNotes()
 }
 
@@ -37,8 +38,8 @@ func (s service) listContacts(search string, favoriteOnly bool) ([]database.Cont
 	return s.repo.ListContacts(strings.TrimSpace(search), favoriteOnly)
 }
 
-func (s service) listContactsPaginated(search string, favoriteOnly bool, cursor *string) (database.CursorPage[database.Contact], error) {
-	return s.repo.ListContactsPaginated(strings.TrimSpace(search), favoriteOnly, cursor, 15)
+func (s service) listContactsPaginated(search string, favoriteOnly bool, cursor *string, direction string) (database.CursorPage[database.Contact], error) {
+	return s.repo.ListContactsPaginated(strings.TrimSpace(search), favoriteOnly, cursor, direction, 15)
 }
 
 func (s service) getContact(id int64) (*database.Contact, error) {
@@ -72,6 +73,10 @@ func (s service) createNote(contactID int64, user *database.User, body string) e
 
 	body = strings.TrimSpace(body)
 
+	if body == "" {
+		return errEmptyNoteBody
+	}
+
 	_, err := s.repo.CreateNote(contactID, user.ID, body)
 
 	return err
@@ -97,6 +102,6 @@ func (s service) listContactsByOrganization(organizationID int64) ([]database.Co
 	return s.repo.ListContactsByOrganization(organizationID)
 }
 
-func (s service) listContactsByOrgPaginated(organizationID int64, cursor *string) (database.CursorPage[database.Contact], error) {
-	return s.repo.ListContactsByOrgPaginated(organizationID, cursor, 15)
+func (s service) listContactsByOrgPaginated(organizationID int64, cursor *string, direction string) (database.CursorPage[database.Contact], error) {
+	return s.repo.ListContactsByOrgPaginated(organizationID, cursor, direction, 15)
 }

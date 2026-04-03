@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Deferred, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -6,20 +6,18 @@ import { Skeleton } from "@/js/components/ui/skeleton";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 
-defineProps({
-  quickStat: {
-    type: Number,
-    default: 0,
+withDefaults(
+  defineProps<{
+    quickStat?: number;
+    slowStats?: Record<string, unknown>;
+    heavyData?: Array<{ name?: string; status?: string }>;
+  }>(),
+  {
+    quickStat: 0,
+    slowStats: undefined,
+    heavyData: undefined,
   },
-  slowStats: {
-    type: Object,
-    default: undefined,
-  },
-  heavyData: {
-    type: Array,
-    default: undefined,
-  },
-});
+);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Data Loading" }, { title: "Deferred Props" }];
 </script>

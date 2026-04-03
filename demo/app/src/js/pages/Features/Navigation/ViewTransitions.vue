@@ -1,11 +1,9 @@
-<script setup>
-import { Link, usePage } from "@inertiajs/vue3";
+<script setup lang="ts">
+import { Link } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { useDemoRoute } from "@/js/lib/routes";
-
-const page = usePage();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Navigation" }, { title: "View Transitions" }];
 

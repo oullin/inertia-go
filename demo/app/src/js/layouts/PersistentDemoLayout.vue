@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 
 const counter = ref(0);
 const elapsed = ref(0);
-let interval;
+let interval: ReturnType<typeof setInterval> | undefined;
 
 onMounted(() => {
   interval = setInterval(() => {
@@ -16,7 +16,7 @@ onUnmounted(() => {
   clearInterval(interval);
 });
 
-function formatTime(seconds) {
+function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, "0")}`;

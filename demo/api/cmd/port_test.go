@@ -174,7 +174,11 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 	testMux := newPortTestMux(t)
 	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
 
-	before := database.CountContacts(db)
+	before, err := database.CountContacts(db)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	body := strings.NewReader(url.Values{
 		"organization_id": {"1"},
@@ -197,8 +201,14 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusFound)
 	}
 
-	if database.CountContacts(db) != before+1 {
-		t.Fatalf("contact count = %d, want %d", database.CountContacts(db), before+1)
+	after, err := database.CountContacts(db)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if after != before+1 {
+		t.Fatalf("contact count = %d, want %d", after, before+1)
 	}
 }
 
@@ -206,7 +216,12 @@ func TestStoreNoteAppendsActivity(t *testing.T) {
 	testMux := newPortTestMux(t)
 	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
 
-	before := database.CountNotes(db)
+	before, err := database.CountNotes(db)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	body := strings.NewReader(url.Values{
 		"body": {"Need legal review before the Friday call."},
 	}.Encode())
@@ -224,8 +239,14 @@ func TestStoreNoteAppendsActivity(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusFound)
 	}
 
-	if database.CountNotes(db) != before+1 {
-		t.Fatalf("notes = %d, want %d", database.CountNotes(db), before+1)
+	after, err := database.CountNotes(db)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if after != before+1 {
+		t.Fatalf("notes = %d, want %d", after, before+1)
 	}
 }
 

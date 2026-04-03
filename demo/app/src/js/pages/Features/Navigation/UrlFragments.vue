@@ -1,24 +1,31 @@
-<script setup>
+<script setup lang="ts">
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-defineProps({
-  timestamp: { type: String, default: "" },
+withDefaults(defineProps<{ timestamp?: string }>(), {
+  timestamp: "",
 });
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Navigation" }, { title: "URL Fragments" }];
 
+function actionUrl(suffix: string): string {
+  const url = new URL(page.url, window.location.origin);
+  url.pathname = url.pathname.replace(/\/?$/, "/") + suffix;
+  return url.pathname;
+}
+
 function redirectWithHash() {
-  router.post(page.url.replace(/\/?$/, "/") + "redirect-with-hash");
+  router.post(actionUrl("redirect-with-hash"));
 }
 
 function preserveFragment() {
-  router.post(page.url.replace(/\/?$/, "/") + "preserve-fragment");
+  router.post(actionUrl("preserve-fragment"));
 }
 </script>
 

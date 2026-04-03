@@ -20,7 +20,7 @@ type contactForm struct {
 }
 
 type organizationForm struct {
-	Name string `json:"name" validate:"required"`
+	Name string `json:"name" validate:"required,max=255"`
 }
 
 func newContactForm(r *http.Request) contactForm {

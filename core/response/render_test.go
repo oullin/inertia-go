@@ -67,11 +67,11 @@ func TestWriteJSON(t *testing.T) {
 	}
 
 	if got.Component != "Users/Index" {
-		t.Errorf("component = %q", got.Component)
+		t.Errorf("component = %q, want %q", got.Component, "Users/Index")
 	}
 
 	if got.URL != "/users" {
-		t.Errorf("url = %q", got.URL)
+		t.Errorf("url = %q, want %q", got.URL, "/users")
 	}
 }
 
@@ -112,7 +112,7 @@ func TestWriteHTML(t *testing.T) {
 	defer resp.Body.Close()
 
 	if ct := resp.Header.Get("Content-Type"); ct != "text/html; charset=utf-8" {
-		t.Errorf("Content-Type = %q", ct)
+		t.Errorf("Content-Type = %q, want %q", ct, "text/html; charset=utf-8")
 	}
 
 	body := w.Body.String()
@@ -166,7 +166,7 @@ func TestWriteHTML_ExtraTemplateData(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, "title=My App") {
-		t.Errorf("extra template data not rendered, body = %s", body)
+		t.Errorf("body missing %q, got %s", "title=My App", body)
 	}
 }
 
@@ -285,7 +285,7 @@ func TestWriteJSON_IncludesMergePropsField(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"mergeProps":["items"]`) {
-		t.Errorf("missing mergeProps in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"mergeProps":["items"]`, body)
 	}
 }
 
@@ -304,7 +304,7 @@ func TestWriteJSON_IncludesDeepMergePropsField(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"deepMergeProps":["data"]`) {
-		t.Errorf("missing deepMergeProps in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"deepMergeProps":["data"]`, body)
 	}
 }
 
@@ -325,11 +325,11 @@ func TestWriteJSON_IncludesDeferredPropsField(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"deferredProps"`) {
-		t.Errorf("missing deferredProps in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"deferredProps"`, body)
 	}
 
 	if !contains(body, `"sidebar"`) {
-		t.Errorf("missing sidebar group in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"sidebar"`, body)
 	}
 }
 
@@ -355,11 +355,11 @@ func TestWriteJSON_IncludesScrollPropsField(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"scrollProps"`) {
-		t.Errorf("missing scrollProps in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"scrollProps"`, body)
 	}
 
 	if !contains(body, `"feedPage"`) {
-		t.Errorf("missing pageName in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"feedPage"`, body)
 	}
 }
 
@@ -380,12 +380,12 @@ func TestWriteJSON_IncludesOncePropsField(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"onceProps"`) {
-		t.Errorf("missing onceProps in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"onceProps"`, body)
 	}
 
 	// ExpiresAt is nil so should be omitted.
 	if contains(body, `"expiresAt"`) {
-		t.Errorf("nil expiresAt should be omitted: %s", body)
+		t.Errorf("JSON should not contain %q, got %s", `"expiresAt"`, body)
 	}
 }
 
@@ -408,7 +408,7 @@ func TestWriteJSON_OncePropsWithExpiresAt(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"expiresAt"`) {
-		t.Errorf("expiresAt should be present when set: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"expiresAt"`, body)
 	}
 }
 
@@ -427,7 +427,7 @@ func TestWriteJSON_EncryptHistoryTrue(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"encryptHistory":true`) {
-		t.Errorf("missing encryptHistory:true in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"encryptHistory":true`, body)
 	}
 }
 
@@ -446,7 +446,7 @@ func TestWriteJSON_ClearHistoryTrue(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `"clearHistory":true`) {
-		t.Errorf("missing clearHistory:true in JSON: %s", body)
+		t.Errorf("JSON missing %q, got %s", `"clearHistory":true`, body)
 	}
 }
 
@@ -518,7 +518,7 @@ func TestWriteHTML_MultipleExtraDataKeys(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, "valA") || !contains(body, "valB") {
-		t.Errorf("extra data not rendered: %s", body)
+		t.Errorf("body missing %q or %q, got %s", "valA", "valB", body)
 	}
 }
 
@@ -626,19 +626,19 @@ func TestWriteHTML_WithHead(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, "<title>Test Page</title>") {
-		t.Errorf("missing title in head, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>Test Page</title>", body)
 	}
 
 	if !contains(body, `name="description"`) {
-		t.Errorf("missing description meta, body = %s", body)
+		t.Errorf("body missing %q, got %s", `name="description"`, body)
 	}
 
 	if !contains(body, `property="og:title"`) {
-		t.Errorf("missing og:title meta, body = %s", body)
+		t.Errorf("body missing %q, got %s", `property="og:title"`, body)
 	}
 
 	if !contains(body, `rel="canonical"`) {
-		t.Errorf("missing canonical link, body = %s", body)
+		t.Errorf("body missing %q, got %s", `rel="canonical"`, body)
 	}
 }
 
@@ -664,7 +664,7 @@ func TestWriteHTML_WithLang(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `lang="es"`) {
-		t.Errorf("missing lang attribute, body = %s", body)
+		t.Errorf("body missing %q, got %s", `lang="es"`, body)
 	}
 }
 
@@ -690,7 +690,7 @@ func TestWriteHTML_WithDir(t *testing.T) {
 	body := w.Body.String()
 
 	if !contains(body, `dir="rtl"`) {
-		t.Errorf("missing dir attribute, body = %s", body)
+		t.Errorf("body missing %q, got %s", `dir="rtl"`, body)
 	}
 }
 

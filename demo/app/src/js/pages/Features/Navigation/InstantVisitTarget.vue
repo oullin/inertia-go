@@ -1,15 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { useDemoRoute } from "@/js/lib/routes";
 
-defineProps({
-  greeting: { type: String, default: "" },
-  serverTimestamp: { type: String, default: "" },
-  items: { type: Array, default: () => [] },
-});
+withDefaults(
+  defineProps<{
+    greeting?: string;
+    serverTimestamp?: string;
+    items?: Array<{ id: number; title: string }>;
+  }>(),
+  {
+    greeting: "",
+    serverTimestamp: "",
+    items: () => [],
+  },
+);
 
 const breadcrumbs = [
   { title: "Features" },

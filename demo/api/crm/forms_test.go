@@ -1,6 +1,9 @@
 package crm
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestContactFormValidate(t *testing.T) {
 	t.Parallel()
@@ -28,6 +31,29 @@ func TestContactFormValidate(t *testing.T) {
 			},
 			want: map[string]string{
 				"email": "The email field must be a valid email address.",
+			},
+		},
+		{
+			name: "first_name exceeds max length",
+			form: contactForm{
+				FirstName: strings.Repeat("a", 256),
+				LastName:  "Cole",
+				Email:     "mina@example.test",
+			},
+			want: map[string]string{
+				"first_name": "The first name field must not exceed 255 characters.",
+			},
+		},
+		{
+			name: "phone exceeds max length",
+			form: contactForm{
+				FirstName: "Mina",
+				LastName:  "Cole",
+				Email:     "mina@example.test",
+				Phone:     strings.Repeat("5", 256),
+			},
+			want: map[string]string{
+				"phone": "The phone field must not exceed 255 characters.",
 			},
 		},
 		{
@@ -71,5 +97,11 @@ func TestOrganizationFormValidate(t *testing.T) {
 
 	if got := (organizationForm{Name: "Acme"}).validate(); len(got) != 0 {
 		t.Fatalf("validate() = %#v, want no errors", got)
+	}
+
+	long := organizationForm{Name: strings.Repeat("a", 256)}
+
+	if got := long.validate()["name"]; got != "The name field must not exceed 255 characters." {
+		t.Fatalf("validate()[name] = %q", got)
 	}
 }

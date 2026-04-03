@@ -199,13 +199,6 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 				t.Fatalf("render failed: %v", err)
 			}
 		},
-		RenderWithContext: func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
-			t.Helper()
-
-			if err := testInertia.Render(w, r, component, pageProps); err != nil {
-				t.Fatalf("render with context failed: %v", err)
-			}
-		},
 		Redirect: func(w http.ResponseWriter, r *http.Request, url string) {
 			testInertia.Redirect(w, r, url)
 		},

@@ -18,15 +18,15 @@ func (r databaseRepository) ListRecentNotes(limit int) ([]database.Note, error) 
 	return database.ListRecentNotes(r.db, limit)
 }
 
-func (r databaseRepository) CountContacts() int {
+func (r databaseRepository) CountContacts() (int, error) {
 	return database.CountContacts(r.db)
 }
 
-func (r databaseRepository) CountOrganizations() int {
+func (r databaseRepository) CountOrganizations() (int, error) {
 	return database.CountOrganizations(r.db)
 }
 
-func (r databaseRepository) CountNotes() int {
+func (r databaseRepository) CountNotes() (int, error) {
 	return database.CountNotes(r.db)
 }
 
@@ -34,8 +34,8 @@ func (r databaseRepository) ListContacts(search string, favoritesOnly bool) ([]d
 	return database.ListContacts(r.db, search, favoritesOnly)
 }
 
-func (r databaseRepository) ListContactsPaginated(search string, favoritesOnly bool, cursor *string, perPage int) (database.CursorPage[database.Contact], error) {
-	return database.ListContactsPaginated(r.db, search, favoritesOnly, cursor, perPage)
+func (r databaseRepository) ListContactsPaginated(search string, favoritesOnly bool, cursor *string, direction string, perPage int) (database.CursorPage[database.Contact], error) {
+	return database.ListContactsPaginated(r.db, search, favoritesOnly, cursor, direction, perPage)
 }
 
 func (r databaseRepository) GetContact(id int64) (*database.Contact, error) {
@@ -86,6 +86,6 @@ func (r databaseRepository) ListContactsByOrganization(organizationID int64) ([]
 	return database.ListContactsByOrganization(r.db, organizationID)
 }
 
-func (r databaseRepository) ListContactsByOrgPaginated(organizationID int64, cursor *string, perPage int) (database.CursorPage[database.Contact], error) {
-	return database.ListContactsByOrgPaginated(r.db, organizationID, cursor, perPage)
+func (r databaseRepository) ListContactsByOrgPaginated(organizationID int64, cursor *string, direction string, perPage int) (database.CursorPage[database.Contact], error) {
+	return database.ListContactsByOrgPaginated(r.db, organizationID, cursor, direction, perPage)
 }

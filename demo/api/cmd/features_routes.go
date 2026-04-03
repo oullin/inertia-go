@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/oullin/inertia-go/core/flash"
-	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/demo/api/auth"
 	"github.com/oullin/inertia-go/demo/api/features"
 )
@@ -14,9 +13,6 @@ func registerFeatureRoutes(mux *http.ServeMux, authApp auth.App) {
 		DB:          db,
 		RequireAuth: authApp.RequireAuth,
 		Render:      renderPage,
-		RenderWithContext: func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
-			renderPageWithContext(w, r, component, pageProps)
-		},
 		Redirect: func(w http.ResponseWriter, r *http.Request, url string) {
 			i.Redirect(w, r, url)
 		},

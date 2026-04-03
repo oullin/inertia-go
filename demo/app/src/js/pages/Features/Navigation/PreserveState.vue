@@ -1,23 +1,24 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-defineProps({
-  serverCounter: { type: Number, default: 0 },
-  timestamp: { type: String, default: "" },
+withDefaults(defineProps<{ serverCounter?: number; timestamp?: string }>(), {
+  serverCounter: 0,
+  timestamp: "",
 });
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 const localCounter = ref(0);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Navigation" }, { title: "Preserve State" }];
 
 function reloadWithState() {
-  router.reload({ preserveState: true });
+  router.reload({ preserveState: true } as never);
 }
 
 function reloadWithoutState() {

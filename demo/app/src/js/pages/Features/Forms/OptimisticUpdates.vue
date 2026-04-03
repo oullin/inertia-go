@@ -1,28 +1,43 @@
-<script setup>
-import { router, usePage } from "@inertiajs/vue3";
+<script setup lang="ts">
+import { ref, watch } from "vue";
+import { router } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { Contact } from "@/js/types";
 
-const page = usePage();
-
-const props = defineProps({
-  contacts: {
-    type: Array,
-    default: () => [],
-  },
+const props = withDefaults(defineProps<{ contacts?: Contact[] }>(), {
+  contacts: () => [],
 });
+
+function cloneRaw(data: Contact[]): Contact[] {
+  return JSON.parse(JSON.stringify(data));
+}
+
+const localContacts = ref<Contact[]>(cloneRaw(props.contacts));
+
+watch(
+  () => props.contacts,
+  (value) => {
+    localContacts.value = cloneRaw(value);
+  },
+);
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "Optimistic Updates" }];
 
-function toggleFavorite(contact) {
+function toggleFavorite(contact: Contact) {
+  contact.is_favorite = !contact.is_favorite;
+
   router.post(
-    page.url,
-    { id: contact.id, is_favorite: !contact.is_favorite },
+    `/features/forms/optimistic-toggle/${contact.id}`,
+    {},
     {
       preserveScroll: true,
       only: ["contacts"],
+      onError() {
+        contact.is_favorite = !contact.is_favorite;
+      },
     },
   );
 }
@@ -41,9 +56,9 @@ function toggleFavorite(contact) {
           title="Contacts"
           description="Click the star button to toggle favorites. The UI updates optimistically."
         >
-          <div v-if="contacts.length" class="grid gap-2">
+          <div v-if="localContacts.length" class="grid gap-2">
             <div
-              v-for="contact in contacts"
+              v-for="contact in localContacts"
               :key="contact.id"
               class="flex items-center justify-between rounded-md border p-3 transition-colors"
               :class="{ 'bg-yellow-50 border-yellow-200': contact.is_favorite }"
@@ -97,9 +112,9 @@ function toggleFavorite(contact) {
 
           <FeatureCard title="Favorites" description="Current favorite contacts.">
             <div class="text-sm">
-              <div v-if="contacts.filter((c) => c.is_favorite).length" class="grid gap-1">
+              <div v-if="localContacts.filter((c) => c.is_favorite).length" class="grid gap-1">
                 <div
-                  v-for="fav in contacts.filter((c) => c.is_favorite)"
+                  v-for="fav in localContacts.filter((c) => c.is_favorite)"
                   :key="fav.id"
                   class="flex items-center gap-2 rounded bg-yellow-50 px-3 py-2"
                 >

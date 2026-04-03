@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useForm, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -15,8 +15,9 @@ import {
   SelectValue,
 } from "@/js/components/ui/select";
 import AppLayout from "@/js/layouts/AppLayout.vue";
+import type { SharedPageProps } from "@/js/types";
 
-const page = usePage();
+const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "useForm" }];
 
