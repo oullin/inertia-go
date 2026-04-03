@@ -63,6 +63,32 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 	}
 }
 
+func TestLoginHandlerCreatesSessionFromJSON(t *testing.T) {
+	_, handler := newAuthTestHandler(t)
+
+	body := strings.NewReader(`{"email":"test@example.com","password":"password","remember":true}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/login", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusFound)
+	}
+
+	if got := w.Header().Get("Location"); got != "/dashboard" {
+		t.Fatalf("location = %q, want %q", got, "/dashboard")
+	}
+
+	cookie := findCookie(t, w, SessionCookieName)
+
+	if cookie.Value != "1" {
+		t.Fatalf("session cookie value = %q, want %q", cookie.Value, "1")
+	}
+}
+
 func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 	_, handler := newAuthTestHandler(t)
 

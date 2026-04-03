@@ -107,6 +107,7 @@ func main() {
 	authApp.RegisterRoutes(appMux)
 	registerCRMRoutes(appMux, authApp)
 	registerFeatureRoutes(appMux, authApp)
+	appMux.Handle("GET /{$}", http.RedirectHandler("/dashboard", http.StatusFound))
 	mux.Handle("/", dashboardAppHandler(authApp.WithCurrentUser(withDemoProps(authApp, appMux)), csrfMiddleware, localeCfg))
 
 	addr := ":8080"
@@ -127,6 +128,7 @@ func main() {
 func resolveDistPath() (string, error) {
 	candidates := []string{
 		"storage/dist/app",
+		"../../storage/dist/app",
 		"demo/app/dist",
 		"../app/dist",
 	}

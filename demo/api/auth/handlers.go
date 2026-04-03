@@ -23,7 +23,7 @@ func (a App) loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	if err := httpx.ParseForm(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return
