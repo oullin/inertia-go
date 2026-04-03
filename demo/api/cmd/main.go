@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/oullin/inertia-go/core/config"
-	"github.com/oullin/inertia-go/core/httpx"
 	corei18n "github.com/oullin/inertia-go/core/i18n"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/middleware"
@@ -88,25 +87,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	i.ShareProps(httpx.Props{
-		"app": map[string]any{
-			"name":        "Progressive Oullin",
-			"productLine": "Documents",
-			"environment": "Production",
-		},
-		"auth": map[string]any{
-			"user": map[string]any{
-				"name":     "Gus",
-				"email":    "gus@example.com",
-				"initials": "GC",
-			},
-		},
-		"workspace": map[string]any{
-			"name": "Oullin.io",
-			"plan": "Growth",
-		},
-	})
-
 	mux := http.NewServeMux()
 	mux.Handle(
 		"/assets/",
@@ -114,8 +94,11 @@ func main() {
 	)
 
 	appMux := http.NewServeMux()
-	registerDashboardRoutes(appMux)
-	mux.Handle("/", dashboardAppHandler(appMux, csrfMiddleware, localeCfg))
+	registerAuthRoutes(appMux)
+	registerCRMRoutes(appMux)
+	registerFeatureRoutes(appMux)
+	registerLegacyDashboardRoutes(appMux)
+	mux.Handle("/", dashboardAppHandler(withDemoProps(appMux), csrfMiddleware, localeCfg))
 
 	addr := ":8080"
 

@@ -15,6 +15,22 @@ func Run(db *sql.DB) error {
 
 	now := time.Now()
 
+	if err := seedUsers(db, now); err != nil {
+		return fmt.Errorf("seed users: %w", err)
+	}
+
+	if err := seedOrganizations(db); err != nil {
+		return fmt.Errorf("seed organizations: %w", err)
+	}
+
+	if err := seedContacts(db); err != nil {
+		return fmt.Errorf("seed contacts: %w", err)
+	}
+
+	if err := seedNotes(db, now); err != nil {
+		return fmt.Errorf("seed notes: %w", err)
+	}
+
 	if err := seedInvites(db, now); err != nil {
 		return fmt.Errorf("seed invites: %w", err)
 	}
@@ -29,6 +45,105 @@ func Run(db *sql.DB) error {
 
 	if err := database.SetCounter(db, "priority_escalations", 18); err != nil {
 		return fmt.Errorf("seed counter: %w", err)
+	}
+
+	return nil
+}
+
+func seedUsers(db *sql.DB, now time.Time) error {
+	_, err := database.CreateUser(db, "Demo User", "test@example.com", "password", &now)
+
+	return err
+}
+
+func seedOrganizations(db *sql.DB) error {
+	orgs := []string{
+		"Acme Ventures",
+		"Northstar Logistics",
+		"Juniper Labs",
+		"Summit Advisory",
+		"Atlas Health",
+	}
+
+	for _, org := range orgs {
+		if _, err := database.CreateOrganization(db, org); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func seedContacts(db *sql.DB) error {
+	type contactSeed struct {
+		firstName string
+		lastName  string
+		email     string
+		phone     string
+		address   string
+		city      string
+		region    string
+		country   string
+		postal    string
+		orgID     *int64
+		favorite  bool
+	}
+
+	org := func(id int64) *int64 { return &id }
+
+	contacts := []contactSeed{
+		{"Alicia", "Keys", "alicia@acme.test", "+1 555 0100", "121 Market St", "San Francisco", "CA", "USA", "94105", org(1), true},
+		{"Marcus", "Tan", "marcus@northstar.test", "+1 555 0101", "48 River Rd", "Austin", "TX", "USA", "73301", org(2), false},
+		{"Priya", "Singh", "priya@juniper.test", "+1 555 0102", "77 Lake Ave", "Seattle", "WA", "USA", "98101", org(3), true},
+		{"Jules", "Martin", "jules@summit.test", "+1 555 0103", "89 Main Blvd", "Chicago", "IL", "USA", "60601", org(4), false},
+		{"Nora", "Alvarez", "nora@atlas.test", "+1 555 0104", "300 Green St", "Boston", "MA", "USA", "02108", org(5), false},
+		{"Leo", "Park", "leo@example.test", "+1 555 0105", "4 Center Plaza", "Denver", "CO", "USA", "80014", nil, false},
+	}
+
+	for _, seed := range contacts {
+		_, err := database.CreateContact(db, database.Contact{
+			OrganizationID: seed.orgID,
+			FirstName:      seed.firstName,
+			LastName:       seed.lastName,
+			Email:          seed.email,
+			Phone:          seed.phone,
+			Address:        seed.address,
+			City:           seed.city,
+			Region:         seed.region,
+			Country:        seed.country,
+			PostalCode:     seed.postal,
+			IsFavorite:     seed.favorite,
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func seedNotes(db *sql.DB, now time.Time) error {
+	notes := []struct {
+		contactID int64
+		body      string
+		createdAt time.Time
+	}{
+		{1, "Followed up on onboarding checklist and confirmed next review date.", now.Add(-2 * time.Hour)},
+		{2, "Requested revised pricing deck for the logistics pilot.", now.Add(-26 * time.Hour)},
+		{3, "Juniper asked for a data residency addendum before procurement.", now.Add(-49 * time.Hour)},
+	}
+
+	for _, note := range notes {
+		if _, err := db.Exec(
+			"INSERT INTO notes (contact_id, user_id, body, created_at) VALUES (?, ?, ?, ?)",
+			note.contactID,
+			1,
+			note.body,
+			note.createdAt,
+		); err != nil {
+			return err
+		}
 	}
 
 	return nil

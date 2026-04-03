@@ -30,6 +30,10 @@ var db *sql.DB
 func registerDashboardRoutes(mux *http.ServeMux) {
 	mux.Handle("/", http.HandlerFunc(rootHandler))
 	mux.Handle("/dashboard", http.HandlerFunc(overviewHandler))
+	registerLegacyDashboardRoutes(mux)
+}
+
+func registerLegacyDashboardRoutes(mux *http.ServeMux) {
 	mux.Handle("/dashboard/navigation", http.HandlerFunc(navigationHandler))
 	mux.Handle("/dashboard/scroll", http.HandlerFunc(scrollHandler))
 	mux.Handle("/dashboard/redirects", http.HandlerFunc(redirectsHandler))
@@ -48,7 +52,6 @@ func registerDashboardRoutes(mux *http.ServeMux) {
 		seed.Run(db)
 		w.WriteHeader(http.StatusOK)
 	}))
-
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {

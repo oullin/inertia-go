@@ -3,7 +3,13 @@ import { createInertiaApp } from "@inertiajs/vue3";
 import "./styles/app.css";
 
 createInertiaApp({
-  title: (title) => (title ? `${title} · Progressive Oullin` : "Progressive Oullin"),
+  title: (title) => (title ? `${title} - Inertia.js Kitchen Sink` : "Inertia.js Kitchen Sink"),
+  defaults: {
+    visitOptions: (_href, options) => ({
+      preserveScroll: options?.preserveScroll ?? "errors",
+      ...options,
+    }),
+  },
   resolve: (name) => {
     const pages = import.meta.glob("./pages/**/*.vue");
     return pages[`./pages/${name}.vue`]();
