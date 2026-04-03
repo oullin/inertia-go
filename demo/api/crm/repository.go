@@ -6,31 +6,11 @@ import (
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
-// Repository defines the CRM persistence operations required by the package.
-type Repository interface {
-	ListRecentNotes(limit int) ([]database.Note, error)
-	CountContacts() int
-	CountOrganizations() int
-	CountNotes() int
-	ListContacts(search string, favoritesOnly bool) ([]database.Contact, error)
-	GetContact(id int64) (*database.Contact, error)
-	CreateContact(contact database.Contact) (int64, error)
-	UpdateContact(id int64, contact database.Contact) error
-	ToggleContactFavorite(id int64) error
-	ListContactNotes(contactID int64) ([]database.Note, error)
-	CreateNote(contactID, userID int64, body string) (int64, error)
-	ListOrganizations(search string) ([]database.Organization, error)
-	GetOrganization(id int64) (*database.Organization, error)
-	UpdateOrganization(id int64, name string) error
-	ListContactsByOrganization(organizationID int64) ([]database.Contact, error)
-}
-
 type databaseRepository struct {
 	db *sql.DB
 }
 
-// NewRepository returns a Repository backed by demo/api/internal/database.
-func NewRepository(db *sql.DB) Repository {
+func newRepository(db *sql.DB) databaseRepository {
 	return databaseRepository{db: db}
 }
 

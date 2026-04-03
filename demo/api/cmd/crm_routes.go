@@ -9,7 +9,7 @@ import (
 
 func registerCRMRoutes(mux *http.ServeMux) {
 	crm.RegisterRoutes(mux, crm.Deps{
-		Repository:  crm.NewRepository(db),
+		DB:          db,
 		RequireAuth: requireDemoAuth,
 		Render:      renderPage,
 		RenderWithContext: func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {

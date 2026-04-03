@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -49,11 +51,17 @@ type Note struct {
 }
 
 func CreateUser(db *sql.DB, name, email, password string, verifiedAt *time.Time) (int64, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	if err != nil {
+		return 0, err
+	}
+
 	result, err := db.Exec(
 		"INSERT INTO users (name, email, password, verified_at) VALUES (?, ?, ?, ?)",
 		name,
 		email,
-		password,
+		string(hashedPassword),
 		verifiedAt,
 	)
 

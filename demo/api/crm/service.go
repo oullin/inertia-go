@@ -8,12 +8,12 @@ import (
 )
 
 type service struct {
-	repo Repository
+	repo databaseRepository
 }
 
 var errUnauthorized = errors.New("crm: current user required")
 
-func newService(repo Repository) service {
+func newService(repo databaseRepository) service {
 	return service{repo: repo}
 }
 

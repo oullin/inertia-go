@@ -1,166 +1,172 @@
 package crm
 
 import (
+	"database/sql"
 	"errors"
 	"testing"
 
 	"github.com/oullin/inertia-go/demo/api/internal/database"
+	"github.com/oullin/inertia-go/demo/api/internal/seed"
 )
 
-type fakeRepository struct {
-	createdContact     database.Contact
-	updatedContactID   int64
-	updatedContact     database.Contact
-	toggledFavoriteID  int64
-	createdNoteContact int64
-	createdNoteUser    int64
-	createdNoteBody    string
-	updatedOrgID       int64
-	updatedOrgName     string
+type serviceTestHarness struct {
+	db  *sql.DB
+	svc service
 }
 
-func (f *fakeRepository) ListRecentNotes(limit int) ([]database.Note, error) {
-	return nil, nil
-}
+func newServiceTestHarness(t *testing.T) serviceTestHarness {
+	t.Helper()
 
-func (f *fakeRepository) CountContacts() int {
-	return 0
-}
+	db, err := database.Open(":memory:")
 
-func (f *fakeRepository) CountOrganizations() int {
-	return 0
-}
+	if err != nil {
+		t.Fatalf("database.Open() error = %v", err)
+	}
 
-func (f *fakeRepository) CountNotes() int {
-	return 0
-}
+	t.Cleanup(func() {
+		db.Close()
+	})
 
-func (f *fakeRepository) ListContacts(search string, favoritesOnly bool) ([]database.Contact, error) {
-	return nil, nil
-}
+	if err := seed.Run(db); err != nil {
+		t.Fatalf("seed.Run() error = %v", err)
+	}
 
-func (f *fakeRepository) GetContact(id int64) (*database.Contact, error) {
-	return nil, nil
-}
-
-func (f *fakeRepository) CreateContact(contact database.Contact) (int64, error) {
-	f.createdContact = contact
-
-	return 42, nil
-}
-
-func (f *fakeRepository) UpdateContact(id int64, contact database.Contact) error {
-	f.updatedContactID = id
-	f.updatedContact = contact
-
-	return nil
-}
-
-func (f *fakeRepository) ToggleContactFavorite(id int64) error {
-	f.toggledFavoriteID = id
-
-	return nil
-}
-
-func (f *fakeRepository) ListContactNotes(contactID int64) ([]database.Note, error) {
-	return nil, nil
-}
-
-func (f *fakeRepository) CreateNote(contactID, userID int64, body string) (int64, error) {
-	f.createdNoteContact = contactID
-	f.createdNoteUser = userID
-	f.createdNoteBody = body
-
-	return 1, nil
-}
-
-func (f *fakeRepository) ListOrganizations(search string) ([]database.Organization, error) {
-	return nil, nil
-}
-
-func (f *fakeRepository) GetOrganization(id int64) (*database.Organization, error) {
-	return nil, nil
-}
-
-func (f *fakeRepository) UpdateOrganization(id int64, name string) error {
-	f.updatedOrgID = id
-	f.updatedOrgName = name
-
-	return nil
-}
-
-func (f *fakeRepository) ListContactsByOrganization(organizationID int64) ([]database.Contact, error) {
-	return nil, nil
+	return serviceTestHarness{
+		db:  db,
+		svc: newService(newRepository(db)),
+	}
 }
 
 func TestServiceCreateContact(t *testing.T) {
 	t.Parallel()
 
-	repo := &fakeRepository{}
-	svc := newService(repo)
-	id, err := svc.createContact(contactForm{
-		OrganizationID: "8",
-		FirstName:      "Mina",
-		LastName:       "Cole",
-		Email:          "mina@example.test",
+	h := newServiceTestHarness(t)
+
+	id, err := h.svc.createContact(contactForm{
+		OrganizationID: "2",
+		FirstName:      " Mina ",
+		LastName:       " Cole ",
+		Email:          " mina@example.test ",
+		Phone:          " +65 1234 ",
+		Address:        " 1 Main St ",
+		City:           " Singapore ",
+		Region:         " SG ",
+		Country:        " Singapore ",
+		PostalCode:     " 018989 ",
 	})
 
 	if err != nil {
 		t.Fatalf("createContact() error = %v", err)
 	}
 
-	if id != 42 {
-		t.Fatalf("id = %d, want 42", id)
+	contact, err := database.GetContact(h.db, id)
+
+	if err != nil {
+		t.Fatalf("GetContact() error = %v", err)
 	}
 
-	if repo.createdContact.FirstName != "Mina" {
-		t.Fatalf("created contact first_name = %q", repo.createdContact.FirstName)
+	if contact == nil {
+		t.Fatal("GetContact() = nil, want contact")
 	}
 
-	if repo.createdContact.OrganizationID == nil || *repo.createdContact.OrganizationID != 8 {
-		t.Fatalf("organization_id = %v, want 8", repo.createdContact.OrganizationID)
+	if contact.OrganizationID == nil || *contact.OrganizationID != 2 {
+		t.Fatalf("organization_id = %v, want 2", contact.OrganizationID)
+	}
+
+	if contact.FirstName != "Mina" || contact.LastName != "Cole" || contact.Email != "mina@example.test" {
+		t.Fatalf("contact = %#v", *contact)
+	}
+
+	if contact.Phone != "+65 1234" || contact.Address != "1 Main St" || contact.City != "Singapore" || contact.Region != "SG" || contact.Country != "Singapore" || contact.PostalCode != "018989" {
+		t.Fatalf("trimmed contact fields = %#v", *contact)
 	}
 }
 
 func TestServiceUpdateContact(t *testing.T) {
 	t.Parallel()
 
-	repo := &fakeRepository{}
-	svc := newService(repo)
+	h := newServiceTestHarness(t)
 
-	if err := svc.updateContact(9, contactForm{FirstName: "Mina"}); err != nil {
+	err := h.svc.updateContact(1, contactForm{
+		OrganizationID: "3",
+		FirstName:      " Mina ",
+		LastName:       " Cole ",
+		Email:          " mina.updated@example.test ",
+		Phone:          " +65 9999 ",
+		Address:        " 99 Marina Blvd ",
+		City:           " Singapore ",
+		Region:         " SG ",
+		Country:        " Singapore ",
+		PostalCode:     " 018980 ",
+	})
+
+	if err != nil {
 		t.Fatalf("updateContact() error = %v", err)
 	}
 
-	if repo.updatedContactID != 9 {
-		t.Fatalf("updatedContactID = %d, want 9", repo.updatedContactID)
+	contact, err := database.GetContact(h.db, 1)
+
+	if err != nil {
+		t.Fatalf("GetContact() error = %v", err)
 	}
 
-	if repo.updatedContact.FirstName != "Mina" {
-		t.Fatalf("updated first_name = %q", repo.updatedContact.FirstName)
+	if contact == nil {
+		t.Fatal("GetContact() = nil, want contact")
+	}
+
+	if contact.OrganizationID == nil || *contact.OrganizationID != 3 {
+		t.Fatalf("organization_id = %v, want 3", contact.OrganizationID)
+	}
+
+	if contact.FirstName != "Mina" || contact.LastName != "Cole" || contact.Email != "mina.updated@example.test" {
+		t.Fatalf("updated contact = %#v", *contact)
+	}
+
+	if contact.Phone != "+65 9999" || contact.Address != "99 Marina Blvd" || contact.City != "Singapore" || contact.Region != "SG" || contact.Country != "Singapore" || contact.PostalCode != "018980" {
+		t.Fatalf("trimmed updated contact fields = %#v", *contact)
 	}
 }
 
 func TestServiceToggleFavorite(t *testing.T) {
 	t.Parallel()
 
-	repo := &fakeRepository{}
-	svc := newService(repo)
+	h := newServiceTestHarness(t)
 
-	if err := svc.toggleFavorite(5); err != nil {
+	before, err := database.GetContact(h.db, 2)
+
+	if err != nil {
+		t.Fatalf("GetContact() before toggle error = %v", err)
+	}
+
+	if before == nil {
+		t.Fatal("GetContact() before toggle = nil, want contact")
+	}
+
+	if err := h.svc.toggleFavorite(2); err != nil {
 		t.Fatalf("toggleFavorite() error = %v", err)
 	}
 
-	if repo.toggledFavoriteID != 5 {
-		t.Fatalf("toggledFavoriteID = %d, want 5", repo.toggledFavoriteID)
+	after, err := database.GetContact(h.db, 2)
+
+	if err != nil {
+		t.Fatalf("GetContact() after toggle error = %v", err)
+	}
+
+	if after == nil {
+		t.Fatal("GetContact() after toggle = nil, want contact")
+	}
+
+	if after.IsFavorite == before.IsFavorite {
+		t.Fatalf("favorite = %t before toggle and %t after toggle", before.IsFavorite, after.IsFavorite)
 	}
 }
 
 func TestServiceCreateNoteRequiresUser(t *testing.T) {
 	t.Parallel()
 
-	svc := newService(&fakeRepository{})
-	err := svc.createNote(3, nil, "hello")
+	h := newServiceTestHarness(t)
+
+	err := h.svc.createNote(3, nil, "hello")
 
 	if !errors.Is(err, errUnauthorized) {
 		t.Fatalf("createNote() error = %v, want errUnauthorized", err)
@@ -170,30 +176,73 @@ func TestServiceCreateNoteRequiresUser(t *testing.T) {
 func TestServiceCreateNote(t *testing.T) {
 	t.Parallel()
 
-	repo := &fakeRepository{}
-	svc := newService(repo)
-	user := &database.User{ID: 7}
+	h := newServiceTestHarness(t)
 
-	if err := svc.createNote(3, user, "  hello  "); err != nil {
+	user, err := database.FindUserByID(h.db, 1)
+
+	if err != nil {
+		t.Fatalf("FindUserByID() error = %v", err)
+	}
+
+	if user == nil {
+		t.Fatal("FindUserByID() = nil, want user")
+	}
+
+	before, err := database.ListContactNotes(h.db, 3)
+
+	if err != nil {
+		t.Fatalf("ListContactNotes() before create error = %v", err)
+	}
+
+	if err := h.svc.createNote(3, user, "  hello  "); err != nil {
 		t.Fatalf("createNote() error = %v", err)
 	}
 
-	if repo.createdNoteContact != 3 || repo.createdNoteUser != 7 || repo.createdNoteBody != "hello" {
-		t.Fatalf("note call = (%d, %d, %q)", repo.createdNoteContact, repo.createdNoteUser, repo.createdNoteBody)
+	after, err := database.ListContactNotes(h.db, 3)
+
+	if err != nil {
+		t.Fatalf("ListContactNotes() after create error = %v", err)
+	}
+
+	if len(after) != len(before)+1 {
+		t.Fatalf("len(ListContactNotes()) = %d, want %d", len(after), len(before)+1)
+	}
+
+	found := false
+
+	for _, note := range after {
+		if note.ContactID == 3 && note.UserID == 1 && note.Body == "hello" {
+			found = true
+
+			break
+		}
+	}
+
+	if !found {
+		t.Fatalf("created note not found in %#v", after)
 	}
 }
 
 func TestServiceUpdateOrganization(t *testing.T) {
 	t.Parallel()
 
-	repo := &fakeRepository{}
-	svc := newService(repo)
+	h := newServiceTestHarness(t)
 
-	if err := svc.updateOrganization(11, organizationForm{Name: "Acme"}); err != nil {
+	if err := h.svc.updateOrganization(1, organizationForm{Name: "  Acme HQ  "}); err != nil {
 		t.Fatalf("updateOrganization() error = %v", err)
 	}
 
-	if repo.updatedOrgID != 11 || repo.updatedOrgName != "Acme" {
-		t.Fatalf("updateOrganization call = (%d, %q)", repo.updatedOrgID, repo.updatedOrgName)
+	org, err := database.GetOrganization(h.db, 1)
+
+	if err != nil {
+		t.Fatalf("GetOrganization() error = %v", err)
+	}
+
+	if org == nil {
+		t.Fatal("GetOrganization() = nil, want organization")
+	}
+
+	if org.Name != "Acme HQ" {
+		t.Fatalf("organization name = %q, want %q", org.Name, "Acme HQ")
 	}
 }

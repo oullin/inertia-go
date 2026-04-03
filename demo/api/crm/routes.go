@@ -24,6 +24,6 @@ func RegisterRoutes(mux *http.ServeMux, deps Deps) {
 func newApp(deps Deps) app {
 	return app{
 		deps:    deps,
-		service: newService(deps.Repository),
+		service: newService(newRepository(deps.DB)),
 	}
 }

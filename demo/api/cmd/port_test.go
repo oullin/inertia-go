@@ -67,6 +67,43 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 	}
 }
 
+func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
+	testMux := newPortTestMux(t)
+	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
+
+	body := strings.NewReader(url.Values{
+		"email":    {"test@example.com"},
+		"password": {"wrong-password"},
+	}.Encode())
+
+	req := httptest.NewRequest(http.MethodPost, "/login", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-CSRF-TOKEN", rawToken)
+	req.Header.Set(httpx.HeaderInertia, "true")
+	req.RequestURI = "/login"
+	req.AddCookie(csrfCookie)
+	w := httptest.NewRecorder()
+
+	testMux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	page := assert.AssertFromBytes(t, w.Body.Bytes())
+	page.AssertComponent(t, "Auth/Login")
+
+	errors, ok := page.Props["errors"].(map[string]any)
+
+	if !ok {
+		t.Fatal("errors prop not found or not a map")
+	}
+
+	if errors["email"] != "Use test@example.com and password to sign in." {
+		t.Fatalf("errors[email] = %v", errors["email"])
+	}
+}
+
 func TestDashboardRequiresSession(t *testing.T) {
 	testMux := newPortTestMux(t)
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)

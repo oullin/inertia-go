@@ -1,6 +1,7 @@
 package crm
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/oullin/inertia-go/core/httpx"
@@ -16,7 +17,7 @@ type Flash struct {
 
 // Deps contains the host application integrations required by the CRM package.
 type Deps struct {
-	Repository        Repository
+	DB                *sql.DB
 	RequireAuth       func(http.Handler) http.Handler
 	Render            func(http.ResponseWriter, *http.Request, string, httpx.Props)
 	RenderWithContext func(http.ResponseWriter, *http.Request, string, httpx.Props)

@@ -7,6 +7,7 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func registerAuthRoutes(mux *http.ServeMux) {
@@ -55,7 +56,7 @@ func loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user == nil || user.Password != password {
+	if user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
 		errors["email"] = "Use test@example.com and password to sign in."
 	}
 
