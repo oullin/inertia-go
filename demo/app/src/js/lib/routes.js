@@ -32,6 +32,7 @@ export const contactRoutes = {
   show: (contact) => useDemoRoute("contacts.show", { contact }),
   edit: (contact) => useDemoRoute("contacts.edit", { contact }),
   update: (contact) => useDemoRoute("contacts.update", { contact }),
+  destroy: (contact) => useDemoRoute("contacts.destroy", { contact }),
   favorite: (contact) => useDemoRoute("contacts.favorite", { contact }),
   storeNote: (contact) => useDemoRoute("contacts.notes.store", { contact }),
 };

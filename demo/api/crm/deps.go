@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
-	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
 // Deps contains the host application integrations required by the CRM package.

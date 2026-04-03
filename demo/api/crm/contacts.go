@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
-	"github.com/oullin/inertia-go/demo/api/internal/flash"
+	"github.com/oullin/inertia-go/core/props"
 )
 
 func (a app) contactsHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +59,8 @@ func (a app) contactByIDHandler(w http.ResponseWriter, r *http.Request) {
 			a.showContactHandler(w, r, contactID)
 		case http.MethodPost, http.MethodPut:
 			a.updateContactHandler(w, r, contactID)
+		case http.MethodDelete:
+			a.deleteContactHandler(w, r, contactID)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -98,7 +101,14 @@ func (a app) contactByIDHandler(w http.ResponseWriter, r *http.Request) {
 func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 	search := strings.TrimSpace(r.URL.Query().Get("search"))
 	favoriteOnly := r.URL.Query().Get("favorite") == "true"
-	contacts, err := a.service.listContacts(search, favoriteOnly)
+
+	var cursor *string
+
+	if c := r.URL.Query().Get("cursor"); c != "" {
+		cursor = &c
+	}
+
+	page, err := a.service.listContactsPaginated(search, favoriteOnly, cursor)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -111,7 +121,7 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 			"search":   search,
 			"favorite": favoriteOnly,
 		},
-		"contacts": contactsProps(contacts),
+		"contacts": cursorContactsProps(page),
 	})
 }
 
@@ -130,18 +140,29 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 		return
 	}
 
-	notes, err := a.service.listContactNotes(contactID)
+	a.deps.Render(w, r, "Contacts/Show", httpx.Props{
+		"contact": contactProp(*contact),
+		"notes": props.Defer(func() any {
+			notes, _ := a.service.listContactNotes(contactID)
 
-	if err != nil {
+			return notesProps(notes)
+		}),
+	})
+}
+
+func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
+	if err := a.service.deleteContact(contactID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
 
-	a.deps.Render(w, r, "Contacts/Show", httpx.Props{
-		"contact": contactProp(*contact),
-		"notes":   notesProps(notes),
+	a.deps.SetFlash(w, flash.Message{
+		Kind:    "success",
+		Title:   "Contact deleted",
+		Message: "The contact has been removed.",
 	})
+	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.index", nil))
 }
 
 func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {

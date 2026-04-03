@@ -9,7 +9,7 @@ import (
 )
 
 func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
-	activity, _ := a.service.recentActivity(5)
+	activity, _ := a.service.recentActivity(10)
 
 	a.deps.Render(w, r, "Crm/Dashboard", httpx.Props{
 		"recentActivity": recentActivityProps(activity),

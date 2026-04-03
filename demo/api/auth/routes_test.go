@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/oullin/inertia-go/core/assert"
+	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
@@ -183,7 +184,7 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 			testInertia.Redirect(w, r, url)
 		},
 		RouteURL: authTestRouteURL,
-		SetFlash: func(http.ResponseWriter, Flash) {},
+		SetFlash: func(http.ResponseWriter, flash.Message) {},
 	})
 
 	mux := http.NewServeMux()

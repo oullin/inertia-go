@@ -9,8 +9,8 @@ import { contactRoutes } from "@/js/lib/routes";
 
 const props = defineProps({
   contacts: {
-    type: Array,
-    default: () => [],
+    type: Object,
+    default: () => ({ data: [], next_cursor: null, prev_cursor: null }),
   },
   filters: {
     type: Object,
@@ -27,18 +27,36 @@ let searchTimeout;
 watch([search, favoriteOnly], () => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
-    router.get(
-      contactRoutes.index().url,
-      {
+    router.visit(contactRoutes.index().url, {
+      data: {
         search: search.value || undefined,
         favorite: favoriteOnly.value ? "true" : undefined,
       },
-      { only: ["contacts", "filters"], preserveState: true, preserveScroll: true },
-    );
-  }, 250);
+      only: ["contacts", "filters"],
+      preserveState: true,
+      preserveScroll: true,
+      reset: ["contacts"],
+    });
+  }, 300);
 });
 
-const filteredCount = computed(() => props.contacts.length);
+const contactList = computed(() => props.contacts.data ?? []);
+const filteredCount = computed(() => contactList.value.length);
+
+function loadMore() {
+  if (!props.contacts.next_cursor) return;
+
+  router.visit(contactRoutes.index().url, {
+    data: {
+      search: search.value || undefined,
+      favorite: favoriteOnly.value ? "true" : undefined,
+      cursor: props.contacts.next_cursor,
+    },
+    only: ["contacts"],
+    preserveState: true,
+    preserveScroll: true,
+  });
+}
 </script>
 
 <template>
@@ -69,9 +87,10 @@ const filteredCount = computed(() => props.contacts.length);
 
       <div class="space-y-2">
         <Link
-          v-for="contact in contacts"
+          v-for="contact in contactList"
           :key="contact.id"
           :href="contactRoutes.show(contact.id).url"
+          prefetch="hover"
           class="flex items-center gap-4 rounded-lg bg-muted/30 p-4 hover:bg-muted/50"
         >
           <div
@@ -93,9 +112,13 @@ const filteredCount = computed(() => props.contacts.length);
           }}</Badge>
         </Link>
 
-        <div v-if="contacts.length === 0" class="text-muted-foreground py-12 text-center">
+        <div v-if="contactList.length === 0" class="text-muted-foreground py-12 text-center">
           No contacts found.
         </div>
+      </div>
+
+      <div v-if="contacts.next_cursor" class="flex justify-center py-4">
+        <Button variant="outline" @click="loadMore">Load more contacts...</Button>
       </div>
     </div>
   </AppLayout>

@@ -37,6 +37,10 @@ func (s service) listContacts(search string, favoriteOnly bool) ([]database.Cont
 	return s.repo.ListContacts(strings.TrimSpace(search), favoriteOnly)
 }
 
+func (s service) listContactsPaginated(search string, favoriteOnly bool, cursor *string) (database.CursorPage[database.Contact], error) {
+	return s.repo.ListContactsPaginated(strings.TrimSpace(search), favoriteOnly, cursor, 15)
+}
+
 func (s service) getContact(id int64) (*database.Contact, error) {
 	return s.repo.GetContact(id)
 }
@@ -51,6 +55,10 @@ func (s service) createContact(form contactForm) (int64, error) {
 
 func (s service) updateContact(contactID int64, form contactForm) error {
 	return s.repo.UpdateContact(contactID, form.record())
+}
+
+func (s service) deleteContact(contactID int64) error {
+	return s.repo.DeleteContact(contactID)
 }
 
 func (s service) toggleFavorite(contactID int64) error {
@@ -73,6 +81,10 @@ func (s service) listOrganizations(search string) ([]database.Organization, erro
 	return s.repo.ListOrganizations(strings.TrimSpace(search))
 }
 
+func (s service) listOrganizationsPaginated(search string, page int) (database.OffsetPage[database.Organization], error) {
+	return s.repo.ListOrganizationsPaginated(strings.TrimSpace(search), page, 20)
+}
+
 func (s service) getOrganization(id int64) (*database.Organization, error) {
 	return s.repo.GetOrganization(id)
 }
@@ -83,4 +95,8 @@ func (s service) updateOrganization(organizationID int64, form organizationForm)
 
 func (s service) listContactsByOrganization(organizationID int64) ([]database.Contact, error) {
 	return s.repo.ListContactsByOrganization(organizationID)
+}
+
+func (s service) listContactsByOrgPaginated(organizationID int64, cursor *string) (database.CursorPage[database.Contact], error) {
+	return s.repo.ListContactsByOrgPaginated(organizationID, cursor, 15)
 }

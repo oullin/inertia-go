@@ -34,6 +34,10 @@ func (r databaseRepository) ListContacts(search string, favoritesOnly bool) ([]d
 	return database.ListContacts(r.db, search, favoritesOnly)
 }
 
+func (r databaseRepository) ListContactsPaginated(search string, favoritesOnly bool, cursor *string, perPage int) (database.CursorPage[database.Contact], error) {
+	return database.ListContactsPaginated(r.db, search, favoritesOnly, cursor, perPage)
+}
+
 func (r databaseRepository) GetContact(id int64) (*database.Contact, error) {
 	return database.GetContact(r.db, id)
 }
@@ -44,6 +48,10 @@ func (r databaseRepository) CreateContact(contact database.Contact) (int64, erro
 
 func (r databaseRepository) UpdateContact(id int64, contact database.Contact) error {
 	return database.UpdateContact(r.db, id, contact)
+}
+
+func (r databaseRepository) DeleteContact(id int64) error {
+	return database.DeleteContact(r.db, id)
 }
 
 func (r databaseRepository) ToggleContactFavorite(id int64) error {
@@ -62,6 +70,10 @@ func (r databaseRepository) ListOrganizations(search string) ([]database.Organiz
 	return database.ListOrganizations(r.db, search)
 }
 
+func (r databaseRepository) ListOrganizationsPaginated(search string, page int, perPage int) (database.OffsetPage[database.Organization], error) {
+	return database.ListOrganizationsPaginated(r.db, search, page, perPage)
+}
+
 func (r databaseRepository) GetOrganization(id int64) (*database.Organization, error) {
 	return database.GetOrganization(r.db, id)
 }
@@ -72,4 +84,8 @@ func (r databaseRepository) UpdateOrganization(id int64, name string) error {
 
 func (r databaseRepository) ListContactsByOrganization(organizationID int64) ([]database.Contact, error) {
 	return database.ListContactsByOrganization(r.db, organizationID)
+}
+
+func (r databaseRepository) ListContactsByOrgPaginated(organizationID int64, cursor *string, perPage int) (database.CursorPage[database.Contact], error) {
+	return database.ListContactsByOrgPaginated(r.db, organizationID, cursor, perPage)
 }

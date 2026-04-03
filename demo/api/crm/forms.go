@@ -3,6 +3,7 @@ package crm
 import (
 	"fmt"
 	"net/http"
+	"net/mail"
 	"strconv"
 	"strings"
 
@@ -16,11 +17,6 @@ type contactForm struct {
 	LastName       string
 	Email          string
 	Phone          string
-	Address        string
-	City           string
-	Region         string
-	Country        string
-	PostalCode     string
 }
 
 type organizationForm struct {
@@ -34,25 +30,15 @@ func newContactForm(r *http.Request) contactForm {
 		LastName:       strings.TrimSpace(r.FormValue("last_name")),
 		Email:          strings.TrimSpace(r.FormValue("email")),
 		Phone:          strings.TrimSpace(r.FormValue("phone")),
-		Address:        strings.TrimSpace(r.FormValue("address")),
-		City:           strings.TrimSpace(r.FormValue("city")),
-		Region:         strings.TrimSpace(r.FormValue("region")),
-		Country:        strings.TrimSpace(r.FormValue("country")),
-		PostalCode:     strings.TrimSpace(r.FormValue("postal_code")),
 	}
 }
 
 func newContactFormFromContact(contact database.Contact) contactForm {
 	form := contactForm{
-		FirstName:  contact.FirstName,
-		LastName:   contact.LastName,
-		Email:      contact.Email,
-		Phone:      contact.Phone,
-		Address:    contact.Address,
-		City:       contact.City,
-		Region:     contact.Region,
-		Country:    contact.Country,
-		PostalCode: contact.PostalCode,
+		FirstName: contact.FirstName,
+		LastName:  contact.LastName,
+		Email:     contact.Email,
+		Phone:     contact.Phone,
 	}
 
 	if contact.OrganizationID != nil {
@@ -71,14 +57,26 @@ func (f contactForm) validate() httpx.ValidationErrors {
 
 	if f.FirstName == "" {
 		errors["first_name"] = "First name is required."
+	} else if len(f.FirstName) > 255 {
+		errors["first_name"] = "First name must not exceed 255 characters."
 	}
 
 	if f.LastName == "" {
 		errors["last_name"] = "Last name is required."
+	} else if len(f.LastName) > 255 {
+		errors["last_name"] = "Last name must not exceed 255 characters."
 	}
 
-	if f.Email == "" || !strings.Contains(f.Email, "@") {
+	if f.Email == "" {
 		errors["email"] = "A valid email address is required."
+	} else if len(f.Email) > 255 {
+		errors["email"] = "Email must not exceed 255 characters."
+	} else if _, err := mail.ParseAddress(f.Email); err != nil {
+		errors["email"] = "A valid email address is required."
+	}
+
+	if len(f.Phone) > 255 {
+		errors["phone"] = "Phone must not exceed 255 characters."
 	}
 
 	return errors
@@ -91,11 +89,6 @@ func (f contactForm) record() database.Contact {
 		LastName:       f.LastName,
 		Email:          f.Email,
 		Phone:          f.Phone,
-		Address:        f.Address,
-		City:           f.City,
-		Region:         f.Region,
-		Country:        f.Country,
-		PostalCode:     f.PostalCode,
 	}
 }
 

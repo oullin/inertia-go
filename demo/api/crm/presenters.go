@@ -24,11 +24,6 @@ func contactProp(contact database.Contact) map[string]any {
 		"last_name":   contact.LastName,
 		"email":       contact.Email,
 		"phone":       contact.Phone,
-		"address":     contact.Address,
-		"city":        contact.City,
-		"region":      contact.Region,
-		"country":     contact.Country,
-		"postal_code": contact.PostalCode,
 		"is_favorite": contact.IsFavorite,
 		"created_at":  contact.CreatedAt.Format(time.RFC3339),
 		"updated_at":  contact.UpdatedAt.Format(time.RFC3339),
@@ -61,11 +56,6 @@ func contactFormProps(form contactForm) map[string]any {
 		"last_name":       form.LastName,
 		"email":           form.Email,
 		"phone":           form.Phone,
-		"address":         form.Address,
-		"city":            form.City,
-		"region":          form.Region,
-		"country":         form.Country,
-		"postal_code":     form.PostalCode,
 	}
 }
 
@@ -124,4 +114,24 @@ func notesProps(notes []database.Note) []map[string]any {
 
 func recentActivityProps(notes []database.Note) []map[string]any {
 	return notesProps(notes)
+}
+
+func cursorContactsProps(page database.CursorPage[database.Contact]) map[string]any {
+	result := map[string]any{
+		"data":        contactsProps(page.Data),
+		"next_cursor": page.NextCursor,
+		"prev_cursor": page.PrevCursor,
+	}
+
+	return result
+}
+
+func offsetOrganizationsProps(page database.OffsetPage[database.Organization]) map[string]any {
+	return map[string]any{
+		"data":         organizationsProps(page.Data),
+		"total":        page.Total,
+		"per_page":     page.PerPage,
+		"current_page": page.CurrentPage,
+		"last_page":    page.LastPage,
+	}
 }

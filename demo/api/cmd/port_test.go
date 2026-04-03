@@ -9,6 +9,7 @@ import (
 
 	"github.com/oullin/inertia-go/core/assert"
 	"github.com/oullin/inertia-go/core/config"
+	coreflash "github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/middleware"
@@ -149,7 +150,6 @@ func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
 		path string
 	}{
 		{name: "root", path: "/"},
-		{name: "feature demo", path: "/features/forms/use-form"},
 		{name: "dashboard navigation", path: "/dashboard/navigation"},
 		{name: "dashboard data", path: "/dashboard/data"},
 		{name: "dashboard state", path: "/dashboard/state"},
@@ -182,11 +182,6 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 		"last_name":       {"Cole"},
 		"email":           {"mina@example.test"},
 		"phone":           {"+1 555 0107"},
-		"address":         {"55 New St"},
-		"city":            {"Portland"},
-		"region":          {"OR"},
-		"country":         {"USA"},
-		"postal_code":     {"97201"},
 	}.Encode())
 
 	req := httptest.NewRequest(http.MethodPost, "/contacts", body)
@@ -244,13 +239,16 @@ func newPortTestMux(t *testing.T) http.Handler {
 	}
 
 	i = testInertia
+	flashStore = coreflash.NewCookieStore(coreflash.WithCookieName("beacon_flash"))
+	initRoutes()
 	setupPortTestDB(t)
-	t.Cleanup(func() { i = nil })
+	t.Cleanup(func() { i = nil; flashStore = nil })
 
 	mux := http.NewServeMux()
 	authApp := newAuthApp()
 	authApp.RegisterRoutes(mux)
 	registerCRMRoutes(mux, authApp)
+	registerFeatureRoutes(mux, authApp)
 
 	cfg := config.DefaultI18n()
 	cfg.URLPrefix = false

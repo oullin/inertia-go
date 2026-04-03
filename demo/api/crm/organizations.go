@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
-	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
 func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +18,15 @@ func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	search := strings.TrimSpace(r.URL.Query().Get("search"))
-	orgs, err := a.service.listOrganizations(search)
+	pageNum := 1
+
+	if p := r.URL.Query().Get("page"); p != "" {
+		if n, err := strconv.Atoi(p); err == nil && n > 0 {
+			pageNum = n
+		}
+	}
+
+	page, err := a.service.listOrganizationsPaginated(search, pageNum)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -30,7 +38,7 @@ func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 		"filters": map[string]any{
 			"search": search,
 		},
-		"organizations": organizationsProps(orgs),
+		"organizations": offsetOrganizationsProps(page),
 	})
 }
 
@@ -68,7 +76,13 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 		return
 	}
 
-	contacts, err := a.service.listContactsByOrganization(organizationID)
+	var cursor *string
+
+	if c := r.URL.Query().Get("cursor"); c != "" {
+		cursor = &c
+	}
+
+	contactsPage, err := a.service.listContactsByOrgPaginated(organizationID, cursor)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,7 +92,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 
 	a.deps.Render(w, r, "Organizations/Show", httpx.Props{
 		"organization": organizationProp(*org),
-		"contacts":     contactsProps(contacts),
+		"contacts":     cursorContactsProps(contactsPage),
 	})
 }
 

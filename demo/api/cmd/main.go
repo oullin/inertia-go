@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"embed"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/oullin/inertia-go/core/config"
+	"github.com/oullin/inertia-go/core/flash"
 	corei18n "github.com/oullin/inertia-go/core/i18n"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/middleware"
@@ -19,8 +21,12 @@ import (
 //go:embed resources/views/app.html
 var rootTemplateFS embed.FS
 
-var i *inertia.Inertia
-var localeCfg *config.I18nConfig
+var (
+	db         *sql.DB
+	i          *inertia.Inertia
+	localeCfg  *config.I18nConfig
+	flashStore *flash.CookieStore
+)
 
 func main() {
 	tmpl, err := rootTemplateFS.ReadFile("resources/views/app.html")
@@ -69,6 +75,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	flashStore = flash.NewCookieStore(flash.WithCookieName("beacon_flash"))
+	initRoutes()
+
 	db, err = database.Open("beacon.db")
 
 	if err != nil {
@@ -97,6 +106,7 @@ func main() {
 	authApp := newAuthApp()
 	authApp.RegisterRoutes(appMux)
 	registerCRMRoutes(appMux, authApp)
+	registerFeatureRoutes(appMux, authApp)
 	mux.Handle("/", dashboardAppHandler(authApp.WithCurrentUser(withDemoProps(authApp, appMux)), csrfMiddleware, localeCfg))
 
 	addr := ":8080"
@@ -157,6 +167,8 @@ func mustResolveResourcePath(name string) string {
 
 func dashboardAppHandler(base http.Handler, csrfMiddleware func(http.Handler) http.Handler, cfg *config.I18nConfig) http.Handler {
 	handler := base
+
+	handler = flash.Middleware(flashStore)(handler)
 
 	if cfg != nil {
 		handler = corei18n.Middleware(cfg, handler)

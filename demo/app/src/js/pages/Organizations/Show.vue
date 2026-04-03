@@ -1,5 +1,6 @@
 <script setup>
-import { Link, useForm } from "@inertiajs/vue3";
+import { computed } from "vue";
+import { Link, router, useForm } from "@inertiajs/vue3";
 import { Badge } from "@/js/components/ui/badge";
 import { Button } from "@/js/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/js/components/ui/card";
@@ -13,8 +14,8 @@ const props = defineProps({
     required: true,
   },
   contacts: {
-    type: Array,
-    default: () => [],
+    type: Object,
+    default: () => ({ data: [], next_cursor: null }),
   },
 });
 
@@ -30,6 +31,19 @@ const form = useForm({
 
 function submit() {
   form.post(organizationRoutes.update(props.organization.id).url);
+}
+
+const contactList = computed(() => props.contacts.data ?? []);
+
+function loadMoreContacts() {
+  if (!props.contacts.next_cursor) return;
+
+  router.visit(organizationRoutes.show(props.organization.id).url, {
+    data: { cursor: props.contacts.next_cursor },
+    only: ["contacts"],
+    preserveState: true,
+    preserveScroll: true,
+  });
 }
 </script>
 
@@ -67,12 +81,12 @@ function submit() {
           <CardTitle>Members</CardTitle>
         </CardHeader>
         <CardContent>
-          <div v-if="contacts.length === 0" class="text-muted-foreground text-sm">
+          <div v-if="contactList.length === 0" class="text-muted-foreground text-sm">
             No contacts in this organization.
           </div>
           <div v-else class="space-y-2">
             <Link
-              v-for="contact in contacts"
+              v-for="contact in contactList"
               :key="contact.id"
               :href="contactRoutes.show(contact.id).url"
               class="flex items-center gap-3 rounded-lg bg-muted/30 p-3 hover:bg-muted/50"
@@ -89,6 +103,12 @@ function submit() {
                 <div class="text-muted-foreground truncate text-xs">{{ contact.email }}</div>
               </div>
             </Link>
+          </div>
+
+          <div v-if="contacts.next_cursor" class="flex justify-center pt-4">
+            <Button variant="outline" size="sm" @click="loadMoreContacts"
+              >Load more members...</Button
+            >
           </div>
         </CardContent>
       </Card>

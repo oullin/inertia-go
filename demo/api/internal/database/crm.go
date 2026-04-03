@@ -2,11 +2,28 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// CursorPage holds cursor-paginated results.
+type CursorPage[T any] struct {
+	Data       []T     `json:"data"`
+	NextCursor *string `json:"next_cursor"`
+	PrevCursor *string `json:"prev_cursor"`
+}
+
+// OffsetPage holds offset-paginated results.
+type OffsetPage[T any] struct {
+	Data        []T `json:"data"`
+	Total       int `json:"total"`
+	PerPage     int `json:"per_page"`
+	CurrentPage int `json:"current_page"`
+	LastPage    int `json:"last_page"`
+}
 
 type User struct {
 	ID         int64
@@ -30,11 +47,6 @@ type Contact struct {
 	LastName         string
 	Email            string
 	Phone            string
-	Address          string
-	City             string
-	Region           string
-	Country          string
-	PostalCode       string
 	IsFavorite       bool
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -189,11 +201,6 @@ func ListContacts(db *sql.DB, search string, favoritesOnly bool) ([]Contact, err
 			c.last_name,
 			c.email,
 			c.phone,
-			c.address,
-			c.city,
-			c.region,
-			c.country,
-			c.postal_code,
 			c.is_favorite,
 			c.created_at,
 			c.updated_at
@@ -246,11 +253,6 @@ func ListContactsByOrganization(db *sql.DB, organizationID int64) ([]Contact, er
 			c.last_name,
 			c.email,
 			c.phone,
-			c.address,
-			c.city,
-			c.region,
-			c.country,
-			c.postal_code,
 			c.is_favorite,
 			c.created_at,
 			c.updated_at
@@ -281,11 +283,6 @@ func GetContact(db *sql.DB, id int64) (*Contact, error) {
 			c.last_name,
 			c.email,
 			c.phone,
-			c.address,
-			c.city,
-			c.region,
-			c.country,
-			c.postal_code,
 			c.is_favorite,
 			c.created_at,
 			c.updated_at
@@ -316,24 +313,14 @@ func CreateContact(db *sql.DB, contact Contact) (int64, error) {
 			last_name,
 			email,
 			phone,
-			address,
-			city,
-			region,
-			country,
-			postal_code,
 			is_favorite
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?)
 	`,
 		nullableInt64(contact.OrganizationID),
 		strings.TrimSpace(contact.FirstName),
 		strings.TrimSpace(contact.LastName),
 		strings.TrimSpace(contact.Email),
 		strings.TrimSpace(contact.Phone),
-		strings.TrimSpace(contact.Address),
-		strings.TrimSpace(contact.City),
-		strings.TrimSpace(contact.Region),
-		strings.TrimSpace(contact.Country),
-		strings.TrimSpace(contact.PostalCode),
 		boolToInt(contact.IsFavorite),
 	)
 
@@ -352,11 +339,6 @@ func UpdateContact(db *sql.DB, id int64, contact Contact) error {
 			last_name = ?,
 			email = ?,
 			phone = ?,
-			address = ?,
-			city = ?,
-			region = ?,
-			country = ?,
-			postal_code = ?,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`,
@@ -365,11 +347,6 @@ func UpdateContact(db *sql.DB, id int64, contact Contact) error {
 		strings.TrimSpace(contact.LastName),
 		strings.TrimSpace(contact.Email),
 		strings.TrimSpace(contact.Phone),
-		strings.TrimSpace(contact.Address),
-		strings.TrimSpace(contact.City),
-		strings.TrimSpace(contact.Region),
-		strings.TrimSpace(contact.Country),
-		strings.TrimSpace(contact.PostalCode),
 		id,
 	)
 
@@ -385,6 +362,218 @@ func ToggleContactFavorite(db *sql.DB, id int64) error {
 	`, id)
 
 	return err
+}
+
+func DeleteContact(db *sql.DB, id int64) error {
+	tx, err := db.Begin()
+
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM notes WHERE contact_id = ?", id); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec("DELETE FROM contacts WHERE id = ?", id); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor *string, perPage int) (CursorPage[Contact], error) {
+	query := `
+		SELECT
+			c.id, c.organization_id, COALESCE(o.name, ''),
+			c.first_name, c.last_name, c.email, c.phone,
+			c.is_favorite, c.created_at, c.updated_at
+		FROM contacts c
+		LEFT JOIN organizations o ON o.id = c.organization_id
+		WHERE 1 = 1
+	`
+
+	var args []any
+
+	if search = strings.TrimSpace(search); search != "" {
+		query += `
+			AND (
+				lower(c.first_name) LIKE lower(?)
+				OR lower(c.last_name) LIKE lower(?)
+				OR lower(c.email) LIKE lower(?)
+				OR lower(COALESCE(o.name, '')) LIKE lower(?)
+			)
+		`
+		like := "%" + search + "%"
+		args = append(args, like, like, like, like)
+	}
+
+	if favoritesOnly {
+		query += " AND c.is_favorite = 1"
+	}
+
+	if cursor != nil && *cursor != "" {
+		query += " AND c.id > ?"
+		args = append(args, *cursor)
+	}
+
+	query += " ORDER BY c.id ASC LIMIT ?"
+	args = append(args, perPage+1)
+
+	rows, err := db.Query(query, args...)
+
+	if err != nil {
+		return CursorPage[Contact]{}, err
+	}
+
+	defer rows.Close()
+
+	all := scanRows(rows, func(scan func(...any) error) (Contact, error) {
+		return scanContact(scan)
+	})
+
+	page := CursorPage[Contact]{Data: all}
+
+	if len(all) > perPage {
+		page.Data = all[:perPage]
+		next := fmt.Sprintf("%d", all[perPage-1].ID)
+		page.NextCursor = &next
+	}
+
+	if cursor != nil && *cursor != "" {
+		prev := *cursor
+		page.PrevCursor = &prev
+	}
+
+	return page, nil
+}
+
+func ListOrganizationsPaginated(db *sql.DB, search string, page int, perPage int) (OffsetPage[Organization], error) {
+	countQuery := `
+		SELECT COUNT(*)
+		FROM organizations o
+	`
+
+	query := `
+		SELECT o.id, o.name, COUNT(c.id) AS contacts_count
+		FROM organizations o
+		LEFT JOIN contacts c ON c.id = o.id
+	`
+
+	// Actually, join on organization_id not id
+	query = `
+		SELECT o.id, o.name, COUNT(c.id) AS contacts_count
+		FROM organizations o
+		LEFT JOIN contacts c ON c.organization_id = o.id
+	`
+
+	var args []any
+
+	var countArgs []any
+
+	if search = strings.TrimSpace(search); search != "" {
+		countQuery += " WHERE lower(o.name) LIKE lower(?)"
+		query += " WHERE lower(o.name) LIKE lower(?)"
+		countArgs = append(countArgs, "%"+search+"%")
+		args = append(args, "%"+search+"%")
+	}
+
+	var total int
+
+	if err := db.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+		return OffsetPage[Organization]{}, err
+	}
+
+	if page < 1 {
+		page = 1
+	}
+
+	lastPage := (total + perPage - 1) / perPage
+
+	if lastPage < 1 {
+		lastPage = 1
+	}
+
+	offset := (page - 1) * perPage
+	query += " GROUP BY o.id, o.name ORDER BY o.name ASC LIMIT ? OFFSET ?"
+	args = append(args, perPage, offset)
+
+	rows, err := db.Query(query, args...)
+
+	if err != nil {
+		return OffsetPage[Organization]{}, err
+	}
+
+	defer rows.Close()
+
+	orgs := scanRows(rows, func(scan func(...any) error) (Organization, error) {
+		var org Organization
+
+		if err := scan(&org.ID, &org.Name, &org.ContactsCount); err != nil {
+			return Organization{}, err
+		}
+
+		return org, nil
+	})
+
+	return OffsetPage[Organization]{
+		Data:        orgs,
+		Total:       total,
+		PerPage:     perPage,
+		CurrentPage: page,
+		LastPage:    lastPage,
+	}, nil
+}
+
+func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string, perPage int) (CursorPage[Contact], error) {
+	query := `
+		SELECT
+			c.id, c.organization_id, COALESCE(o.name, ''),
+			c.first_name, c.last_name, c.email, c.phone,
+			c.is_favorite, c.created_at, c.updated_at
+		FROM contacts c
+		LEFT JOIN organizations o ON o.id = c.organization_id
+		WHERE c.organization_id = ?
+	`
+
+	args := []any{organizationID}
+
+	if cursor != nil && *cursor != "" {
+		query += " AND c.id > ?"
+		args = append(args, *cursor)
+	}
+
+	query += " ORDER BY c.id ASC LIMIT ?"
+	args = append(args, perPage+1)
+
+	rows, err := db.Query(query, args...)
+
+	if err != nil {
+		return CursorPage[Contact]{}, err
+	}
+
+	defer rows.Close()
+
+	all := scanRows(rows, func(scan func(...any) error) (Contact, error) {
+		return scanContact(scan)
+	})
+
+	result := CursorPage[Contact]{Data: all}
+
+	if len(all) > perPage {
+		result.Data = all[:perPage]
+		next := fmt.Sprintf("%d", all[perPage-1].ID)
+		result.NextCursor = &next
+	}
+
+	if cursor != nil && *cursor != "" {
+		prev := *cursor
+		result.PrevCursor = &prev
+	}
+
+	return result, nil
 }
 
 func CountContacts(db *sql.DB) int {
@@ -537,11 +726,6 @@ func scanContact(scan func(...any) error) (Contact, error) {
 		&contact.LastName,
 		&contact.Email,
 		&contact.Phone,
-		&contact.Address,
-		&contact.City,
-		&contact.Region,
-		&contact.Country,
-		&contact.PostalCode,
 		&favorite,
 		&contact.CreatedAt,
 		&contact.UpdatedAt,

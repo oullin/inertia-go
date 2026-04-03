@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { Head, Link, usePage } from "@inertiajs/vue3";
-import { IconDashboard, IconUsers } from "@tabler/icons-vue";
+import { IconDashboard, IconUsers, IconCode, IconFileText } from "@tabler/icons-vue";
 import LoadingBar from "@/js/components/ui/loading-bar/LoadingBar.vue";
 import { Separator } from "@/js/components/ui/separator";
 import {
@@ -36,6 +36,10 @@ const page = usePage();
 const currentPath = computed(() => String(page.url ?? "/").split("?")[0]);
 const user = computed(() => page.props.auth?.user ?? null);
 
+function featureRoute(name) {
+  return page.props.routes?.[name] ?? "/";
+}
+
 const groups = computed(() => [
   {
     label: "CRM",
@@ -44,6 +48,100 @@ const groups = computed(() => [
       { title: "Contacts", href: contactRoutes.index().url, icon: IconUsers },
       { title: "Organizations", href: organizationRoutes.index().url, icon: IconUsers },
     ],
+  },
+]);
+
+const featureGroups = computed(() => [
+  {
+    label: "Forms",
+    items: [
+      { title: "useForm", href: featureRoute("features.forms.use-form") },
+      { title: "Form Component", href: featureRoute("features.forms.form-component") },
+      { title: "File Uploads", href: featureRoute("features.forms.file-uploads") },
+      { title: "Validation", href: featureRoute("features.forms.validation") },
+      { title: "Precognition", href: featureRoute("features.forms.precognition") },
+      { title: "Optimistic Updates", href: featureRoute("features.forms.optimistic-updates") },
+      { title: "Form Context", href: featureRoute("features.forms.use-form-context") },
+      { title: "Dotted Keys", href: featureRoute("features.forms.dotted-keys") },
+      { title: "Wayfinder", href: featureRoute("features.forms.wayfinder") },
+    ],
+  },
+  {
+    label: "Navigation",
+    items: [
+      { title: "Links", href: featureRoute("features.navigation.links") },
+      { title: "Preserve State", href: featureRoute("features.navigation.preserve-state") },
+      { title: "Preserve Scroll", href: featureRoute("features.navigation.preserve-scroll") },
+      { title: "View Transitions", href: featureRoute("features.navigation.view-transitions") },
+      { title: "History", href: featureRoute("features.navigation.history-management") },
+      { title: "Async Requests", href: featureRoute("features.navigation.async-requests") },
+      { title: "Manual Visits", href: featureRoute("features.navigation.manual-visits") },
+      { title: "Redirects", href: featureRoute("features.navigation.redirects") },
+      { title: "Scroll Management", href: featureRoute("features.navigation.scroll-management") },
+      { title: "Instant Visits", href: featureRoute("features.navigation.instant-visits") },
+      { title: "URL Fragments", href: featureRoute("features.navigation.url-fragments") },
+    ],
+  },
+  {
+    label: "Data Loading",
+    items: [
+      { title: "Deferred Props", href: featureRoute("features.data-loading.deferred-props") },
+      { title: "Partial Reloads", href: featureRoute("features.data-loading.partial-reloads") },
+      { title: "Infinite Scroll", href: featureRoute("features.data-loading.infinite-scroll") },
+      { title: "When Visible", href: featureRoute("features.data-loading.when-visible") },
+      { title: "Polling", href: featureRoute("features.data-loading.polling") },
+      { title: "Prop Merging", href: featureRoute("features.data-loading.prop-merging") },
+      { title: "Optional Props", href: featureRoute("features.data-loading.optional-props") },
+      { title: "Once Props", href: featureRoute("features.data-loading.once-props") },
+    ],
+  },
+  {
+    label: "Prefetching",
+    items: [
+      { title: "Link Prefetch", href: featureRoute("features.prefetching.link-prefetch") },
+      {
+        title: "Stale While Revalidate",
+        href: featureRoute("features.prefetching.stale-while-revalidate"),
+      },
+      { title: "Manual Prefetch", href: featureRoute("features.prefetching.manual-prefetch") },
+      { title: "Cache Management", href: featureRoute("features.prefetching.cache-management") },
+    ],
+  },
+  {
+    label: "State",
+    items: [
+      { title: "Remember", href: featureRoute("features.state.remember") },
+      { title: "Flash Data", href: featureRoute("features.state.flash-data") },
+      { title: "Shared Props", href: featureRoute("features.state.shared-props") },
+    ],
+  },
+  {
+    label: "Layouts",
+    items: [
+      { title: "Persistent Layouts", href: featureRoute("features.layouts.persistent-layouts") },
+      { title: "Nested Layouts", href: featureRoute("features.layouts.nested-layouts") },
+      { title: "Head", href: featureRoute("features.layouts.head") },
+      { title: "Layout Props", href: featureRoute("features.layouts.layout-props") },
+    ],
+  },
+  {
+    label: "Events",
+    items: [
+      { title: "Global Events", href: featureRoute("features.events.global-events") },
+      { title: "Visit Callbacks", href: featureRoute("features.events.visit-callbacks") },
+      { title: "Progress", href: featureRoute("features.events.progress") },
+    ],
+  },
+  {
+    label: "Errors",
+    items: [
+      { title: "HTTP Exceptions", href: featureRoute("features.errors.http-exceptions") },
+      { title: "Network Errors", href: featureRoute("features.errors.network-errors") },
+    ],
+  },
+  {
+    label: "HTTP",
+    items: [{ title: "useHttp", href: featureRoute("features.http.use-http") }],
   },
 ]);
 </script>
@@ -91,6 +189,26 @@ const groups = computed(() => [
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup v-for="fGroup in featureGroups" :key="fGroup.label">
+          <SidebarGroupContent>
+            <SidebarGroupLabel>{{ fGroup.label }}</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem v-for="item in fGroup.items" :key="item.title">
+                <SidebarMenuButton
+                  as-child
+                  :is-active="currentPath === item.href"
+                  :tooltip="item.title"
+                >
+                  <Link :href="item.href" view-transition>
+                    <IconCode class="!size-4 opacity-60" />
+                    <span>{{ item.title }}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter v-if="user" class="border-t">
         <div class="flex items-center justify-between gap-3 px-2 py-1 text-sm">
@@ -129,6 +247,7 @@ const groups = computed(() => [
         :class="{
           'border-green-200 bg-green-50 text-green-800': page.props.flash.kind === 'success',
           'border-red-200 bg-red-50 text-red-800': page.props.flash.kind === 'error',
+          'border-yellow-200 bg-yellow-50 text-yellow-800': page.props.flash.kind === 'warning',
           'border-blue-200 bg-blue-50 text-blue-800':
             page.props.flash.kind === 'info' || !page.props.flash.kind,
         }"

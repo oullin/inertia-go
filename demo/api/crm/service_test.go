@@ -48,11 +48,6 @@ func TestServiceCreateContact(t *testing.T) {
 		LastName:       " Cole ",
 		Email:          " mina@example.test ",
 		Phone:          " +65 1234 ",
-		Address:        " 1 Main St ",
-		City:           " Singapore ",
-		Region:         " SG ",
-		Country:        " Singapore ",
-		PostalCode:     " 018989 ",
 	})
 
 	if err != nil {
@@ -77,8 +72,8 @@ func TestServiceCreateContact(t *testing.T) {
 		t.Fatalf("contact = %#v", *contact)
 	}
 
-	if contact.Phone != "+65 1234" || contact.Address != "1 Main St" || contact.City != "Singapore" || contact.Region != "SG" || contact.Country != "Singapore" || contact.PostalCode != "018989" {
-		t.Fatalf("trimmed contact fields = %#v", *contact)
+	if contact.Phone != "+65 1234" {
+		t.Fatalf("phone = %q, want %q", contact.Phone, "+65 1234")
 	}
 }
 
@@ -93,11 +88,6 @@ func TestServiceUpdateContact(t *testing.T) {
 		LastName:       " Cole ",
 		Email:          " mina.updated@example.test ",
 		Phone:          " +65 9999 ",
-		Address:        " 99 Marina Blvd ",
-		City:           " Singapore ",
-		Region:         " SG ",
-		Country:        " Singapore ",
-		PostalCode:     " 018980 ",
 	})
 
 	if err != nil {
@@ -122,8 +112,8 @@ func TestServiceUpdateContact(t *testing.T) {
 		t.Fatalf("updated contact = %#v", *contact)
 	}
 
-	if contact.Phone != "+65 9999" || contact.Address != "99 Marina Blvd" || contact.City != "Singapore" || contact.Region != "SG" || contact.Country != "Singapore" || contact.PostalCode != "018980" {
-		t.Fatalf("trimmed updated contact fields = %#v", *contact)
+	if contact.Phone != "+65 9999" {
+		t.Fatalf("phone = %q, want %q", contact.Phone, "+65 9999")
 	}
 }
 

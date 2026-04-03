@@ -1,9 +1,10 @@
 <script setup>
-import { Link, router, useForm } from "@inertiajs/vue3";
+import { Link, Deferred, router, useForm } from "@inertiajs/vue3";
 import InputError from "@/js/components/app/InputError.vue";
 import { Badge } from "@/js/components/ui/badge";
 import { Button } from "@/js/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/js/components/ui/card";
+import { Skeleton } from "@/js/components/ui/skeleton";
 import { Textarea } from "@/js/components/ui/textarea";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { contactRoutes } from "@/js/lib/routes";
@@ -15,7 +16,7 @@ const props = defineProps({
   },
   notes: {
     type: Array,
-    default: () => [],
+    default: undefined,
   },
 });
 
@@ -39,6 +40,12 @@ function submitNote() {
 function toggleFavorite() {
   router.post(contactRoutes.favorite(props.contact.id).url, {}, { preserveScroll: true });
 }
+
+function deleteContact() {
+  if (!confirm("Are you sure you want to delete this contact?")) return;
+
+  router.delete(contactRoutes.destroy(props.contact.id).url);
+}
 </script>
 
 <template>
@@ -58,7 +65,6 @@ function toggleFavorite() {
             <div class="text-muted-foreground grid gap-1 text-sm">
               <p>{{ contact.email }}</p>
               <p>{{ contact.phone || "No phone number" }}</p>
-              <p>{{ contact.address }}, {{ contact.city }}, {{ contact.region }}</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -68,6 +74,7 @@ function toggleFavorite() {
             <Button as-child>
               <Link :href="contactRoutes.edit(contact.id).url">Edit</Link>
             </Button>
+            <Button variant="destructive" @click="deleteContact">Delete</Button>
           </div>
         </CardHeader>
       </Card>
@@ -96,18 +103,30 @@ function toggleFavorite() {
           <CardTitle>Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          <div v-if="notes.length === 0" class="text-muted-foreground text-sm">No notes yet.</div>
-          <div v-else class="space-y-3">
-            <div v-for="note in notes" :key="note.id" class="rounded-lg bg-muted/30 p-4">
-              <div class="mb-2 flex items-center justify-between gap-3">
-                <p class="text-sm font-medium">{{ note.user.name }}</p>
-                <time class="text-muted-foreground text-xs">{{
-                  new Date(note.created_at).toLocaleString()
-                }}</time>
+          <Deferred data="notes">
+            <template #fallback>
+              <div class="space-y-3">
+                <Skeleton class="h-20 w-full" />
+                <Skeleton class="h-20 w-full" />
+                <Skeleton class="h-20 w-full" />
               </div>
-              <p class="text-sm leading-6">{{ note.body }}</p>
+            </template>
+
+            <div v-if="!notes || notes.length === 0" class="text-muted-foreground text-sm">
+              No notes yet.
             </div>
-          </div>
+            <div v-else class="space-y-3">
+              <div v-for="note in notes" :key="note.id" class="rounded-lg bg-muted/30 p-4">
+                <div class="mb-2 flex items-center justify-between gap-3">
+                  <p class="text-sm font-medium">{{ note.user.name }}</p>
+                  <time class="text-muted-foreground text-xs">{{
+                    new Date(note.created_at).toLocaleString()
+                  }}</time>
+                </div>
+                <p class="text-sm leading-6">{{ note.body }}</p>
+              </div>
+            </div>
+          </Deferred>
         </CardContent>
       </Card>
     </div>

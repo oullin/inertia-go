@@ -1,0 +1,168 @@
+package features
+
+import (
+	"fmt"
+	"math/rand"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/oullin/inertia-go/core/httpx"
+	"github.com/oullin/inertia-go/core/props"
+	"github.com/oullin/inertia-go/demo/api/internal/database"
+)
+
+func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
+	a.deps.Render(w, r, "Features/DataLoading/DeferredProps", httpx.Props{
+		"quickStat": 42,
+		"slowStats": props.Defer(func() any {
+			time.Sleep(800 * time.Millisecond)
+
+			return map[string]any{
+				"totalContacts":  database.CountContacts(a.deps.DB),
+				"totalFavorites": 12,
+			}
+		}, "slow"),
+		"heavyData": props.Defer(func() any {
+			time.Sleep(1500 * time.Millisecond)
+			items := make([]map[string]any, 20)
+
+			for i := range items {
+				items[i] = map[string]any{"id": i + 1, "name": fmt.Sprintf("Item %d", i+1)}
+			}
+
+			return items
+		}, "heavy"),
+	})
+}
+
+func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
+	users := []map[string]any{
+		{"id": 1, "name": "Alice"},
+		{"id": 2, "name": "Bob"},
+		{"id": 3, "name": "Carol"},
+	}
+
+	a.deps.Render(w, r, "Features/DataLoading/PartialReloads", httpx.Props{
+		"users":        users,
+		"stats":        map[string]any{"total": 3, "active": 2},
+		"timestamp":    time.Now().Format(time.RFC3339),
+		"randomNumber": rand.Intn(1000),
+	})
+}
+
+func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
+	var cursor *string
+
+	if c := r.URL.Query().Get("cursor"); c != "" {
+		cursor = &c
+	}
+
+	page, _ := database.ListContactsPaginated(a.deps.DB, "", false, cursor, 15)
+
+	items := make([]map[string]any, 0, len(page.Data))
+
+	for _, c := range page.Data {
+		item := map[string]any{
+			"id":          c.ID,
+			"first_name":  c.FirstName,
+			"last_name":   c.LastName,
+			"email":       c.Email,
+			"is_favorite": c.IsFavorite,
+		}
+
+		if c.OrganizationID != nil {
+			item["organization"] = map[string]any{"name": c.OrganizationName}
+		}
+
+		items = append(items, item)
+	}
+
+	a.deps.Render(w, r, "Features/DataLoading/InfiniteScroll", httpx.Props{
+		"contacts": map[string]any{
+			"data":        items,
+			"next_cursor": page.NextCursor,
+		},
+	})
+}
+
+func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
+	a.deps.Render(w, r, "Features/DataLoading/WhenVisible", httpx.Props{
+		"section1": props.Optional(func() any {
+			time.Sleep(500 * time.Millisecond)
+
+			return map[string]any{"title": "Section 1", "content": "Loaded on visibility."}
+		}),
+		"section2": props.Optional(func() any {
+			time.Sleep(800 * time.Millisecond)
+
+			return map[string]any{"title": "Section 2", "content": "Also loaded lazily."}
+		}),
+		"section3": props.Optional(func() any {
+			time.Sleep(1000 * time.Millisecond)
+
+			return map[string]any{"title": "Section 3", "content": "Third lazy section."}
+		}),
+	})
+}
+
+func (a app) pollingHandler(w http.ResponseWriter, r *http.Request) {
+	a.deps.Render(w, r, "Features/DataLoading/Polling", httpx.Props{
+		"currentTime":  time.Now().Format(time.RFC3339),
+		"randomNumber": rand.Intn(1000),
+		"contactCount": database.CountContacts(a.deps.DB),
+	})
+}
+
+func (a app) propMergingHandler(w http.ResponseWriter, r *http.Request) {
+	notifications := []map[string]any{
+		{"id": 1, "text": "New contact added", "time": "2m ago"},
+		{"id": 2, "text": "Organization updated", "time": "5m ago"},
+		{"id": 3, "text": "Note created", "time": "12m ago"},
+	}
+
+	activities := []map[string]any{
+		{"id": 1, "action": "Logged in", "time": "1m ago"},
+		{"id": 2, "action": "Viewed contacts", "time": "3m ago"},
+	}
+
+	a.deps.Render(w, r, "Features/DataLoading/PropMerging", httpx.Props{
+		"notifications": props.Merge(notifications),
+		"activities":    props.Merge(activities),
+		"timestamp":     time.Now().Format(time.RFC3339),
+	})
+}
+
+func (a app) optionalPropsHandler(w http.ResponseWriter, r *http.Request) {
+	a.deps.Render(w, r, "Features/DataLoading/OptionalProps", httpx.Props{
+		"regularData": map[string]any{"message": "Always loaded"},
+		"optionalData": props.Optional(func() any {
+			return map[string]any{"message": "Loaded on demand"}
+		}),
+		"deferredData": props.Defer(func() any {
+			time.Sleep(500 * time.Millisecond)
+
+			return map[string]any{"message": "Loaded asynchronously"}
+		}),
+	})
+}
+
+func (a app) oncePropsHandler(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/features/data-loading/once-props/")
+	pageNum, _ := strconv.Atoi(strings.Trim(path, "/"))
+
+	if pageNum < 1 {
+		pageNum = 1
+	}
+
+	a.deps.Render(w, r, "Features/DataLoading/OnceProps", httpx.Props{
+		"page":       pageNum,
+		"staticData": props.Once(map[string]any{"cached": true, "message": "This won't change on reload"}),
+		"freshData":  map[string]any{"timestamp": time.Now().Format(time.RFC3339)},
+		"dynamicData": map[string]any{
+			"page":      pageNum,
+			"generated": time.Now().Format(time.RFC3339),
+		},
+	})
+}

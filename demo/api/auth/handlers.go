@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 )
@@ -37,7 +38,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case err == nil:
 			a.setSession(w, user.ID, form.Remember)
-			a.deps.SetFlash(w, Flash{
+			a.deps.SetFlash(w, flash.Message{
 				Kind:    "success",
 				Title:   "Signed in",
 				Message: "The demo session is now authenticated.",
@@ -66,7 +67,7 @@ func (a App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.clearSession(w)
-	a.deps.SetFlash(w, Flash{
+	a.deps.SetFlash(w, flash.Message{
 		Kind:    "info",
 		Title:   "Signed out",
 		Message: "Your demo session has been cleared.",

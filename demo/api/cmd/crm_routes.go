@@ -3,10 +3,10 @@ package main
 import (
 	"net/http"
 
+	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/demo/api/auth"
 	"github.com/oullin/inertia-go/demo/api/crm"
-	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
 func registerCRMRoutes(mux *http.ServeMux, authApp auth.App) {
@@ -20,13 +20,9 @@ func registerCRMRoutes(mux *http.ServeMux, authApp auth.App) {
 		Redirect: func(w http.ResponseWriter, r *http.Request, url string) {
 			i.Redirect(w, r, url)
 		},
-		RouteURL: routeURL,
-		SetFlash: func(w http.ResponseWriter, message flash.Message) {
-			setFlash(w, flash.Message{
-				Kind:    message.Kind,
-				Title:   message.Title,
-				Message: message.Message,
-			})
+		RouteURL: routes.URL,
+		SetFlash: func(w http.ResponseWriter, msg flash.Message) {
+			flashStore.Set(w, msg)
 		},
 		CurrentUser: authApp.CurrentUser,
 	})

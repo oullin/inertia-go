@@ -109,31 +109,6 @@ function submit() {
               <Input id="phone" v-model="form.phone" />
             </div>
 
-            <div class="grid gap-2">
-              <Label for="address">Address</Label>
-              <Input id="address" v-model="form.address" />
-            </div>
-
-            <div class="grid gap-2">
-              <Label for="city">City</Label>
-              <Input id="city" v-model="form.city" />
-            </div>
-
-            <div class="grid gap-2">
-              <Label for="region">Region</Label>
-              <Input id="region" v-model="form.region" />
-            </div>
-
-            <div class="grid gap-2">
-              <Label for="country">Country</Label>
-              <Input id="country" v-model="form.country" />
-            </div>
-
-            <div class="grid gap-2">
-              <Label for="postal_code">Postal code</Label>
-              <Input id="postal_code" v-model="form.postal_code" />
-            </div>
-
             <div class="md:col-span-2 flex items-center gap-3">
               <Button type="submit" :disabled="form.processing">
                 {{ form.processing ? "Saving..." : isEdit ? "Update contact" : "Create contact" }}
@@ -141,6 +116,12 @@ function submit() {
               <Button v-if="isEdit" type="button" variant="outline" as-child>
                 <a :href="contactRoutes.show(contact.id).url">Cancel</a>
               </Button>
+              <span v-if="isEdit && form.isDirty" class="text-muted-foreground text-sm">
+                Unsaved changes
+              </span>
+              <span v-if="isEdit && form.recentlySuccessful" class="text-sm text-green-600">
+                Saved!
+              </span>
             </div>
           </form>
         </CardContent>

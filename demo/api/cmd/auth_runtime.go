@@ -3,9 +3,9 @@ package main
 import (
 	"net/http"
 
+	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/demo/api/auth"
-	"github.com/oullin/inertia-go/demo/api/internal/flash"
 )
 
 func newAuthApp() auth.App {
@@ -18,13 +18,9 @@ func newAuthApp() auth.App {
 		Redirect: func(w http.ResponseWriter, r *http.Request, url string) {
 			i.Redirect(w, r, url)
 		},
-		RouteURL: routeURL,
-		SetFlash: func(w http.ResponseWriter, message auth.Flash) {
-			setFlash(w, flash.Message{
-				Kind:    message.Kind,
-				Title:   message.Title,
-				Message: message.Message,
-			})
+		RouteURL: routes.URL,
+		SetFlash: func(w http.ResponseWriter, msg flash.Message) {
+			flashStore.Set(w, msg)
 		},
 	})
 }
