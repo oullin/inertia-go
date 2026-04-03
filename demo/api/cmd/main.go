@@ -96,8 +96,6 @@ func main() {
 	appMux := http.NewServeMux()
 	registerAuthRoutes(appMux)
 	registerCRMRoutes(appMux)
-	registerFeatureRoutes(appMux)
-	registerLegacyDashboardRoutes(appMux)
 	mux.Handle("/", dashboardAppHandler(withDemoProps(appMux), csrfMiddleware, localeCfg))
 
 	addr := ":8080"

@@ -10,19 +10,8 @@ import (
 )
 
 func registerAuthRoutes(mux *http.ServeMux) {
-	mux.Handle("/", http.HandlerFunc(homeHandler))
 	mux.Handle("/login", guestOnly(http.HandlerFunc(loginHandler)))
 	mux.Handle("/logout", requireDemoAuth(http.HandlerFunc(logoutHandler)))
-}
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if currentUser(r) != nil {
-		i.Redirect(w, r, routeURL("dashboard", nil))
-
-		return
-	}
-
-	i.Redirect(w, r, routeURL("login", nil))
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {

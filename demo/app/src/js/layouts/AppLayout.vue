@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { Head, Link, usePage } from "@inertiajs/vue3";
-import { IconDashboard, IconListDetails, IconUsers } from "@tabler/icons-vue";
+import { IconDashboard, IconUsers } from "@tabler/icons-vue";
 import LoadingBar from "@/js/components/ui/loading-bar/LoadingBar.vue";
 import { Separator } from "@/js/components/ui/separator";
 import {
@@ -19,7 +19,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/js/components/ui/sidebar";
-import { appRoutes, contactRoutes, featureRoutes, organizationRoutes } from "@/js/lib/routes";
+import { appRoutes, contactRoutes, organizationRoutes } from "@/js/lib/routes";
 
 const props = defineProps({
   title: {
@@ -43,14 +43,6 @@ const groups = computed(() => [
       { title: "Dashboard", href: appRoutes.dashboard().url, icon: IconDashboard },
       { title: "Contacts", href: contactRoutes.index().url, icon: IconUsers },
       { title: "Organizations", href: organizationRoutes.index().url, icon: IconUsers },
-    ],
-  },
-  {
-    label: "Features",
-    items: [
-      { title: "Forms", href: featureRoutes.formsUseForm().url, icon: IconListDetails },
-      { title: "Navigation", href: featureRoutes.navigationLinks().url, icon: IconListDetails },
-      { title: "Data Loading", href: featureRoutes.deferredProps().url, icon: IconListDetails },
     ],
   },
 ]);

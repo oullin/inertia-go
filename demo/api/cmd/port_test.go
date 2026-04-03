@@ -103,6 +103,35 @@ func TestDashboardRendersForAuthenticatedUser(t *testing.T) {
 	page.AssertHasProp(t, "auth")
 }
 
+func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
+	testMux := newPortTestMux(t)
+
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "root", path: "/"},
+		{name: "feature demo", path: "/features/forms/use-form"},
+		{name: "dashboard navigation", path: "/dashboard/navigation"},
+		{name: "dashboard data", path: "/dashboard/data"},
+		{name: "dashboard state", path: "/dashboard/state"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			req.AddCookie(&http.Cookie{Name: demoSessionCookieName, Value: "1"})
+			w := httptest.NewRecorder()
+
+			testMux.ServeHTTP(w, req)
+
+			if w.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want %d", w.Code, http.StatusNotFound)
+			}
+		})
+	}
+}
+
 func TestStoreContactCreatesRecord(t *testing.T) {
 	testMux := newPortTestMux(t)
 	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
@@ -183,8 +212,6 @@ func newPortTestMux(t *testing.T) http.Handler {
 	mux := http.NewServeMux()
 	registerAuthRoutes(mux)
 	registerCRMRoutes(mux)
-	registerFeatureRoutes(mux)
-	registerLegacyDashboardRoutes(mux)
 
 	cfg := config.DefaultI18n()
 	cfg.URLPrefix = false

@@ -41,10 +41,3 @@ export const organizationRoutes = {
   show: (organization) => useDemoRoute("organizations.show", { organization }),
   update: (organization) => useDemoRoute("organizations.update", { organization }),
 };
-
-export const featureRoutes = {
-  formsUseForm: () => useDemoRoute("features.forms.use-form"),
-  navigationLinks: () => useDemoRoute("features.navigation.links"),
-  deferredProps: () => useDemoRoute("features.data-loading.deferred"),
-  remember: () => useDemoRoute("features.state.remember"),
-};
