@@ -1,16 +1,18 @@
-<script setup>
+<script setup lang="ts">
 import { cn } from "@/js/lib/utils";
 
 const model = defineModel({
   default: "",
 });
 
-defineProps({
-  class: {
-    type: null,
-    default: "",
+withDefaults(
+  defineProps<{
+    class?: any;
+  }>(),
+  {
+    class: "",
   },
-});
+);
 </script>
 
 <template>

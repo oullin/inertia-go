@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/oullin/inertia-go/core/httpx"
@@ -101,7 +102,23 @@ func message(fe validator.FieldError) string {
 }
 
 // humanize converts a snake_case or camelCase field name to a readable label.
-// e.g. "first_name" → "first name", "email" → "email"
+// e.g. "first_name" → "first name", "FirstName" → "first name"
 func humanize(field string) string {
-	return strings.ReplaceAll(field, "_", " ")
+	var b strings.Builder
+
+	for i, r := range field {
+		if r == '_' {
+			b.WriteByte(' ')
+
+			continue
+		}
+
+		if i > 0 && unicode.IsUpper(r) && unicode.IsLower(rune(field[i-1])) {
+			b.WriteByte(' ')
+		}
+
+		b.WriteRune(unicode.ToLower(r))
+	}
+
+	return b.String()
 }

@@ -5,6 +5,7 @@ import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import InputError from "@/js/components/app/InputError.vue";
 import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
+import { Textarea } from "@/js/components/ui/textarea";
 import { Label } from "@/js/components/ui/label";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import type { SharedPageProps } from "@/js/types";
@@ -134,11 +135,10 @@ function submitSecondary() {
 
               <div class="grid gap-2">
                 <Label for="body">Body</Label>
-                <textarea
+                <Textarea
                   id="body"
                   v-model="secondaryForm.body"
                   rows="3"
-                  class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   :class="{ 'border-red-500': secondaryForm.errors.body }"
                   placeholder="Post body content"
                 />

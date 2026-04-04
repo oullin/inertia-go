@@ -133,6 +133,20 @@ func TestURL(t *testing.T) {
 	}
 }
 
+func TestURLEscapesParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	got := reg.URL("contacts.show", map[string]string{"contact": "foo/bar?baz#qux"})
+	want := "/contacts/foo%2Fbar%3Fbaz%23qux"
+
+	if got != want {
+		t.Errorf("expected %s, got %s", want, got)
+	}
+}
+
 func TestURLUnknownRoute(t *testing.T) {
 	t.Parallel()
 

@@ -3,7 +3,6 @@ package features
 import (
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
@@ -46,8 +45,7 @@ func (a app) flashDataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) flashDataActionHandler(w http.ResponseWriter, r *http.Request) {
-	action := strings.TrimPrefix(r.URL.Path, "/features/state/flash-data/")
-	action = strings.Trim(action, "/")
+	action := r.PathValue("action")
 
 	var msg flash.Message
 

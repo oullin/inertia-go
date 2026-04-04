@@ -144,18 +144,19 @@ function submit() {
                 </p>
               </div>
               <div class="rounded-md border p-3">
-                <p class="mb-1 font-medium">Server Receives Nested</p>
-                <p class="text-muted-foreground">The server receives these as nested structures:</p>
+                <p class="mb-1 font-medium">Server Flattens to Dotted Keys</p>
+                <p class="text-muted-foreground">
+                  Inertia sends the nested JSON shown above. The server's
+                  <code class="bg-muted rounded px-1">ParseForm</code> flattens it back to dotted
+                  keys so handlers access values via
+                  <code class="bg-muted rounded px-1">r.FormValue("address.street")</code>.
+                </p>
                 <pre class="bg-muted mt-2 overflow-auto rounded p-2 text-xs">
-{
-  "address": {
-    "street": "123 Main St",
-    "city": "Springfield"
-  },
-  "contact": {
-    "emails": ["primary@example.com"]
-  }
-}</pre
+// Wire format (nested JSON)
+{ "address": { "street": "123 Main St" } }
+
+// After ParseForm (flat dotted keys)
+r.FormValue("address.street") // "123 Main St"</pre
                 >
               </div>
               <div class="rounded-md border p-3">

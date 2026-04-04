@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
+	"github.com/oullin/inertia-go/demo/api/internal/httputil"
 )
 
 func (a app) linksHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,10 @@ func (a app) asyncRequestsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) asyncSlowHandler(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(2 * time.Second)
+	if httputil.SleepCtx(r.Context(), 2*time.Second) != nil {
+		return
+	}
+
 	a.deps.Render(w, r, "Features/Navigation/AsyncRequests", httpx.Props{
 		"timestamp": time.Now().Format(time.RFC3339),
 	})
@@ -99,8 +102,7 @@ func (a app) redirectsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) redirectsActionHandler(w http.ResponseWriter, r *http.Request) {
-	action := strings.TrimPrefix(r.URL.Path, "/features/navigation/redirects/")
-	action = strings.Trim(action, "/")
+	action := r.PathValue("action")
 
 	switch action {
 	case "back":
@@ -173,8 +175,7 @@ func (a app) urlFragmentsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) urlFragmentsActionHandler(w http.ResponseWriter, r *http.Request) {
-	action := strings.TrimPrefix(r.URL.Path, "/features/navigation/url-fragments/")
-	action = strings.Trim(action, "/")
+	action := r.PathValue("action")
 
 	switch action {
 	case "redirect-with-hash":

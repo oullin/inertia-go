@@ -31,9 +31,15 @@ func newServiceTestHarness(t *testing.T) serviceTestHarness {
 		t.Fatalf("seed.Run() error = %v", err)
 	}
 
+	repo, err := newRepository(db)
+
+	if err != nil {
+		t.Fatalf("newRepository() error = %v", err)
+	}
+
 	return serviceTestHarness{
 		db:  db,
-		svc: newService(newRepository(db)),
+		svc: newService(repo),
 	}
 }
 
@@ -252,5 +258,57 @@ func TestServiceUpdateOrganization(t *testing.T) {
 
 	if org.Name != "Acme HQ" {
 		t.Fatalf("organization name = %q, want %q", org.Name, "Acme HQ")
+	}
+}
+
+func TestServiceUpdateOrganizationNotFound(t *testing.T) {
+	t.Parallel()
+
+	h := newServiceTestHarness(t)
+
+	err := h.svc.updateOrganization(99999, organizationForm{Name: "Ghost"})
+
+	if !errors.Is(err, database.ErrNotFound) {
+		t.Fatalf("updateOrganization() error = %v, want database.ErrNotFound", err)
+	}
+}
+
+func TestServiceUpdateContactNotFound(t *testing.T) {
+	t.Parallel()
+
+	h := newServiceTestHarness(t)
+
+	err := h.svc.updateContact(99999, contactForm{
+		FirstName: "Ghost",
+		LastName:  "User",
+		Email:     "ghost@example.test",
+	})
+
+	if !errors.Is(err, database.ErrNotFound) {
+		t.Fatalf("updateContact() error = %v, want database.ErrNotFound", err)
+	}
+}
+
+func TestServiceToggleFavoriteNotFound(t *testing.T) {
+	t.Parallel()
+
+	h := newServiceTestHarness(t)
+
+	err := h.svc.toggleFavorite(99999)
+
+	if !errors.Is(err, database.ErrNotFound) {
+		t.Fatalf("toggleFavorite() error = %v, want database.ErrNotFound", err)
+	}
+}
+
+func TestServiceDeleteContactNotFound(t *testing.T) {
+	t.Parallel()
+
+	h := newServiceTestHarness(t)
+
+	err := h.svc.deleteContact(99999)
+
+	if !errors.Is(err, database.ErrNotFound) {
+		t.Fatalf("deleteContact() error = %v, want database.ErrNotFound", err)
 	}
 }

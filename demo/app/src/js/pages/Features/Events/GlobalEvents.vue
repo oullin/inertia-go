@@ -27,7 +27,8 @@ function logEvent(name: string, detail: string | object) {
   eventLog.value.unshift({
     id: ++idCounter,
     name,
-    detail: typeof detail === "object" ? JSON.stringify(detail) : String(detail ?? ""),
+    detail:
+      detail !== null && typeof detail === "object" ? JSON.stringify(detail) : String(detail ?? ""),
     time: new Date().toLocaleTimeString(),
   });
   if (eventLog.value.length > 20) {

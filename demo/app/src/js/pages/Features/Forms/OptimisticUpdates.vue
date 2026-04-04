@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -25,6 +25,8 @@ watch(
 );
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "Optimistic Updates" }];
+
+const favorites = computed(() => localContacts.value.filter((c) => c.is_favorite));
 
 function toggleFavorite(contact: Contact) {
   contact.is_favorite = !contact.is_favorite;
@@ -112,9 +114,9 @@ function toggleFavorite(contact: Contact) {
 
           <FeatureCard title="Favorites" description="Current favorite contacts.">
             <div class="text-sm">
-              <div v-if="localContacts.filter((c) => c.is_favorite).length" class="grid gap-1">
+              <div v-if="favorites.length" class="grid gap-1">
                 <div
-                  v-for="fav in localContacts.filter((c) => c.is_favorite)"
+                  v-for="fav in favorites"
                   :key="fav.id"
                   class="flex items-center gap-2 rounded bg-yellow-50 px-3 py-2"
                 >

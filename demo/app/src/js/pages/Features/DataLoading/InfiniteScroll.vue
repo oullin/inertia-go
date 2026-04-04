@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -21,6 +21,15 @@ const breadcrumbs = [
 const loading = ref(false);
 const allContacts = ref<Contact[]>([...props.contacts.data]);
 const nextCursor = ref<string | null>(props.contacts.next_cursor);
+
+watch(
+  () => props.contacts,
+  (fresh) => {
+    allContacts.value = [...fresh.data];
+    nextCursor.value = fresh.next_cursor;
+    loading.value = false;
+  },
+);
 
 function loadMore() {
   if (!nextCursor.value || loading.value) return;

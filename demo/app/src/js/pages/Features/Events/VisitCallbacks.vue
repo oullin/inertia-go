@@ -19,10 +19,11 @@ const page = usePage<SharedPageProps>();
 const breadcrumbs = [{ title: "Features" }, { title: "Events" }, { title: "Visit Callbacks" }];
 
 const callbackLog = ref<CallbackLogEntry[]>([]);
+let nextId = 0;
 
 function logCallback(name: string) {
   callbackLog.value.unshift({
-    id: Date.now(),
+    id: nextId++,
     name,
     time: new Date().toLocaleTimeString(),
   });

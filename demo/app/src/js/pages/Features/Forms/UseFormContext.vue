@@ -73,7 +73,8 @@ const form = useForm({
                 class="overflow-auto text-xs leading-relaxed"
               ><code>&lt;!-- PersonalFields.vue --&gt;
 &lt;script setup&gt;
-// Access form without props
+import { useFormContext } from '@inertiajs/vue3'
+
 const form = useFormContext()
 &lt;/script&gt;
 
@@ -90,6 +91,8 @@ const form = useFormContext()
                 class="overflow-auto text-xs leading-relaxed"
               ><code>&lt;!-- AddressFields.vue --&gt;
 &lt;script setup&gt;
+import { useFormContext } from '@inertiajs/vue3'
+
 const form = useFormContext()
 &lt;/script&gt;
 

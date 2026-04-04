@@ -2,10 +2,13 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
+	"github.com/oullin/inertia-go/core/cryptox"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
@@ -66,7 +69,13 @@ func (a App) loadCurrentUser(r *http.Request) *database.User {
 		return nil
 	}
 
-	id, err := strconv.ParseInt(cookie.Value, 10, 64)
+	plaintext, err := cryptox.Decrypt(cookie.Value, a.deps.CryptoKey)
+
+	if err != nil {
+		return nil
+	}
+
+	id, err := strconv.ParseInt(plaintext, 10, 64)
 
 	if err != nil {
 		return nil
@@ -81,10 +90,16 @@ func (a App) loadCurrentUser(r *http.Request) *database.User {
 	return user
 }
 
-func (a App) setSession(w http.ResponseWriter, userID int64, remember bool) {
+func (a App) setSession(w http.ResponseWriter, userID int64, remember bool) error {
+	encrypted, err := cryptox.Encrypt(strconv.FormatInt(userID, 10), a.deps.CryptoKey)
+
+	if err != nil {
+		return fmt.Errorf("auth: encrypt session: %w", err)
+	}
+
 	cookie := &http.Cookie{
 		Name:     SessionCookieName,
-		Value:    strconv.FormatInt(userID, 10),
+		Value:    encrypted,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   a.deps.SecureCookie,
@@ -96,6 +111,8 @@ func (a App) setSession(w http.ResponseWriter, userID int64, remember bool) {
 	}
 
 	http.SetCookie(w, cookie)
+
+	return nil
 }
 
 func (a App) clearSession(w http.ResponseWriter) {
@@ -119,8 +136,10 @@ func (a App) PublicUser(user *database.User) any {
 	initials := ""
 
 	for _, part := range strings.Fields(user.Name) {
-		if part != "" {
-			initials += strings.ToUpper(part[:1])
+		r, _ := utf8.DecodeRuneInString(part)
+
+		if r != utf8.RuneError {
+			initials += strings.ToUpper(string(r))
 		}
 	}
 

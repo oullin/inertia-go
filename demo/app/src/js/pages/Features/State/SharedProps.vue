@@ -15,7 +15,7 @@ const propEntries = computed(() => {
   return Object.entries(page.props).map(([key, value]) => ({
     key,
     value,
-    type: Array.isArray(value) ? "array" : typeof value,
+    type: value === null ? "null" : Array.isArray(value) ? "array" : typeof value,
   }));
 });
 </script>

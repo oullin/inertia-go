@@ -7,13 +7,15 @@ import (
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/props"
+	"github.com/oullin/inertia-go/demo/api/internal/httputil"
 )
 
 func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	activity, err := a.service.recentActivity(10)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("recent activity", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -21,7 +23,9 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	a.deps.Render(w, r, "Crm/Dashboard", httpx.Props{
 		"recentActivity": recentActivityProps(activity),
 		"totalContacts": props.Defer(func() any {
-			time.Sleep(150 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 150*time.Millisecond) != nil {
+				return nil
+			}
 
 			n, err := a.service.countContacts()
 
@@ -32,7 +36,9 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 			return n
 		}, "stats"),
 		"totalOrganizations": props.Defer(func() any {
-			time.Sleep(150 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 150*time.Millisecond) != nil {
+				return nil
+			}
 
 			n, err := a.service.countOrganizations()
 
@@ -43,7 +49,9 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 			return n
 		}, "stats"),
 		"recentNotesCount": props.Defer(func() any {
-			time.Sleep(150 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 150*time.Millisecond) != nil {
+				return nil
+			}
 
 			n, err := a.service.countNotes()
 

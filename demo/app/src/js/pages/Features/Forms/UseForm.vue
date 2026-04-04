@@ -5,6 +5,7 @@ import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import InputError from "@/js/components/app/InputError.vue";
 import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
+import { Textarea } from "@/js/components/ui/textarea";
 import { Label } from "@/js/components/ui/label";
 import { Checkbox } from "@/js/components/ui/checkbox";
 import {
@@ -59,11 +60,10 @@ function submit() {
 
             <div class="grid gap-2">
               <Label for="bio">Bio</Label>
-              <textarea
+              <Textarea
                 id="bio"
                 v-model="form.bio"
                 rows="3"
-                class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Tell us about yourself..."
               />
               <InputError :message="form.errors.bio" />
@@ -88,7 +88,7 @@ function submit() {
               <Checkbox
                 id="subscribe"
                 :checked="form.subscribe"
-                @update:checked="form.subscribe = $event"
+                @update:checked="form.subscribe = Boolean($event)"
               />
               <Label for="subscribe" class="cursor-pointer">Subscribe to newsletter</Label>
             </div>

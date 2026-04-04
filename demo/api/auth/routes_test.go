@@ -8,12 +8,16 @@ import (
 	"testing"
 
 	"github.com/oullin/inertia-go/core/assert"
+	"github.com/oullin/inertia-go/core/cryptox"
 	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 	"github.com/oullin/inertia-go/demo/api/internal/seed"
+	"github.com/oullin/inertia-go/demo/api/internal/testutil"
 )
+
+var testCryptoKey = make([]byte, 32)
 
 func TestLoginHandlerRendersPage(t *testing.T) {
 	t.Parallel()
@@ -60,10 +64,16 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 		t.Fatalf("location = %q, want %q", got, "/dashboard")
 	}
 
-	cookie := findCookie(t, w, SessionCookieName)
+	cookie := testutil.FindCookie(t, w, SessionCookieName)
 
-	if cookie.Value != "1" {
-		t.Fatalf("session cookie value = %q, want %q", cookie.Value, "1")
+	decrypted, err := cryptox.Decrypt(cookie.Value, testCryptoKey)
+
+	if err != nil {
+		t.Fatalf("decrypt session cookie: %v", err)
+	}
+
+	if decrypted != "1" {
+		t.Fatalf("session cookie value = %q, want %q", decrypted, "1")
 	}
 }
 
@@ -88,10 +98,16 @@ func TestLoginHandlerCreatesSessionFromJSON(t *testing.T) {
 		t.Fatalf("location = %q, want %q", got, "/dashboard")
 	}
 
-	cookie := findCookie(t, w, SessionCookieName)
+	cookie := testutil.FindCookie(t, w, SessionCookieName)
 
-	if cookie.Value != "1" {
-		t.Fatalf("session cookie value = %q, want %q", cookie.Value, "1")
+	decrypted, err := cryptox.Decrypt(cookie.Value, testCryptoKey)
+
+	if err != nil {
+		t.Fatalf("decrypt session cookie: %v", err)
+	}
+
+	if decrypted != "1" {
+		t.Fatalf("session cookie value = %q, want %q", decrypted, "1")
 	}
 }
 
@@ -136,8 +152,14 @@ func TestLogoutHandlerClearsSession(t *testing.T) {
 
 	_, handler := newAuthTestHandler(t)
 
+	encrypted, err := cryptox.Encrypt("1", testCryptoKey)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
-	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "1"})
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: encrypted})
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -150,7 +172,7 @@ func TestLogoutHandlerClearsSession(t *testing.T) {
 		t.Fatalf("location = %q, want %q", got, "/login")
 	}
 
-	if findCookie(t, w, SessionCookieName).MaxAge != -1 {
+	if testutil.FindCookie(t, w, SessionCookieName).MaxAge != -1 {
 		t.Fatalf("logout should clear the session cookie")
 	}
 }
@@ -172,6 +194,30 @@ func TestWithCurrentUserLoadsUserFromCookie(t *testing.T) {
 		}
 	}))
 
+	encrypted, err := cryptox.Encrypt("1", testCryptoKey)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: encrypted})
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+}
+
+func TestForgedCookieIsRejected(t *testing.T) {
+	t.Parallel()
+
+	app, _ := newAuthTestHandler(t)
+
+	handler := app.WithCurrentUser(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if app.CurrentUser(r) != nil {
+			t.Fatal("forged cookie should not authenticate a user")
+		}
+	}))
+
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "1"})
 	w := httptest.NewRecorder()
@@ -182,7 +228,7 @@ func TestWithCurrentUserLoadsUserFromCookie(t *testing.T) {
 func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 	t.Helper()
 
-	testInertia, err := inertia.New(testTemplate, inertia.WithVersion("test"))
+	testInertia, err := inertia.New(testutil.TestTemplate, inertia.WithVersion("test"))
 
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +249,8 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 	})
 
 	app := New(Deps{
-		DB: testDB,
+		DB:        testDB,
+		CryptoKey: testCryptoKey,
 		Render: func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
 			t.Helper()
 
@@ -232,7 +279,7 @@ func authTestRouteURL(name string, params map[string]string) string {
 	}[name]
 
 	if pattern == "" {
-		return "/"
+		return "#!wayfinder:unknown-route"
 	}
 
 	for key, value := range params {

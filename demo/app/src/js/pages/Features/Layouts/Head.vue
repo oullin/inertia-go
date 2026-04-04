@@ -61,8 +61,8 @@ const breadcrumbs = [{ title: "Features" }, { title: "Layouts" }, { title: "Head
             </div>
           </div>
           <p class="text-muted-foreground mt-3 text-xs">
-            Check your browser tab to see the custom title. Inspect the page source to see the meta
-            tags.
+            Check your browser tab to see the custom title. Open DevTools and inspect the
+            &lt;head&gt; element to see the meta tags.
           </p>
         </FeatureCard>
 

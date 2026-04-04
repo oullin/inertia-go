@@ -79,7 +79,7 @@ export interface ContactFormData {
 
 export interface NavItem {
   title: string;
-  href: string;
+  href: string | null;
   icon?: Component;
 }
 

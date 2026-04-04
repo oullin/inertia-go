@@ -7,6 +7,7 @@ import (
 
 	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
+	"github.com/oullin/inertia-go/demo/api/internal/httputil"
 )
 
 func (a app) globalEventsHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +45,9 @@ func (a app) progressHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) progressSlowHandler(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(2 * time.Second)
+	if httputil.SleepCtx(r.Context(), 2*time.Second) != nil {
+		return
+	}
+
 	a.deps.Render(w, r, "Features/Events/Progress", httpx.Props{})
 }

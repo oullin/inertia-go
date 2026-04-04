@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onUnmounted, ref } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import InputError from "@/js/components/app/InputError.vue";
 import { Button } from "@/js/components/ui/button";
 import { Input } from "@/js/components/ui/input";
+import { Textarea } from "@/js/components/ui/textarea";
 import { Label } from "@/js/components/ui/label";
 import { Checkbox } from "@/js/components/ui/checkbox";
 import {
@@ -33,6 +34,9 @@ const formData = ref({
 const processing = ref(false);
 const errors = ref<Record<string, string>>({});
 const wasSuccessful = ref(false);
+let successTimeout: ReturnType<typeof setTimeout> | undefined;
+
+onUnmounted(() => clearTimeout(successTimeout));
 
 function submit() {
   processing.value = true;
@@ -41,7 +45,7 @@ function submit() {
   router.post(page.url, formData.value, {
     onSuccess: () => {
       wasSuccessful.value = true;
-      setTimeout(() => (wasSuccessful.value = false), 2000);
+      successTimeout = setTimeout(() => (wasSuccessful.value = false), 2000);
     },
     onError: (errs) => {
       errors.value = errs;
@@ -97,11 +101,10 @@ function resetForm() {
 
             <div class="grid gap-2">
               <Label for="bio">Bio</Label>
-              <textarea
+              <Textarea
                 id="bio"
                 v-model="formData.bio"
                 rows="3"
-                class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Tell us about yourself..."
               />
               <InputError :message="errors.bio" />
@@ -126,7 +129,7 @@ function resetForm() {
               <Checkbox
                 id="subscribe"
                 :checked="formData.subscribe"
-                @update:checked="formData.subscribe = $event"
+                @update:checked="formData.subscribe = Boolean($event)"
               />
               <Label for="subscribe" class="cursor-pointer">Subscribe to newsletter</Label>
             </div>

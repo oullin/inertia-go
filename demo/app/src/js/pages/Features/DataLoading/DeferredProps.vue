@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Deferred, usePage } from "@inertiajs/vue3";
+import { Deferred } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Skeleton } from "@/js/components/ui/skeleton";

@@ -8,7 +8,7 @@ withDefaults(defineProps<{ title: string; description?: string }>(), {
 
 <template>
   <Card>
-    <CardHeader v-if="title">
+    <CardHeader>
       <CardTitle>{{ title }}</CardTitle>
       <CardDescription v-if="description">{{ description }}</CardDescription>
     </CardHeader>

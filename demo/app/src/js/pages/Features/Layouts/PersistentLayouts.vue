@@ -10,6 +10,8 @@ import { featureRoute } from "@/js/lib/routes";
 defineOptions({
   layout: PersistentDemoLayout,
 });
+
+const page2Route = featureRoute("features.layouts.persistent-layouts-page-2");
 </script>
 
 <template>
@@ -42,10 +44,8 @@ defineOptions({
             Click the button below to navigate to page 2. The stopwatch and counter in the
             persistent layout bar above will keep running and maintain their values.
           </p>
-          <Button as-child>
-            <Link :href="featureRoute('features.layouts.persistent-layouts-page-2')">
-              Go to Page 2
-            </Link>
+          <Button v-if="page2Route" as-child>
+            <Link :href="page2Route"> Go to Page 2 </Link>
           </Button>
           <div class="flex items-center gap-2">
             <Badge variant="secondary">Current Page</Badge>

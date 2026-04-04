@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import { Badge } from "@/js/components/ui/badge";
 import { Button } from "@/js/components/ui/button";
@@ -27,11 +27,19 @@ const form = useForm({
 });
 
 function submit() {
-  form.post(organizationRoutes.update(props.organization.id).url);
+  form.put(organizationRoutes.update(props.organization.id).url);
 }
 
 const allContacts = ref<Contact[]>([...props.contacts.data]);
 const nextCursor = ref<string | null>(props.contacts.next_cursor);
+
+watch(
+  () => props.contacts,
+  (fresh) => {
+    allContacts.value = [...fresh.data];
+    nextCursor.value = fresh.next_cursor;
+  },
+);
 
 function loadMoreContacts() {
   if (!nextCursor.value) return;
@@ -108,7 +116,7 @@ function loadMoreContacts() {
               <div
                 class="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium"
               >
-                {{ contact.first_name[0] }}{{ contact.last_name[0] }}
+                {{ contact.first_name?.[0] ?? "" }}{{ contact.last_name?.[0] ?? "" }}
               </div>
               <div class="min-w-0 flex-1">
                 <span class="text-sm font-medium"

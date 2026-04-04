@@ -38,7 +38,12 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 
 		switch {
 		case err == nil:
-			a.setSession(w, user.ID, form.Remember)
+			if err := a.setSession(w, user.ID, form.Remember); err != nil {
+				slog.Error("session: set", "error", err)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+
+				return
+			}
 
 			if err := a.deps.SetFlash(w, flash.Message{
 				Kind:    "success",
@@ -54,7 +59,8 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, errInvalidCredentials):
 			errorsByField["email"] = "Use test@example.com and password to sign in."
 		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			slog.Error("authenticate", "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
 		}

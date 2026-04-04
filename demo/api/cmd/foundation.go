@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
@@ -10,10 +10,8 @@ import (
 	"github.com/oullin/inertia-go/demo/api/auth"
 )
 
-var routes *wayfinder.Registry
-
-func initRoutes() {
-	routes = wayfinder.New()
+func initRoutes() *wayfinder.Registry {
+	routes := wayfinder.New()
 	routes.Add("login", "GET", "/login")
 	routes.Add("logout", "POST", "/logout")
 	routes.Add("dashboard", "GET", "/dashboard")
@@ -104,9 +102,11 @@ func initRoutes() {
 	routes.Group("features.http", "/features/http", func(g *wayfinder.Group) {
 		g.Add("use-http", "GET", "/use-http")
 	})
+
+	return routes
 }
 
-func withDemoProps(authApp auth.App, next http.Handler) http.Handler {
+func (rt *runtime) withDemoProps(authApp auth.App, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := authApp.CurrentUser(r)
 
@@ -131,19 +131,19 @@ func withDemoProps(authApp auth.App, next http.Handler) http.Handler {
 				"name": "Inertia Go",
 				"plan": "Porting",
 			},
-			"routes": routes.ManifestProps(),
+			"routes": rt.routes.ManifestProps(),
 		})
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func renderPage(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
+func (rt *runtime) renderPage(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
 	ctx := r.Context()
 
-	if err := i.Render(w, r.WithContext(ctx), component, pageProps); err != nil {
+	if err := rt.inertia.Render(w, r.WithContext(ctx), component, pageProps); err != nil {
 		switch {
-		case strings.Contains(err.Error(), "not found"):
+		case errors.Is(err, httpx.ErrNotFound):
 			http.Error(w, "page not found", http.StatusNotFound)
 		default:
 			http.Error(w, "demo internal error", http.StatusInternalServerError)

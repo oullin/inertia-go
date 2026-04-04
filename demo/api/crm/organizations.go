@@ -30,7 +30,8 @@ func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 	page, err := a.service.listOrganizationsPaginated(search, pageNum)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("list organizations", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -66,7 +67,8 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 	org, err := a.service.getOrganization(organizationID)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("get organization", "id", organizationID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -88,7 +90,8 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 	contactsPage, err := a.service.listContactsByOrgPaginated(organizationID, cursor, direction)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("list contacts by org", "id", organizationID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -117,7 +120,8 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 	}
 
 	if err := a.service.updateOrganization(organizationID, form); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("update organization", "id", organizationID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}

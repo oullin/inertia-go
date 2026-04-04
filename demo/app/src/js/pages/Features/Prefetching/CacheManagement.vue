@@ -5,7 +5,6 @@ import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
 import { Button } from "@/js/components/ui/button";
 import { Badge } from "@/js/components/ui/badge";
 import AppLayout from "@/js/layouts/AppLayout.vue";
-import { featureRoute } from "@/js/lib/routes";
 
 const breadcrumbs = [
   { title: "Features" },

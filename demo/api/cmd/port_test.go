@@ -9,6 +9,7 @@ import (
 
 	"github.com/oullin/inertia-go/core/assert"
 	"github.com/oullin/inertia-go/core/config"
+	"github.com/oullin/inertia-go/core/cryptox"
 	coreflash "github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
@@ -16,10 +17,13 @@ import (
 	"github.com/oullin/inertia-go/demo/api/auth"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 	"github.com/oullin/inertia-go/demo/api/internal/seed"
+	"github.com/oullin/inertia-go/demo/api/internal/testutil"
 )
 
+var testCryptoKey = make([]byte, 32)
+
 func TestLoginHandlerRendersPage(t *testing.T) {
-	testMux := newPortTestMux(t)
+	_, testMux := newPortTestMux(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	req.Header.Set(httpx.HeaderInertia, "true")
@@ -39,7 +43,7 @@ func TestLoginHandlerRendersPage(t *testing.T) {
 }
 
 func TestLoginHandlerCreatesSession(t *testing.T) {
-	testMux := newPortTestMux(t)
+	_, testMux := newPortTestMux(t)
 	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
 
 	body := strings.NewReader(url.Values{
@@ -64,13 +68,21 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 		t.Fatalf("location = %q, want %q", got, "/dashboard")
 	}
 
-	if findCookie(t, w, auth.SessionCookieName).Value != "1" {
-		t.Fatalf("expected session cookie for seeded user")
+	cookie := testutil.FindCookie(t, w, auth.SessionCookieName)
+
+	decrypted, err := cryptox.Decrypt(cookie.Value, testCryptoKey)
+
+	if err != nil {
+		t.Fatalf("decrypt session cookie: %v", err)
+	}
+
+	if decrypted != "1" {
+		t.Fatalf("session = %q, want %q", decrypted, "1")
 	}
 }
 
 func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
-	testMux := newPortTestMux(t)
+	_, testMux := newPortTestMux(t)
 	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
 
 	body := strings.NewReader(url.Values{
@@ -107,7 +119,7 @@ func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 }
 
 func TestDashboardRequiresSession(t *testing.T) {
-	testMux := newPortTestMux(t)
+	_, testMux := newPortTestMux(t)
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 	w := httptest.NewRecorder()
 
@@ -123,11 +135,14 @@ func TestDashboardRequiresSession(t *testing.T) {
 }
 
 func TestDashboardRendersForAuthenticatedUser(t *testing.T) {
-	testMux := newPortTestMux(t)
+	_, testMux := newPortTestMux(t)
+
+	encrypted := mustEncryptSession(t, "1")
+
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 	req.Header.Set(httpx.HeaderInertia, "true")
 	req.RequestURI = "/dashboard"
-	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -143,7 +158,9 @@ func TestDashboardRendersForAuthenticatedUser(t *testing.T) {
 }
 
 func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
-	testMux := newPortTestMux(t)
+	_, testMux := newPortTestMux(t)
+
+	encrypted := mustEncryptSession(t, "1")
 
 	tests := []struct {
 		name string
@@ -158,7 +175,7 @@ func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
-			req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
+			req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
 			w := httptest.NewRecorder()
 
 			testMux.ServeHTTP(w, req)
@@ -171,10 +188,12 @@ func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
 }
 
 func TestStoreContactCreatesRecord(t *testing.T) {
-	testMux := newPortTestMux(t)
+	rt, testMux := newPortTestMux(t)
 	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
 
-	before, err := database.CountContacts(db)
+	encrypted := mustEncryptSession(t, "1")
+
+	before, err := database.CountContacts(rt.db)
 
 	if err != nil {
 		t.Fatal(err)
@@ -192,7 +211,7 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
 	req.AddCookie(csrfCookie)
-	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -201,7 +220,7 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusFound)
 	}
 
-	after, err := database.CountContacts(db)
+	after, err := database.CountContacts(rt.db)
 
 	if err != nil {
 		t.Fatal(err)
@@ -213,10 +232,12 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 }
 
 func TestStoreNoteAppendsActivity(t *testing.T) {
-	testMux := newPortTestMux(t)
+	rt, testMux := newPortTestMux(t)
 	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
 
-	before, err := database.CountNotes(db)
+	encrypted := mustEncryptSession(t, "1")
+
+	before, err := database.CountNotes(rt.db)
 
 	if err != nil {
 		t.Fatal(err)
@@ -230,7 +251,7 @@ func TestStoreNoteAppendsActivity(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
 	req.AddCookie(csrfCookie)
-	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "1"})
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -239,7 +260,7 @@ func TestStoreNoteAppendsActivity(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusFound)
 	}
 
-	after, err := database.CountNotes(db)
+	after, err := database.CountNotes(rt.db)
 
 	if err != nil {
 		t.Fatal(err)
@@ -250,39 +271,14 @@ func TestStoreNoteAppendsActivity(t *testing.T) {
 	}
 }
 
-func newPortTestMux(t *testing.T) http.Handler {
+func newPortTestMux(t *testing.T) (*runtime, http.Handler) {
 	t.Helper()
 
-	testInertia, err := inertia.New(testTemplate, inertia.WithVersion("test"))
+	testInertia, err := inertia.New(testutil.TestTemplate, inertia.WithVersion("test"))
 
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	i = testInertia
-	flashStore = coreflash.NewCookieStore(coreflash.WithCookieName("beacon_flash"))
-	t.Cleanup(func() { i = nil; flashStore = nil })
-	initRoutes()
-	setupPortTestDB(t)
-
-	mux := http.NewServeMux()
-	authApp := newAuthApp()
-	authApp.RegisterRoutes(mux)
-	registerCRMRoutes(mux, authApp)
-	registerFeatureRoutes(mux, authApp)
-
-	cfg := config.DefaultI18n()
-	cfg.URLPrefix = false
-
-	return dashboardAppHandler(
-		authApp.WithCurrentUser(withDemoProps(authApp, mux)),
-		middleware.CSRF(config.CSRFConfig{}, []byte("0123456789abcdef0123456789abcdef")),
-		cfg,
-	)
-}
-
-func setupPortTestDB(t *testing.T) {
-	t.Helper()
 
 	testDB, err := database.Open(":memory:")
 
@@ -294,12 +290,48 @@ func setupPortTestDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	db = testDB
+	t.Cleanup(func() { testDB.Close() })
 
-	t.Cleanup(func() {
-		testDB.Close()
-		db = nil
-	})
+	cfg := config.DefaultI18n()
+	cfg.URLPrefix = false
+
+	rt := &runtime{
+		db:         testDB,
+		cryptoKey:  testCryptoKey,
+		inertia:    testInertia,
+		localeCfg:  cfg,
+		flashStore: coreflash.NewCookieStore(coreflash.WithCookieName("beacon_flash")),
+		routes:     initRoutes(),
+	}
+
+	mux := http.NewServeMux()
+	authApp := rt.newAuthApp()
+	authApp.RegisterRoutes(mux)
+
+	if err := rt.registerCRMRoutes(mux, authApp); err != nil {
+		t.Fatalf("registerCRMRoutes() error = %v", err)
+	}
+
+	rt.registerFeatureRoutes(mux, authApp)
+
+	handler := rt.dashboardAppHandler(
+		authApp.WithCurrentUser(rt.withDemoProps(authApp, mux)),
+		middleware.CSRF(config.CSRFConfig{}, []byte("0123456789abcdef0123456789abcdef")),
+	)
+
+	return rt, handler
+}
+
+func mustEncryptSession(t *testing.T, value string) string {
+	t.Helper()
+
+	encrypted, err := cryptox.Encrypt(value, testCryptoKey)
+
+	if err != nil {
+		t.Fatalf("encrypt session: %v", err)
+	}
+
+	return encrypted
 }
 
 func issuePortCSRFCookie(t *testing.T, handler http.Handler, path string) (*http.Cookie, string) {
@@ -309,5 +341,5 @@ func issuePortCSRFCookie(t *testing.T, handler http.Handler, path string) (*http
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
-	return findCookie(t, w, "XSRF-TOKEN"), findCSRFMetaToken(t, w.Body.String())
+	return testutil.FindCookie(t, w, "XSRF-TOKEN"), testutil.FindCSRFMetaToken(t, w.Body.String())
 }

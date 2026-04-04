@@ -11,6 +11,10 @@ const breadcrumbs = [
   { title: "Prefetching" },
   { title: "Stale While Revalidate" },
 ];
+
+const linkPrefetchRoute = featureRoute("features.prefetching.link-prefetch");
+const manualPrefetchRoute = featureRoute("features.prefetching.manual-prefetch");
+const cacheManagementRoute = featureRoute("features.prefetching.cache-management");
 </script>
 
 <template>
@@ -71,7 +75,8 @@ const breadcrumbs = [
         >
           <div class="flex flex-wrap gap-2">
             <Link
-              :href="featureRoute('features.prefetching.link-prefetch')"
+              v-if="linkPrefetchRoute"
+              :href="linkPrefetchRoute"
               prefetch="hover"
               :cache-for="[5000, 30000]"
               class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
@@ -80,7 +85,8 @@ const breadcrumbs = [
               <Badge variant="secondary">SWR</Badge>
             </Link>
             <Link
-              :href="featureRoute('features.prefetching.manual-prefetch')"
+              v-if="manualPrefetchRoute"
+              :href="manualPrefetchRoute"
               prefetch="hover"
               :cache-for="[5000, 30000]"
               class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
@@ -89,7 +95,8 @@ const breadcrumbs = [
               <Badge variant="secondary">SWR</Badge>
             </Link>
             <Link
-              :href="featureRoute('features.prefetching.cache-management')"
+              v-if="cacheManagementRoute"
+              :href="cacheManagementRoute"
               prefetch="hover"
               :cache-for="[5000, 30000]"
               class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"

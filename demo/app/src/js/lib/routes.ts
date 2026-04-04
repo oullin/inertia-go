@@ -27,8 +27,17 @@ export function useDemoRoute(
   };
 }
 
-export function featureRoute(name: string): string {
-  return useDemoRoute(name).url;
+export function featureRoute(name: string): string | null {
+  const page = usePage<SharedPageProps>();
+  const resolved = page.props.routes?.[name];
+
+  if (!resolved) {
+    console.warn(`[wayfinder] unknown feature route "${name}"`);
+
+    return null;
+  }
+
+  return resolved;
 }
 
 export const appRoutes = {

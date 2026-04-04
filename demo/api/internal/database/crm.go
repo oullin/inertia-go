@@ -2,12 +2,15 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// ErrNotFound is returned when an UPDATE or DELETE affects zero rows.
 
 // CursorPage holds cursor-paginated results.
 type CursorPage[T any] struct {
@@ -26,11 +29,11 @@ type OffsetPage[T any] struct {
 }
 
 type User struct {
-	ID         int64
-	Name       string
-	Email      string
-	Password   string
-	VerifiedAt *time.Time
+	ID           int64
+	Name         string
+	Email        string
+	PasswordHash string `json:"-"`
+	VerifiedAt   *time.Time
 }
 
 type Organization struct {
@@ -60,6 +63,22 @@ type Note struct {
 	UserName    string
 	Body        string
 	CreatedAt   time.Time
+}
+
+var ErrNotFound = errors.New("database: record not found")
+
+func checkRowsAffected(result sql.Result) error {
+	n, err := result.RowsAffected()
+
+	if err != nil {
+		return err
+	}
+
+	if n == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }
 
 func CreateUser(db *sql.DB, name, email, password string, verifiedAt *time.Time) (int64, error) {
@@ -178,13 +197,17 @@ func CreateOrganization(db *sql.DB, name string) (int64, error) {
 }
 
 func UpdateOrganization(db *sql.DB, id int64, name string) error {
-	_, err := db.Exec(
+	result, err := db.Exec(
 		"UPDATE organizations SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
 		strings.TrimSpace(name),
 		id,
 	)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return checkRowsAffected(result)
 }
 
 func CountOrganizations(db *sql.DB) (int, error) {
@@ -336,7 +359,7 @@ func CreateContact(db *sql.DB, contact Contact) (int64, error) {
 }
 
 func UpdateContact(db *sql.DB, id int64, contact Contact) error {
-	_, err := db.Exec(`
+	result, err := db.Exec(`
 		UPDATE contacts
 		SET organization_id = ?,
 			first_name = ?,
@@ -354,18 +377,26 @@ func UpdateContact(db *sql.DB, id int64, contact Contact) error {
 		id,
 	)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return checkRowsAffected(result)
 }
 
 func ToggleContactFavorite(db *sql.DB, id int64) error {
-	_, err := db.Exec(`
+	result, err := db.Exec(`
 		UPDATE contacts
 		SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, id)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return checkRowsAffected(result)
 }
 
 func DeleteContact(db *sql.DB, id int64) error {
@@ -381,7 +412,13 @@ func DeleteContact(db *sql.DB, id int64) error {
 		return err
 	}
 
-	if _, err := tx.Exec("DELETE FROM contacts WHERE id = ?", id); err != nil {
+	result, err := tx.Exec("DELETE FROM contacts WHERE id = ?", id)
+
+	if err != nil {
+		return err
+	}
+
+	if err := checkRowsAffected(result); err != nil {
 		return err
 	}
 
@@ -767,7 +804,7 @@ func scanUser(row interface{ Scan(...any) error }) (*User, error) {
 
 	var verifiedAt sql.NullTime
 
-	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &verifiedAt); err != nil {
+	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.PasswordHash, &verifiedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}

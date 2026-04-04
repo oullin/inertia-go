@@ -34,7 +34,8 @@ func (a app) contactsCreateHandler(w http.ResponseWriter, r *http.Request) {
 	orgs, err := a.service.listOrganizations("")
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("list organizations", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -120,7 +121,8 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 	page, err := a.service.listContactsPaginated(search, favoriteOnly, cursor, direction)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("list contacts", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -138,7 +140,8 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 	contact, err := a.service.getContact(contactID)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("get contact", "id", contactID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -165,7 +168,8 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 
 func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := a.service.deleteContact(contactID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("delete contact", "id", contactID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -185,7 +189,8 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 	contact, err := a.service.getContact(contactID)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("get contact", "id", contactID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -199,7 +204,8 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 	orgs, err := a.service.listOrganizations("")
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("list organizations", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -225,7 +231,8 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		orgs, err := a.service.listOrganizations("")
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			slog.Error("list organizations", "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
 		}
@@ -242,7 +249,8 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := a.service.createContact(form)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("create contact", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -272,7 +280,8 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		existing, err := a.service.getContact(contactID)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			slog.Error("get contact", "id", contactID, "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
 		}
@@ -280,7 +289,8 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		orgs, err := a.service.listOrganizations("")
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			slog.Error("list organizations", "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
 		}
@@ -296,7 +306,8 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 	}
 
 	if err := a.service.updateContact(contactID, form); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("update contact", "id", contactID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -314,7 +325,8 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 
 func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := a.service.toggleFavorite(contactID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("toggle favorite", "id", contactID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -357,7 +369,8 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("create note", "contact_id", contactID, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -391,5 +404,9 @@ func routeIDAndAction(path, prefix string) (int64, string, bool) {
 		return id, "", true
 	}
 
-	return id, parts[1], true
+	if len(parts) == 2 && parts[1] != "" {
+		return id, parts[1], true
+	}
+
+	return 0, "", false
 }

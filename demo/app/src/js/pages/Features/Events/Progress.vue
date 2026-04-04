@@ -8,6 +8,9 @@ import AppLayout from "@/js/layouts/AppLayout.vue";
 import { featureRoute } from "@/js/lib/routes";
 
 const breadcrumbs = [{ title: "Features" }, { title: "Events" }, { title: "Progress" }];
+
+const deferredPropsRoute = featureRoute("features.data-loading.deferred-props");
+const pollingRoute = featureRoute("features.data-loading.polling");
 </script>
 
 <template>
@@ -26,13 +29,11 @@ const breadcrumbs = [{ title: "Features" }, { title: "Events" }, { title: "Progr
               make the progress bar more visible.
             </p>
             <div class="flex flex-wrap gap-2">
-              <Button as-child variant="outline">
-                <Link :href="featureRoute('features.data-loading.deferred-props')">
-                  Deferred Props (slow)
-                </Link>
+              <Button v-if="deferredPropsRoute" as-child variant="outline">
+                <Link :href="deferredPropsRoute"> Deferred Props (slow) </Link>
               </Button>
-              <Button as-child variant="outline">
-                <Link :href="featureRoute('features.data-loading.polling')"> Polling Page </Link>
+              <Button v-if="pollingRoute" as-child variant="outline">
+                <Link :href="pollingRoute"> Polling Page </Link>
               </Button>
             </div>
           </div>

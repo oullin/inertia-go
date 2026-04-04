@@ -33,11 +33,11 @@ func TestCreateUserHashesPassword(t *testing.T) {
 		t.Fatal("FindUserByEmail() returned nil user")
 	}
 
-	if user.Password == "password" {
+	if user.PasswordHash == "password" {
 		t.Fatal("CreateUser() stored plaintext password")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte("password")); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte("password")); err != nil {
 		t.Fatalf("stored password hash did not verify: %v", err)
 	}
 }

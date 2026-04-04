@@ -197,6 +197,29 @@ func TestValidate_MaxLength_Phone(t *testing.T) {
 	}
 }
 
+func TestHumanize(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"first_name", "first name"},
+		{"firstName", "first name"},
+		{"FirstName", "first name"},
+		{"email", "email"},
+		{"already lower", "already lower"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := humanize(tt.input)
+
+			if got != tt.want {
+				t.Errorf("humanize(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestValidate_ReturnsNilForValidStruct(t *testing.T) {
 	t.Parallel()
 

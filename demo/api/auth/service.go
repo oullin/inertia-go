@@ -25,7 +25,7 @@ func (s service) authenticate(form loginForm) (*database.User, error) {
 		return nil, err
 	}
 
-	if user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)) != nil {
+	if user == nil || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(form.Password)) != nil {
 		return nil, errInvalidCredentials
 	}
 

@@ -2,7 +2,6 @@ package features
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
 )
@@ -12,8 +11,7 @@ func (a app) httpExceptionsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) httpExceptionsTriggerHandler(w http.ResponseWriter, r *http.Request) {
-	code := strings.TrimPrefix(r.URL.Path, "/features/errors/http-exceptions/")
-	code = strings.Trim(code, "/")
+	code := r.PathValue("code")
 
 	switch code {
 	case "403":

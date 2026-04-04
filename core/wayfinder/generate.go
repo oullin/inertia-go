@@ -87,9 +87,19 @@ func GenerateFile(reg *Registry, path string, opts GenerateOptions) error {
 		return err
 	}
 
-	defer f.Close()
+	if err := Generate(reg, f, opts); err != nil {
+		f.Close()
 
-	return Generate(reg, f, opts)
+		return err
+	}
+
+	if err := f.Sync(); err != nil {
+		f.Close()
+
+		return err
+	}
+
+	return f.Close()
 }
 
 func generateFlat(w io.Writer, routes []Route, ts bool) error {

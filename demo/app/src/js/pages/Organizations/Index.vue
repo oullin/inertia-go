@@ -42,11 +42,29 @@ watch(search, (value) => {
 
 const orgList = computed(() => props.organizations.data ?? []);
 
-const pages = computed(() => {
-  const result: number[] = [];
-  for (let i = 1; i <= props.organizations.last_page; i++) {
-    result.push(i);
+const pages = computed((): (number | "...")[] => {
+  const last = props.organizations.last_page;
+  const current = props.organizations.current_page;
+
+  if (last <= 7) {
+    return Array.from({ length: last }, (_, i) => i + 1);
   }
+
+  const items = new Set<number>([1, last]);
+  for (let i = current - 1; i <= current + 1; i++) {
+    if (i >= 1 && i <= last) items.add(i);
+  }
+
+  const sorted = [...items].sort((a, b) => a - b);
+  const result: (number | "...")[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+      result.push("...");
+    }
+    result.push(sorted[i]);
+  }
+
   return result;
 });
 
@@ -83,7 +101,7 @@ function goToPage(page: number) {
           <div
             class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium"
           >
-            {{ organization.name[0] }}
+            {{ organization.name?.[0] ?? "?" }}
           </div>
           <div class="flex-1">
             <span class="font-medium">{{ organization.name }}</span>
@@ -100,16 +118,18 @@ function goToPage(page: number) {
       </div>
 
       <div v-if="organizations.last_page > 1" class="flex items-center justify-center gap-1 py-4">
-        <Button
-          v-for="page in pages"
-          :key="page"
-          variant="outline"
-          size="sm"
-          :class="{ 'bg-accent font-bold': page === organizations.current_page }"
-          @click="goToPage(page)"
-        >
-          {{ page }}
-        </Button>
+        <template v-for="(page, index) in pages" :key="index">
+          <span v-if="page === '...'" class="text-muted-foreground px-2 text-sm">...</span>
+          <Button
+            v-else
+            variant="outline"
+            size="sm"
+            :class="{ 'bg-accent font-bold': page === organizations.current_page }"
+            @click="goToPage(page)"
+          >
+            {{ page }}
+          </Button>
+        </template>
       </div>
     </div>
   </AppLayout>

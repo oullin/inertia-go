@@ -75,7 +75,7 @@ function resetAll() {
 
         <FeatureCard
           title="Activities"
-          :description="`${activities.length} activit(ies) accumulated`"
+          :description="`${activities.length} ${activities.length === 1 ? 'activity' : 'activities'} accumulated`"
         >
           <div class="space-y-2">
             <div

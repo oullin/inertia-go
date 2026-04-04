@@ -11,6 +11,7 @@ import (
 // Deps contains the host application integrations required by the auth package.
 type Deps struct {
 	DB           *sql.DB
+	CryptoKey    []byte
 	Render       func(http.ResponseWriter, *http.Request, string, httpx.Props)
 	Redirect     func(http.ResponseWriter, *http.Request, string)
 	RouteURL     func(string, map[string]string) string

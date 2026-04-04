@@ -11,6 +11,8 @@ import { featureRoute } from "@/js/lib/routes";
 
 const breadcrumbs = [{ title: "Features" }, { title: "State" }, { title: "Remember" }];
 
+const flashDataRoute = featureRoute("features.state.flash-data");
+
 const formState = useRemember({
   name: "",
   email: "",
@@ -66,7 +68,8 @@ function resetCounter() {
 
             <div class="flex items-center gap-2">
               <Link
-                :href="featureRoute('features.state.flash-data')"
+                v-if="flashDataRoute"
+                :href="flashDataRoute"
                 class="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
               >
                 Navigate Away

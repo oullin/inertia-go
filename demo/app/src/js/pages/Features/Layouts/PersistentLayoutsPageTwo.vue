@@ -10,6 +10,8 @@ import { featureRoute } from "@/js/lib/routes";
 defineOptions({
   layout: PersistentDemoLayout,
 });
+
+const page1Route = featureRoute("features.layouts.persistent-layouts");
 </script>
 
 <template>
@@ -39,10 +41,8 @@ defineOptions({
       >
         <div class="space-y-4">
           <p class="text-sm">Go back to page 1. The layout state will continue to persist.</p>
-          <Button as-child>
-            <Link :href="featureRoute('features.layouts.persistent-layouts')">
-              Back to Page 1
-            </Link>
+          <Button v-if="page1Route" as-child>
+            <Link :href="page1Route"> Back to Page 1 </Link>
           </Button>
           <div class="flex items-center gap-2">
             <Badge variant="secondary">Current Page</Badge>

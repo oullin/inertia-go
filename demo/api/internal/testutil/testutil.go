@@ -1,4 +1,4 @@
-package main
+package testutil
 
 import (
 	"net/http"
@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-const testTemplate = `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+const TestTemplate = `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
 
-func findCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {
+func FindCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {
 	t.Helper()
 
 	for _, c := range w.Result().Cookies() {
@@ -23,7 +23,7 @@ func findCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.C
 	return nil
 }
 
-func findCSRFMetaToken(t *testing.T, body string) string {
+func FindCSRFMetaToken(t *testing.T, body string) string {
 	t.Helper()
 
 	const prefix = `name="csrf-token" content="`

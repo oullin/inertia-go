@@ -25,6 +25,15 @@ const search = ref(props.filters.search ?? "");
 const favoriteOnly = ref(Boolean(props.filters.favorite));
 const allContacts = ref<Contact[]>([...props.contacts.data]);
 const nextCursor = ref<string | null>(props.contacts.next_cursor);
+
+watch(
+  () => props.contacts,
+  (fresh) => {
+    allContacts.value = [...fresh.data];
+    nextCursor.value = fresh.next_cursor;
+  },
+);
+
 let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
 watch([search, favoriteOnly], () => {
@@ -105,7 +114,7 @@ function loadMore() {
           <div
             class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-medium"
           >
-            {{ contact.first_name[0] }}{{ contact.last_name[0] }}
+            {{ contact.first_name?.[0] ?? "" }}{{ contact.last_name?.[0] ?? "" }}
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">

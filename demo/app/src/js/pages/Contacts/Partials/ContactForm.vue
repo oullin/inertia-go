@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { InertiaForm } from "@inertiajs/vue3";
+import { computed } from "vue";
 import InputError from "@/js/components/app/InputError.vue";
 import { Button } from "@/js/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/js/components/ui/card";
@@ -29,22 +30,28 @@ const props = withDefaults(
   },
 );
 
-const isEdit = props.mode === "edit";
-const breadcrumbs = isEdit
-  ? [
-      { title: "CRM" },
-      { title: "Contacts", href: contactRoutes.index().url },
-      {
-        title: `${props.contact.first_name} ${props.contact.last_name}`,
-        href: contactRoutes.show(props.contact.id).url,
-      },
-      { title: "Edit" },
-    ]
-  : [{ title: "CRM" }, { title: "Contacts", href: contactRoutes.index().url }, { title: "Create" }];
+const isEdit = computed(() => props.mode === "edit");
+const breadcrumbs = computed(() =>
+  isEdit.value
+    ? [
+        { title: "CRM" },
+        { title: "Contacts", href: contactRoutes.index().url },
+        {
+          title: `${props.contact?.first_name} ${props.contact?.last_name}`,
+          href: contactRoutes.show(props.contact?.id).url,
+        },
+        { title: "Edit" },
+      ]
+    : [
+        { title: "CRM" },
+        { title: "Contacts", href: contactRoutes.index().url },
+        { title: "Create" },
+      ],
+);
 
 function submit() {
-  if (isEdit) {
-    props.form.post(contactRoutes.update(props.contact.id).url);
+  if (isEdit.value) {
+    props.form.put(contactRoutes.update(props.contact?.id).url);
     return;
   }
 
@@ -80,6 +87,7 @@ function submit() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <InputError :message="form.errors.organization_id" />
             </div>
 
             <div class="grid gap-2">
@@ -110,7 +118,7 @@ function submit() {
                 {{ form.processing ? "Saving..." : isEdit ? "Update contact" : "Create contact" }}
               </Button>
               <Button v-if="isEdit" type="button" variant="outline" as-child>
-                <a :href="contactRoutes.show(contact.id).url">Cancel</a>
+                <a :href="contactRoutes.show(contact?.id).url">Cancel</a>
               </Button>
               <span v-if="isEdit && form.isDirty" class="text-muted-foreground text-sm">
                 Unsaved changes

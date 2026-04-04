@@ -6,12 +6,12 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/props"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
+	"github.com/oullin/inertia-go/demo/api/internal/httputil"
 )
 
 const contactsPerPage = 15
@@ -20,7 +20,9 @@ func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
 	a.deps.Render(w, r, "Features/DataLoading/DeferredProps", httpx.Props{
 		"quickStat": 42,
 		"slowStats": props.Defer(func() any {
-			time.Sleep(800 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 800*time.Millisecond) != nil {
+				return nil
+			}
 
 			totalContacts, err := database.CountContacts(a.deps.DB)
 
@@ -34,7 +36,10 @@ func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}, "slow"),
 		"heavyData": props.Defer(func() any {
-			time.Sleep(1500 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 1500*time.Millisecond) != nil {
+				return nil
+			}
+
 			items := make([]map[string]any, 20)
 
 			for i := range items {
@@ -71,7 +76,8 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 	page, err := database.ListContactsPaginated(a.deps.DB, "", false, cursor, "next", contactsPerPage)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Error("list contacts paginated", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
 	}
@@ -105,17 +111,23 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
 	a.deps.Render(w, r, "Features/DataLoading/WhenVisible", httpx.Props{
 		"section1": props.Optional(func() any {
-			time.Sleep(500 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 500*time.Millisecond) != nil {
+				return nil
+			}
 
 			return map[string]any{"title": "Section 1", "content": "Loaded on visibility."}
 		}),
 		"section2": props.Optional(func() any {
-			time.Sleep(800 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 800*time.Millisecond) != nil {
+				return nil
+			}
 
 			return map[string]any{"title": "Section 2", "content": "Also loaded lazily."}
 		}),
 		"section3": props.Optional(func() any {
-			time.Sleep(1000 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 1000*time.Millisecond) != nil {
+				return nil
+			}
 
 			return map[string]any{"title": "Section 3", "content": "Third lazy section."}
 		}),
@@ -162,7 +174,9 @@ func (a app) optionalPropsHandler(w http.ResponseWriter, r *http.Request) {
 			return map[string]any{"message": "Loaded on demand"}
 		}),
 		"deferredData": props.Defer(func() any {
-			time.Sleep(500 * time.Millisecond)
+			if httputil.SleepCtx(r.Context(), 500*time.Millisecond) != nil {
+				return nil
+			}
 
 			return map[string]any{"message": "Loaded asynchronously"}
 		}),
@@ -170,8 +184,7 @@ func (a app) optionalPropsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) oncePropsHandler(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/features/data-loading/once-props/")
-	pageNum, _ := strconv.Atoi(strings.Trim(path, "/"))
+	pageNum, _ := strconv.Atoi(r.PathValue("page"))
 
 	if pageNum < 1 {
 		pageNum = 1

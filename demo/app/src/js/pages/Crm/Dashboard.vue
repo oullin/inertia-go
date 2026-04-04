@@ -93,11 +93,15 @@ const breadcrumbs = [{ title: "Dashboard", href: appRoutes.dashboard().url }];
                   <span class="text-sm font-medium">{{ note.user?.name ?? "Unknown" }}</span>
                   <span class="text-muted-foreground text-xs">added a note on</span>
                   <Link
-                    :href="contactRoutes.show(note.contact.id).url"
+                    v-if="note.contact"
+                    :href="contactRoutes.show(note.contact?.id).url"
                     class="text-sm font-medium text-primary hover:underline"
                   >
-                    {{ note.contact.name }}
+                    {{ note.contact?.name }}
                   </Link>
+                  <span v-else class="text-sm font-medium text-muted-foreground"
+                    >Unknown contact</span
+                  >
                 </div>
                 <p class="text-muted-foreground line-clamp-2 text-sm">{{ note.body }}</p>
               </div>

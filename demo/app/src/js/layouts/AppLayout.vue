@@ -29,6 +29,14 @@ const props = withDefaults(defineProps<{ title?: string; breadcrumbs?: Breadcrum
 
 const page = usePage<SharedPageProps>();
 const currentPath = computed(() => String(page.url ?? "/").split("?")[0]);
+const title = computed(
+  () => props.title || ((page.props as Record<string, unknown>).title as string) || "",
+);
+const breadcrumbs = computed(() =>
+  props.breadcrumbs.length
+    ? props.breadcrumbs
+    : (((page.props as Record<string, unknown>).breadcrumbs as Breadcrumb[]) ?? []),
+);
 const user = computed(() => page.props.auth?.user ?? null);
 
 const groups = computed(() => [
@@ -187,6 +195,7 @@ const featureGroups = computed(() => [
             <SidebarMenu>
               <SidebarMenuItem v-for="item in fGroup.items" :key="item.title">
                 <SidebarMenuButton
+                  v-if="item.href"
                   as-child
                   :is-active="currentPath === item.href"
                   :tooltip="item.title"

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
 import { useForm, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -12,55 +11,27 @@ import type { SharedPageProps } from "@/js/types";
 
 type FieldName = "username" | "email" | "password" | "password_confirmation";
 
-interface FieldState {
-  touched: boolean;
-  validating: boolean;
-  valid: boolean | null;
-}
+const fields: FieldName[] = ["username", "email", "password", "password_confirmation"];
 
 const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "Precognition" }];
 
-const form = useForm({
+const form = useForm("post", page.url, {
   username: "",
   email: "",
   password: "",
   password_confirmation: "",
 });
 
-const fieldStates = ref<Record<FieldName, FieldState>>({
-  username: { touched: false, validating: false, valid: null },
-  email: { touched: false, validating: false, valid: null },
-  password: { touched: false, validating: false, valid: null },
-  password_confirmation: { touched: false, validating: false, valid: null },
-});
-
-function markTouched(field: FieldName) {
-  fieldStates.value[field].touched = true;
-}
-
-watch(
-  () => form.errors,
-  (errors) => {
-    for (const field of Object.keys(fieldStates.value) as FieldName[]) {
-      if (fieldStates.value[field].touched) {
-        fieldStates.value[field].valid = !errors[field];
-      }
-    }
-  },
-  { deep: true },
-);
-
 function submit() {
-  form.post(page.url);
+  form.submit();
 }
 
 function fieldClass(field: FieldName): string {
-  const state = fieldStates.value[field];
-  if (!state.touched) return "";
-  if (form.errors[field]) return "border-red-500";
-  if (state.valid) return "border-green-500";
+  if (!form.touched(field)) return "";
+  if (form.invalid(field)) return "border-red-500";
+  if (form.valid(field)) return "border-green-500";
   return "";
 }
 </script>
@@ -86,11 +57,11 @@ function fieldClass(field: FieldName): string {
                 v-model="form.username"
                 placeholder="Choose a username"
                 :class="fieldClass('username')"
-                @blur="markTouched('username')"
+                @blur="form.validate('username')"
               />
               <InputError :message="form.errors.username" />
               <p
-                v-if="fieldStates.username.touched && !form.errors.username && form.username"
+                v-if="form.touched('username') && form.valid('username') && form.username"
                 class="text-xs text-green-600"
               >
                 Username looks good!
@@ -105,7 +76,7 @@ function fieldClass(field: FieldName): string {
                 type="email"
                 placeholder="you@example.com"
                 :class="fieldClass('email')"
-                @blur="markTouched('email')"
+                @blur="form.validate('email')"
               />
               <InputError :message="form.errors.email" />
             </div>
@@ -118,7 +89,7 @@ function fieldClass(field: FieldName): string {
                 type="password"
                 placeholder="At least 8 characters"
                 :class="fieldClass('password')"
-                @blur="markTouched('password')"
+                @blur="form.validate('password')"
               />
               <InputError :message="form.errors.password" />
             </div>
@@ -131,7 +102,7 @@ function fieldClass(field: FieldName): string {
                 type="password"
                 placeholder="Repeat your password"
                 :class="fieldClass('password_confirmation')"
-                @blur="markTouched('password_confirmation')"
+                @blur="form.validate('password_confirmation')"
               />
               <InputError :message="form.errors.password_confirmation" />
             </div>
@@ -151,26 +122,26 @@ function fieldClass(field: FieldName): string {
           <FeatureCard title="Field States" description="Real-time status of each form field.">
             <div class="grid gap-2 text-sm">
               <div
-                v-for="(state, field) in fieldStates"
+                v-for="field in fields"
                 :key="field"
                 class="flex items-center justify-between rounded-md border p-3"
               >
                 <span class="font-medium font-mono">{{ field }}</span>
                 <div class="flex items-center gap-2">
                   <span
-                    v-if="state.touched"
+                    v-if="form.touched(field)"
                     class="rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800"
                   >
                     touched
                   </span>
                   <span
-                    v-if="form.errors[field]"
+                    v-if="form.touched(field) && form.invalid(field)"
                     class="rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800"
                   >
                     invalid
                   </span>
                   <span
-                    v-else-if="state.touched && form[field]"
+                    v-else-if="form.touched(field) && form.valid(field)"
                     class="rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800"
                   >
                     valid

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useForm, usePage } from "@inertiajs/vue3";
 import FeatureCard from "@/js/components/app/FeatureCard.vue";
 import FeatureHeader from "@/js/components/app/FeatureHeader.vue";
@@ -12,6 +12,9 @@ import type { SharedPageProps } from "@/js/types";
 const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "File Uploads" }];
+
+const photoInput = ref<HTMLInputElement | null>(null);
+const documentsInput = ref<HTMLInputElement | null>(null);
 
 const form = useForm({
   photo: null as File | null,
@@ -43,6 +46,12 @@ function onDocumentsChange(e: Event) {
   form.documents = Array.from((e.target as HTMLInputElement).files || []);
 }
 
+function reset() {
+  form.reset();
+  if (photoInput.value) photoInput.value.value = "";
+  if (documentsInput.value) documentsInput.value.value = "";
+}
+
 function submit() {
   form.post(page.url, {
     forceFormData: true,
@@ -65,6 +74,7 @@ function submit() {
               <Label for="photo">Photo (single file)</Label>
               <input
                 id="photo"
+                ref="photoInput"
                 type="file"
                 accept="image/*"
                 class="border-input bg-background file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 flex w-full rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:px-3 file:py-1 file:text-sm file:font-medium"
@@ -77,6 +87,7 @@ function submit() {
               <Label for="documents">Documents (multiple files)</Label>
               <input
                 id="documents"
+                ref="documentsInput"
                 type="file"
                 multiple
                 class="border-input bg-background file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 flex w-full rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:px-3 file:py-1 file:text-sm file:font-medium"
@@ -102,7 +113,7 @@ function submit() {
               <Button type="submit" :disabled="form.processing">
                 {{ form.processing ? "Uploading..." : "Upload Files" }}
               </Button>
-              <Button type="button" variant="outline" @click="form.reset()">Clear</Button>
+              <Button type="button" variant="outline" @click="reset()">Clear</Button>
               <span v-if="form.recentlySuccessful" class="text-sm text-green-600"> Uploaded! </span>
             </div>
           </form>

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -46,7 +47,8 @@ func CSRF(cfg config.CSRFConfig, key []byte) func(http.Handler) http.Handler {
 				}
 
 				if err := setTokenCookie(w, cfg.CookieName, token, key, cfg.Secure, cfg.SameSiteMode()); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					slog.Error("csrf: set token cookie", "error", err)
+					http.Error(w, "csrf: internal error", http.StatusInternalServerError)
 
 					return
 				}

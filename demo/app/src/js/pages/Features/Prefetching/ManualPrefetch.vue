@@ -13,16 +13,31 @@ const breadcrumbs = [{ title: "Features" }, { title: "Prefetching" }, { title: "
 const prefetchStatus = ref("idle");
 
 function triggerPrefetch() {
+  const url = featureRoute("features.prefetching.link-prefetch");
+
+  if (!url) {
+    return;
+  }
+
   prefetchStatus.value = "prefetching";
-  router.prefetch(featureRoute("features.prefetching.link-prefetch"), {
-    onFinish() {
+  router.prefetch(url, {
+    onSuccess() {
       prefetchStatus.value = "cached";
+    },
+    onError() {
+      prefetchStatus.value = "error";
     },
   });
 }
 
 function navigateToPrefetched() {
-  router.visit(featureRoute("features.prefetching.link-prefetch"));
+  const url = featureRoute("features.prefetching.link-prefetch");
+
+  if (!url) {
+    return;
+  }
+
+  router.visit(url);
 }
 </script>
 
@@ -73,8 +88,11 @@ function navigateToPrefetched() {
 router.prefetch(url, {
   method: 'get',
   data: {},
-  onFinish() {
-    console.log('Prefetch complete!')
+  onSuccess() {
+    console.log('Prefetch cached!')
+  },
+  onError() {
+    console.log('Prefetch failed!')
   },
 })</pre
           >

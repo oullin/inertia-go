@@ -59,7 +59,8 @@ async function submitForm() {
 }
 
 function getCookie(cookieName: string): string {
-  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  const escaped = cookieName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = document.cookie.match(new RegExp("(^| )" + escaped + "=([^;]+)"));
   return match ? decodeURIComponent(match[2]) : "";
 }
 

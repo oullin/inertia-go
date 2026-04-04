@@ -14,19 +14,23 @@ import (
 	corei18n "github.com/oullin/inertia-go/core/i18n"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/middleware"
+	"github.com/oullin/inertia-go/core/wayfinder"
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 	"github.com/oullin/inertia-go/demo/api/internal/seed"
 )
 
 //go:embed resources/views/app.html
-var rootTemplateFS embed.FS
 
-var (
+type runtime struct {
 	db         *sql.DB
-	i          *inertia.Inertia
+	cryptoKey  []byte
+	inertia    *inertia.Inertia
 	localeCfg  *config.I18nConfig
 	flashStore *flash.CookieStore
-)
+	routes     *wayfinder.Registry
+}
+
+var rootTemplateFS embed.FS
 
 func main() {
 	tmpl, err := rootTemplateFS.ReadFile("resources/views/app.html")
@@ -47,7 +51,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	i, err = inertia.New(string(tmpl),
+	i, err := inertia.New(string(tmpl),
 		inertia.WithVersion(version),
 		inertia.WithHeadFromFile(seoPath),
 	)
@@ -56,7 +60,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	localeCfg, err = corei18n.LoadConfig(mustResolveResourcePath("i18n.yml"))
+	localeCfg, err := corei18n.LoadConfig(mustResolveResourcePath("i18n.yml"))
 
 	if err != nil {
 		log.Fatal(err)
@@ -75,10 +79,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	flashStore = flash.NewCookieStore(flash.WithCookieName("beacon_flash"))
-	initRoutes()
+	cryptoCfg, err := config.LoadCrypto(mustResolveResourcePath("crypto.yml"))
 
-	db, err = database.Open("beacon.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cryptoKey, err := cryptoCfg.DecodedKey()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := database.Open("beacon.db")
 
 	if err != nil {
 		log.Fatal(err)
@@ -88,6 +101,15 @@ func main() {
 
 	if err := seed.Run(db); err != nil {
 		log.Fatal("failed to seed database:", err)
+	}
+
+	rt := &runtime{
+		db:         db,
+		cryptoKey:  cryptoKey,
+		inertia:    i,
+		localeCfg:  localeCfg,
+		flashStore: flash.NewCookieStore(flash.WithCookieName("beacon_flash")),
+		routes:     initRoutes(),
 	}
 
 	distPath, err := resolveDistPath()
@@ -103,12 +125,16 @@ func main() {
 	)
 
 	appMux := http.NewServeMux()
-	authApp := newAuthApp()
+	authApp := rt.newAuthApp()
 	authApp.RegisterRoutes(appMux)
-	registerCRMRoutes(appMux, authApp)
-	registerFeatureRoutes(appMux, authApp)
+
+	if err := rt.registerCRMRoutes(appMux, authApp); err != nil {
+		log.Fatalf("crm routes: %v", err)
+	}
+
+	rt.registerFeatureRoutes(appMux, authApp)
 	appMux.Handle("GET /{$}", http.RedirectHandler("/dashboard", http.StatusFound))
-	mux.Handle("/", dashboardAppHandler(authApp.WithCurrentUser(withDemoProps(authApp, appMux)), csrfMiddleware, localeCfg))
+	mux.Handle("/", rt.dashboardAppHandler(authApp.WithCurrentUser(rt.withDemoProps(authApp, appMux)), csrfMiddleware))
 
 	addr := ":8080"
 
@@ -167,13 +193,13 @@ func mustResolveResourcePath(name string) string {
 	return path
 }
 
-func dashboardAppHandler(base http.Handler, csrfMiddleware func(http.Handler) http.Handler, cfg *config.I18nConfig) http.Handler {
+func (rt *runtime) dashboardAppHandler(base http.Handler, csrfMiddleware func(http.Handler) http.Handler) http.Handler {
 	handler := base
 
-	handler = flash.Middleware(flashStore)(handler)
+	handler = flash.Middleware(rt.flashStore)(handler)
 
-	if cfg != nil {
-		handler = corei18n.Middleware(cfg, handler)
+	if rt.localeCfg != nil {
+		handler = corei18n.Middleware(rt.localeCfg, handler)
 	}
 
 	if csrfMiddleware != nil {
@@ -182,5 +208,5 @@ func dashboardAppHandler(base http.Handler, csrfMiddleware func(http.Handler) ht
 
 	handler = middleware.Precognition()(handler)
 
-	return i.Middleware(handler)
+	return rt.inertia.Middleware(handler)
 }

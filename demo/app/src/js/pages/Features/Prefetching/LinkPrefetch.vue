@@ -7,6 +7,10 @@ import AppLayout from "@/js/layouts/AppLayout.vue";
 import { featureRoute } from "@/js/lib/routes";
 
 const breadcrumbs = [{ title: "Features" }, { title: "Prefetching" }, { title: "Link Prefetch" }];
+
+const swrRoute = featureRoute("features.prefetching.stale-while-revalidate");
+const manualPrefetchRoute = featureRoute("features.prefetching.manual-prefetch");
+const cacheManagementRoute = featureRoute("features.prefetching.cache-management");
 </script>
 
 <template>
@@ -24,7 +28,8 @@ const breadcrumbs = [{ title: "Features" }, { title: "Prefetching" }, { title: "
         >
           <div class="space-y-3">
             <Link
-              :href="featureRoute('features.prefetching.stale-while-revalidate')"
+              v-if="swrRoute"
+              :href="swrRoute"
               prefetch="hover"
               class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
             >
@@ -43,7 +48,8 @@ const breadcrumbs = [{ title: "Features" }, { title: "Prefetching" }, { title: "
         >
           <div class="space-y-3">
             <Link
-              :href="featureRoute('features.prefetching.manual-prefetch')"
+              v-if="manualPrefetchRoute"
+              :href="manualPrefetchRoute"
               prefetch="click"
               class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
             >
@@ -62,7 +68,8 @@ const breadcrumbs = [{ title: "Features" }, { title: "Prefetching" }, { title: "
         >
           <div class="space-y-3">
             <Link
-              :href="featureRoute('features.prefetching.cache-management')"
+              v-if="cacheManagementRoute"
+              :href="cacheManagementRoute"
               prefetch="mount"
               class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
             >
@@ -81,7 +88,8 @@ const breadcrumbs = [{ title: "Features" }, { title: "Prefetching" }, { title: "
         >
           <div class="space-y-3">
             <Link
-              :href="featureRoute('features.prefetching.stale-while-revalidate')"
+              v-if="swrRoute"
+              :href="swrRoute"
               prefetch="hover"
               :cache-for="30000"
               class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"

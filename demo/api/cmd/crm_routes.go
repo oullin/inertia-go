@@ -7,16 +7,16 @@ import (
 	"github.com/oullin/inertia-go/demo/api/crm"
 )
 
-func registerCRMRoutes(mux *http.ServeMux, authApp auth.App) {
-	crm.RegisterRoutes(mux, crm.Deps{
-		DB:          db,
+func (rt *runtime) registerCRMRoutes(mux *http.ServeMux, authApp auth.App) error {
+	return crm.RegisterRoutes(mux, crm.Deps{
+		DB:          rt.db,
 		RequireAuth: authApp.RequireAuth,
-		Render:      renderPage,
+		Render:      rt.renderPage,
 		Redirect: func(w http.ResponseWriter, r *http.Request, url string) {
-			i.Redirect(w, r, url)
+			rt.inertia.Redirect(w, r, url)
 		},
-		RouteURL:    routes.URL,
-		SetFlash:    flashStore.Set,
+		RouteURL:    rt.routes.URL,
+		SetFlash:    rt.flashStore.Set,
 		CurrentUser: authApp.CurrentUser,
 	})
 }

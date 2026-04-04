@@ -1,6 +1,7 @@
 package crm
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -10,20 +11,36 @@ type app struct {
 }
 
 // RegisterRoutes mounts the CRM HTTP routes onto the provided mux.
-func RegisterRoutes(mux *http.ServeMux, deps Deps) {
-	app := newApp(deps)
+func RegisterRoutes(mux *http.ServeMux, deps Deps) error {
+	app, err := newApp(deps)
 
-	mux.Handle("/dashboard", deps.RequireAuth(http.HandlerFunc(app.dashboardHandler)))
-	mux.Handle("/contacts", deps.RequireAuth(http.HandlerFunc(app.contactsHandler)))
-	mux.Handle("/contacts/create", deps.RequireAuth(http.HandlerFunc(app.contactsCreateHandler)))
-	mux.Handle("/contacts/", deps.RequireAuth(http.HandlerFunc(app.contactByIDHandler)))
-	mux.Handle("/organizations", deps.RequireAuth(http.HandlerFunc(app.organizationsHandler)))
-	mux.Handle("/organizations/", deps.RequireAuth(http.HandlerFunc(app.organizationByIDHandler)))
+	if err != nil {
+		return fmt.Errorf("crm: %w", err)
+	}
+
+	auth := func(h http.HandlerFunc) http.Handler {
+		return deps.RequireAuth(h)
+	}
+
+	mux.Handle("/dashboard", auth(app.dashboardHandler))
+	mux.Handle("/contacts", auth(app.contactsHandler))
+	mux.Handle("/contacts/create", auth(app.contactsCreateHandler))
+	mux.Handle("/contacts/", auth(app.contactByIDHandler))
+	mux.Handle("/organizations", auth(app.organizationsHandler))
+	mux.Handle("/organizations/", auth(app.organizationByIDHandler))
+
+	return nil
 }
 
-func newApp(deps Deps) app {
+func newApp(deps Deps) (app, error) {
+	repo, err := newRepository(deps.DB)
+
+	if err != nil {
+		return app{}, err
+	}
+
 	return app{
 		deps:    deps,
-		service: newService(newRepository(deps.DB)),
-	}
+		service: newService(repo),
+	}, nil
 }
