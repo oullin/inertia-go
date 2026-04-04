@@ -43,7 +43,13 @@ function triggerFlash(kind: string) {
         <FeatureCard title="Current Flash" description="What is currently in page.props.flash.">
           <div v-if="page.props.flash?.message" class="space-y-3">
             <div class="flex items-center gap-2">
-              <Badge :variant="page.props.flash.kind === 'error' ? 'destructive' : 'default'">
+              <Badge
+                :variant="
+                  { error: 'destructive', success: 'success', warning: 'warning' }[
+                    page.props.flash.kind
+                  ] ?? 'default'
+                "
+              >
                 {{ page.props.flash.kind ?? "info" }}
               </Badge>
             </div>

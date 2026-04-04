@@ -10,6 +10,8 @@ import (
 )
 
 func TestAdd(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 
@@ -29,6 +31,8 @@ func TestAdd(t *testing.T) {
 }
 
 func TestAddNormalizesMethod(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "post", "/login")
 
@@ -40,6 +44,8 @@ func TestAddNormalizesMethod(t *testing.T) {
 }
 
 func TestAddChaining(t *testing.T) {
+	t.Parallel()
+
 	reg := New().
 		Add("login", "GET", "/login").
 		Add("logout", "POST", "/logout")
@@ -54,6 +60,8 @@ func TestAddChaining(t *testing.T) {
 }
 
 func TestGroup(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Group("contacts", "/contacts", func(g *Group) {
 		g.Add("index", "GET", "")
@@ -91,6 +99,8 @@ func TestGroup(t *testing.T) {
 }
 
 func TestNestedGroup(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Group("contacts", "/contacts", func(g *Group) {
 		g.Add("index", "GET", "")
@@ -111,6 +121,8 @@ func TestNestedGroup(t *testing.T) {
 }
 
 func TestURL(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
@@ -122,6 +134,8 @@ func TestURL(t *testing.T) {
 }
 
 func TestURLUnknownRoute(t *testing.T) {
+	t.Parallel()
+
 	var buf bytes.Buffer
 
 	log.SetOutput(&buf)
@@ -142,6 +156,8 @@ func TestURLUnknownRoute(t *testing.T) {
 }
 
 func TestURLNoParams(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("dashboard", "GET", "/dashboard")
 
@@ -152,7 +168,22 @@ func TestURLNoParams(t *testing.T) {
 	}
 }
 
+func TestURLEncodesParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	url := reg.URL("contacts.show", map[string]string{"contact": "hello world/foo"})
+
+	if url != "/contacts/hello%20world%2Ffoo" {
+		t.Errorf("expected /contacts/hello%%20world%%2Ffoo, got %s", url)
+	}
+}
+
 func TestManifest(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
@@ -169,6 +200,8 @@ func TestManifest(t *testing.T) {
 }
 
 func TestManifestProps(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 
@@ -180,6 +213,8 @@ func TestManifestProps(t *testing.T) {
 }
 
 func TestExportOrder(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("c", "GET", "/c")
 	reg.Add("a", "GET", "/a")
@@ -197,6 +232,8 @@ func TestExportOrder(t *testing.T) {
 }
 
 func TestToJSON(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 
@@ -218,6 +255,8 @@ func TestToJSON(t *testing.T) {
 }
 
 func TestLookupMiss(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 
 	_, ok := reg.Lookup("missing")
@@ -228,6 +267,8 @@ func TestLookupMiss(t *testing.T) {
 }
 
 func TestRouteParams(t *testing.T) {
+	t.Parallel()
+
 	route := Route{Pattern: "/contacts/{contact}/notes/{note}"}
 	params := route.Params()
 
@@ -241,6 +282,8 @@ func TestRouteParams(t *testing.T) {
 }
 
 func TestRouteParamsNone(t *testing.T) {
+	t.Parallel()
+
 	route := Route{Pattern: "/dashboard"}
 	params := route.Params()
 
@@ -250,6 +293,8 @@ func TestRouteParamsNone(t *testing.T) {
 }
 
 func TestAddOverwrite(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 	reg.Add("login", "POST", "/auth/login")

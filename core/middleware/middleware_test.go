@@ -10,6 +10,8 @@ import (
 )
 
 func TestMiddleware_SetsVaryHeader(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -26,6 +28,8 @@ func TestMiddleware_SetsVaryHeader(t *testing.T) {
 }
 
 func TestMiddleware_NonInertiaPassesThrough(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
@@ -48,6 +52,8 @@ func TestMiddleware_NonInertiaPassesThrough(t *testing.T) {
 }
 
 func TestMiddleware_VersionMatch(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
@@ -68,6 +74,8 @@ func TestMiddleware_VersionMatch(t *testing.T) {
 }
 
 func TestMiddleware_VersionMismatch(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	mw := middleware.New(middleware.Config{Version: "v2"})
 
@@ -96,6 +104,8 @@ func TestMiddleware_VersionMismatch(t *testing.T) {
 }
 
 func TestMiddleware_VersionMismatchOnlyGET(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	mw := middleware.New(middleware.Config{Version: "v2"})
 
@@ -116,6 +126,8 @@ func TestMiddleware_VersionMismatchOnlyGET(t *testing.T) {
 }
 
 func TestMiddleware_RedirectConversion_PUTTo303(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +146,8 @@ func TestMiddleware_RedirectConversion_PUTTo303(t *testing.T) {
 }
 
 func TestMiddleware_RedirectConversion_PATCHTo303(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -152,6 +166,8 @@ func TestMiddleware_RedirectConversion_PATCHTo303(t *testing.T) {
 }
 
 func TestMiddleware_RedirectConversion_DELETETo303(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +186,8 @@ func TestMiddleware_RedirectConversion_DELETETo303(t *testing.T) {
 }
 
 func TestMiddleware_RedirectConversion_GETStays302(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -188,6 +206,8 @@ func TestMiddleware_RedirectConversion_GETStays302(t *testing.T) {
 }
 
 func TestMiddleware_WriteWithoutExplicitWriteHeader(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -211,6 +231,8 @@ func TestMiddleware_WriteWithoutExplicitWriteHeader(t *testing.T) {
 }
 
 func TestMiddleware_DoubleWriteHeaderIgnored(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -232,6 +254,8 @@ func TestMiddleware_DoubleWriteHeaderIgnored(t *testing.T) {
 // --- Version Edge Cases ---
 
 func TestMiddleware_EmptyClientVersionPassesThrough(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
@@ -256,6 +280,8 @@ func TestMiddleware_EmptyClientVersionPassesThrough(t *testing.T) {
 }
 
 func TestMiddleware_EmptyServerVersionWithClientVersion(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: ""})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -275,6 +301,8 @@ func TestMiddleware_EmptyServerVersionWithClientVersion(t *testing.T) {
 }
 
 func TestMiddleware_VersionMismatchPreservesQueryString(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v2"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
@@ -292,6 +320,8 @@ func TestMiddleware_VersionMismatchPreservesQueryString(t *testing.T) {
 }
 
 func TestMiddleware_VersionMismatchOnPOST_NoConflict(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	mw := middleware.New(middleware.Config{Version: "v2"})
 
@@ -312,6 +342,8 @@ func TestMiddleware_VersionMismatchOnPOST_NoConflict(t *testing.T) {
 }
 
 func TestMiddleware_VersionMismatchOnDELETE_NoConflict(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	mw := middleware.New(middleware.Config{Version: "v2"})
 
@@ -334,6 +366,8 @@ func TestMiddleware_VersionMismatchOnDELETE_NoConflict(t *testing.T) {
 // --- Redirect Conversion ---
 
 func TestMiddleware_RedirectConversion_POSTStays302(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -352,6 +386,8 @@ func TestMiddleware_RedirectConversion_POSTStays302(t *testing.T) {
 }
 
 func TestMiddleware_301NotConverted(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -370,6 +406,8 @@ func TestMiddleware_301NotConverted(t *testing.T) {
 }
 
 func TestMiddleware_307NotConverted(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -390,6 +428,8 @@ func TestMiddleware_307NotConverted(t *testing.T) {
 // --- Status Interceptor ---
 
 func TestMiddleware_VaryHeaderOnInertiaRequest(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -408,6 +448,8 @@ func TestMiddleware_VaryHeaderOnInertiaRequest(t *testing.T) {
 }
 
 func TestMiddleware_VersionMismatchResponseHasNoBody(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v2"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
@@ -425,6 +467,8 @@ func TestMiddleware_VersionMismatchResponseHasNoBody(t *testing.T) {
 }
 
 func TestMiddleware_NonInertia302NotConverted(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -442,6 +486,8 @@ func TestMiddleware_NonInertia302NotConverted(t *testing.T) {
 }
 
 func TestMiddleware_ConcurrentRequests(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.New(middleware.Config{Version: "v1"})
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

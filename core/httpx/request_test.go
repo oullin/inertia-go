@@ -9,6 +9,8 @@ import (
 )
 
 func TestIsInertiaRequest(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		header string
@@ -22,6 +24,8 @@ func TestIsInertiaRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 
 			if tt.header != "" {
@@ -36,6 +40,8 @@ func TestIsInertiaRequest(t *testing.T) {
 }
 
 func TestIsPrecognitionRequest(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest("POST", "/", nil)
 	r.Header.Set("Precognition", "true")
 
@@ -45,6 +51,8 @@ func TestIsPrecognitionRequest(t *testing.T) {
 }
 
 func TestIsPrecognitionRequest_Missing(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest("POST", "/", nil)
 
 	if httpx.IsPrecognitionRequest(r) {
@@ -53,6 +61,8 @@ func TestIsPrecognitionRequest_Missing(t *testing.T) {
 }
 
 func TestValidateOnly(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest("POST", "/", nil)
 	r.Header.Set("Validate-Only", "name,email,phone")
 
@@ -72,6 +82,8 @@ func TestValidateOnly(t *testing.T) {
 }
 
 func TestValidateOnly_WithSpaces(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest("POST", "/", nil)
 	r.Header.Set("Validate-Only", " name , email ")
 
@@ -87,6 +99,8 @@ func TestValidateOnly_WithSpaces(t *testing.T) {
 }
 
 func TestValidateOnly_Missing(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest("POST", "/", nil)
 
 	if fields := httpx.ValidateOnly(r); fields != nil {
@@ -95,6 +109,8 @@ func TestValidateOnly_Missing(t *testing.T) {
 }
 
 func TestValidateOnly_Empty(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest("POST", "/", nil)
 	r.Header.Set("Validate-Only", "")
 

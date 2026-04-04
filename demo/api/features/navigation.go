@@ -2,6 +2,7 @@ package features
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -17,7 +18,10 @@ func (a app) linksHandler(w http.ResponseWriter, r *http.Request) {
 			"timestamp": time.Now().Format(time.RFC3339),
 		})
 	case http.MethodPost:
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Action", Message: "Link action processed."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Action", Message: "Link action processed."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.navigation.links", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -48,7 +52,10 @@ func (a app) historyManagementHandler(w http.ResponseWriter, r *http.Request) {
 			"timestamp": time.Now().Format(time.RFC3339),
 		})
 	case http.MethodPost:
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "History", Message: "Action recorded in history."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "History", Message: "Action recorded in history."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.navigation.history-management", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -81,7 +88,10 @@ func (a app) redirectsHandler(w http.ResponseWriter, r *http.Request) {
 			"timestamp": time.Now().Format(time.RFC3339),
 		})
 	case http.MethodPost:
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Redirected", Message: "Standard redirect completed."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Redirected", Message: "Standard redirect completed."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.navigation.redirects", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -94,10 +104,16 @@ func (a app) redirectsActionHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch action {
 	case "back":
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Back", Message: "Redirected back."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Back", Message: "Redirected back."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.navigation.redirects", nil))
 	case "to-route":
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Named route", Message: "Redirected to named route."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Named route", Message: "Redirected to named route."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.navigation.redirects", nil))
 	case "external":
 		a.deps.Location(w, r, "https://inertiajs.com")
@@ -146,7 +162,10 @@ func (a app) urlFragmentsHandler(w http.ResponseWriter, r *http.Request) {
 			"timestamp": time.Now().Format(time.RFC3339),
 		})
 	case http.MethodPost:
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Fragment", Message: "Fragment action processed."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Fragment", Message: "Fragment action processed."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.navigation.url-fragments", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

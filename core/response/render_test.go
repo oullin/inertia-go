@@ -30,6 +30,8 @@ func (e *marshalError) Error() string { return "marshal failed" }
 // --- WriteJSON ---
 
 func TestWriteJSON(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component: "Users/Index",
 		Props:     map[string]any{"name": "alice"},
@@ -76,6 +78,8 @@ func TestWriteJSON(t *testing.T) {
 }
 
 func TestWriteJSON_MarshalError(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{Component: "Page"}
 
 	w := httptest.NewRecorder()
@@ -89,6 +93,8 @@ func TestWriteJSON_MarshalError(t *testing.T) {
 // --- WriteHTML ---
 
 func TestWriteHTML(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(
 		`<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`,
 	))
@@ -131,6 +137,8 @@ func TestWriteHTML(t *testing.T) {
 }
 
 func TestWriteHTML_MarshalError(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
 	page := &response.Page{Component: "Page"}
 
@@ -143,6 +151,8 @@ func TestWriteHTML_MarshalError(t *testing.T) {
 }
 
 func TestWriteHTML_ExtraTemplateData(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(
 		`{{ .inertia }}|title={{ .pageTitle }}`,
 	))
@@ -171,6 +181,8 @@ func TestWriteHTML_ExtraTemplateData(t *testing.T) {
 }
 
 func TestWriteHTML_ScriptClosingTagEscaped(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
 
 	// Props containing "</script>" should be escaped to prevent injection.
@@ -199,6 +211,8 @@ func TestWriteHTML_ScriptClosingTagEscaped(t *testing.T) {
 }
 
 func TestWriteHTML_CustomContainerID(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
 
 	page := &response.Page{
@@ -227,6 +241,8 @@ func TestWriteHTML_CustomContainerID(t *testing.T) {
 }
 
 func TestWriteHTML_OmitsEmptyOptionalFields(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
 
 	page := &response.Page{
@@ -271,6 +287,8 @@ func contains(s, substr string) bool {
 // --- WriteJSON Extended ---
 
 func TestWriteJSON_IncludesMergePropsField(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component:  "Page",
 		Props:      map[string]any{"items": []int{1}},
@@ -290,6 +308,8 @@ func TestWriteJSON_IncludesMergePropsField(t *testing.T) {
 }
 
 func TestWriteJSON_IncludesDeepMergePropsField(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component:      "Page",
 		Props:          map[string]any{},
@@ -309,6 +329,8 @@ func TestWriteJSON_IncludesDeepMergePropsField(t *testing.T) {
 }
 
 func TestWriteJSON_IncludesDeferredPropsField(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component: "Page",
 		Props:     map[string]any{},
@@ -334,6 +356,8 @@ func TestWriteJSON_IncludesDeferredPropsField(t *testing.T) {
 }
 
 func TestWriteJSON_IncludesScrollPropsField(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component: "Page",
 		Props:     map[string]any{},
@@ -364,6 +388,8 @@ func TestWriteJSON_IncludesScrollPropsField(t *testing.T) {
 }
 
 func TestWriteJSON_IncludesOncePropsField(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component: "Page",
 		Props:     map[string]any{},
@@ -390,6 +416,8 @@ func TestWriteJSON_IncludesOncePropsField(t *testing.T) {
 }
 
 func TestWriteJSON_OncePropsWithExpiresAt(t *testing.T) {
+	t.Parallel()
+
 	expires := int64(1700000000)
 
 	page := &response.Page{
@@ -413,6 +441,8 @@ func TestWriteJSON_OncePropsWithExpiresAt(t *testing.T) {
 }
 
 func TestWriteJSON_EncryptHistoryTrue(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component:      "Page",
 		Props:          map[string]any{},
@@ -432,6 +462,8 @@ func TestWriteJSON_EncryptHistoryTrue(t *testing.T) {
 }
 
 func TestWriteJSON_ClearHistoryTrue(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component:    "Page",
 		Props:        map[string]any{},
@@ -451,6 +483,8 @@ func TestWriteJSON_ClearHistoryTrue(t *testing.T) {
 }
 
 func TestWriteJSON_AllFieldsOmittedWhenEmpty(t *testing.T) {
+	t.Parallel()
+
 	page := &response.Page{
 		Component: "Page",
 		Props:     map[string]any{},
@@ -477,6 +511,8 @@ func TestWriteJSON_AllFieldsOmittedWhenEmpty(t *testing.T) {
 // --- WriteHTML Extended ---
 
 func TestWriteHTML_NilExtraDataHandled(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
@@ -489,6 +525,8 @@ func TestWriteHTML_NilExtraDataHandled(t *testing.T) {
 }
 
 func TestWriteHTML_EmptyExtraData(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
@@ -501,6 +539,8 @@ func TestWriteHTML_EmptyExtraData(t *testing.T) {
 }
 
 func TestWriteHTML_MultipleExtraDataKeys(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(
 		`{{ .inertia }}|{{ .keyA }}|{{ .keyB }}`,
 	))
@@ -523,6 +563,8 @@ func TestWriteHTML_MultipleExtraDataKeys(t *testing.T) {
 }
 
 func TestWriteHTML_EmbeddedJSONIsValid(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`{{ .inertia }}`))
 	page := &response.Page{
 		Component: "Page",
@@ -582,6 +624,8 @@ func TestWriteHTML_EmbeddedJSONIsValid(t *testing.T) {
 }
 
 func TestWriteHTML_InertiaHeadIsEmpty(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`head=[{{ .inertiaHead }}]`))
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
@@ -596,6 +640,8 @@ func TestWriteHTML_InertiaHeadIsEmpty(t *testing.T) {
 }
 
 func TestWriteHTML_WithHead(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(
 		`<head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body>`,
 	))
@@ -643,6 +689,8 @@ func TestWriteHTML_WithHead(t *testing.T) {
 }
 
 func TestWriteHTML_WithLang(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(
 		`<html lang="{{ .inertiaLang }}">{{ .inertia }}</html>`,
 	))
@@ -669,6 +717,8 @@ func TestWriteHTML_WithLang(t *testing.T) {
 }
 
 func TestWriteHTML_WithDir(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(
 		`<html dir="{{ .inertiaDir }}">{{ .inertia }}</html>`,
 	))
@@ -695,6 +745,8 @@ func TestWriteHTML_WithDir(t *testing.T) {
 }
 
 func TestWriteHTML_EmptyHeadBackwardCompat(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(`head=[{{ .inertiaHead }}]`))
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 

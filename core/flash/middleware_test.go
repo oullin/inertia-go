@@ -9,6 +9,8 @@ import (
 )
 
 func TestMiddlewareConsumesFlash(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore(WithCookieName("test_flash"))
 
 	handler := Middleware(s)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,6 +50,8 @@ func TestMiddlewareConsumesFlash(t *testing.T) {
 }
 
 func TestMiddlewareNoFlash(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore(WithCookieName("test_flash"))
 	called := false
 
@@ -74,6 +78,8 @@ func TestMiddlewareNoFlash(t *testing.T) {
 }
 
 func TestMiddlewareNilStoreNoOp(t *testing.T) {
+	t.Parallel()
+
 	called := false
 
 	handler := Middleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +97,8 @@ func TestMiddlewareNilStoreNoOp(t *testing.T) {
 }
 
 func TestMiddlewareCustomPropKey(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore(WithCookieName("test_flash"))
 
 	handler := Middleware(s, WithPropKey("notification"))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

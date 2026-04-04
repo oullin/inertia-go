@@ -7,6 +7,8 @@ import (
 )
 
 func TestNewCookieStoreDefaults(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore()
 
 	if s.cookieName != "inertia_flash" {
@@ -27,6 +29,8 @@ func TestNewCookieStoreDefaults(t *testing.T) {
 }
 
 func TestNewCookieStoreWithOptions(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore(
 		WithCookieName("my_flash"),
 		WithPath("/app"),
@@ -57,11 +61,16 @@ func TestNewCookieStoreWithOptions(t *testing.T) {
 }
 
 func TestSetAndConsume(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore(WithCookieName("test_flash"))
 	msg := Message{Kind: "success", Title: "Done", Message: "Contact created."}
 
 	rec := httptest.NewRecorder()
-	s.Set(rec, msg)
+
+	if err := s.Set(rec, msg); err != nil {
+		t.Fatalf("Set returned unexpected error: %v", err)
+	}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.AddCookie(findCookie(t, rec, "test_flash"))
@@ -90,7 +99,46 @@ func TestSetAndConsume(t *testing.T) {
 	}
 }
 
+func TestConsumeMirrorsSecurityAttributes(t *testing.T) {
+	t.Parallel()
+
+	s := NewCookieStore(
+		WithCookieName("sec_flash"),
+		WithSecure(true),
+		WithHTTPOnly(true),
+		WithSameSite(http.SameSiteStrictMode),
+	)
+
+	rec := httptest.NewRecorder()
+
+	if err := s.Set(rec, Message{Kind: "info", Title: "Hi", Message: "Hello."}); err != nil {
+		t.Fatalf("Set returned unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.AddCookie(findCookie(t, rec, "sec_flash"))
+
+	rec2 := httptest.NewRecorder()
+	s.Consume(rec2, req)
+
+	dc := findCookie(t, rec2, "sec_flash")
+
+	if !dc.HttpOnly {
+		t.Error("expected deletion cookie to have HttpOnly set")
+	}
+
+	if !dc.Secure {
+		t.Error("expected deletion cookie to have Secure set")
+	}
+
+	if dc.SameSite != http.SameSiteStrictMode {
+		t.Errorf("expected deletion cookie SameSite %v, got %v", http.SameSiteStrictMode, dc.SameSite)
+	}
+}
+
 func TestConsumeWithNoCookie(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
@@ -103,6 +151,8 @@ func TestConsumeWithNoCookie(t *testing.T) {
 }
 
 func TestConsumeWithInvalidJSON(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore(WithCookieName("test_flash"))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.AddCookie(&http.Cookie{Name: "test_flash", Value: "not-json"})
@@ -116,11 +166,16 @@ func TestConsumeWithInvalidJSON(t *testing.T) {
 }
 
 func TestConsumeAfterConsumeReturnsNil(t *testing.T) {
+	t.Parallel()
+
 	s := NewCookieStore(WithCookieName("test_flash"))
 	msg := Message{Kind: "info", Title: "Hey", Message: "Hello."}
 
 	rec := httptest.NewRecorder()
-	s.Set(rec, msg)
+
+	if err := s.Set(rec, msg); err != nil {
+		t.Fatalf("Set returned unexpected error: %v", err)
+	}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.AddCookie(findCookie(t, rec, "test_flash"))

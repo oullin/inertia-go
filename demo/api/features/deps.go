@@ -16,5 +16,5 @@ type Deps struct {
 	Redirect    func(http.ResponseWriter, *http.Request, string)
 	Location    func(http.ResponseWriter, *http.Request, string)
 	RouteURL    func(string, map[string]string) string
-	SetFlash    func(http.ResponseWriter, flash.Message)
+	SetFlash    func(http.ResponseWriter, flash.Message) error
 }

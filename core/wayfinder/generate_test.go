@@ -2,11 +2,21 @@ package wayfinder
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 )
 
+// Top-level routes (no dot) go into the "app" group.
+
+// limitWriter fails after n bytes.
+type limitWriter struct {
+	n int
+}
+
 func TestGenerateTypeScript(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
@@ -37,7 +47,7 @@ func TestGenerateTypeScript(t *testing.T) {
 		t.Error("expected flat contactsShow function with typed params")
 	}
 
-	if !strings.Contains(output, "return { url: `/contacts/${params.contact}`, method: 'get' }") {
+	if !strings.Contains(output, "return { url: `/contacts/${encodeURIComponent(String(params.contact))}`, method: 'get' }") {
 		t.Error("expected contactsShow template literal return")
 	}
 
@@ -47,6 +57,8 @@ func TestGenerateTypeScript(t *testing.T) {
 }
 
 func TestGenerateJavaScript(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
@@ -75,6 +87,8 @@ func TestGenerateJavaScript(t *testing.T) {
 }
 
 func TestGenerateFlatOnly(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("contacts.index", "GET", "/contacts")
 
@@ -98,6 +112,8 @@ func TestGenerateFlatOnly(t *testing.T) {
 }
 
 func TestGenerateNestedOnly(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("contacts.index", "GET", "/contacts")
 
@@ -121,6 +137,8 @@ func TestGenerateNestedOnly(t *testing.T) {
 }
 
 func TestGenerateCustomHeader(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 
@@ -140,6 +158,8 @@ func TestGenerateCustomHeader(t *testing.T) {
 }
 
 func TestGenerateNestedGrouping(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("contacts.index", "GET", "/contacts")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
@@ -174,6 +194,8 @@ func TestGenerateNestedGrouping(t *testing.T) {
 }
 
 func TestGenerateTopLevelRoutes(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 	reg.Add("logout", "POST", "/logout")
@@ -188,13 +210,14 @@ func TestGenerateTopLevelRoutes(t *testing.T) {
 
 	output := buf.String()
 
-	// Top-level routes (no dot) go into the "app" group.
 	if !strings.Contains(output, "export const app = {") {
 		t.Error("expected top-level routes grouped under 'app'")
 	}
 }
 
 func TestDotToCamel(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		input    string
 		expected string
@@ -218,6 +241,8 @@ func TestDotToCamel(t *testing.T) {
 }
 
 func TestGenerateHyphenatedRoutes(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("features.forms.use-form", "GET", "/features/forms/use-form")
 	reg.Add("use-http", "GET", "/use-http")
@@ -249,14 +274,54 @@ func TestGenerateHyphenatedRoutes(t *testing.T) {
 	}
 }
 
+var errWriteLimited = errors.New("write limit reached")
+
+func (lw *limitWriter) Write(p []byte) (int, error) {
+	if lw.n <= 0 {
+		return 0, errWriteLimited
+	}
+
+	if len(p) > lw.n {
+		lw.n = 0
+
+		return 0, errWriteLimited
+	}
+
+	lw.n -= len(p)
+
+	return len(p), nil
+}
+
+func TestGeneratePropagatesWriteError(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	// Allow just enough bytes for the header, then fail.
+	w := &limitWriter{n: 10}
+
+	err := Generate(reg, w, GenerateOptions{})
+
+	if err == nil {
+		t.Fatal("expected a write error, got nil")
+	}
+
+	if !errors.Is(err, errWriteLimited) {
+		t.Fatalf("expected errWriteLimited, got %v", err)
+	}
+}
+
 func TestBuildURLTemplate(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		pattern  string
 		expected string
 	}{
 		{"/contacts", "`/contacts`"},
-		{"/contacts/{contact}", "`/contacts/${params.contact}`"},
-		{"/contacts/{contact}/notes/{note}", "`/contacts/${params.contact}/notes/${params.note}`"},
+		{"/contacts/{contact}", "`/contacts/${encodeURIComponent(String(params.contact))}`"},
+		{"/contacts/{contact}/notes/{note}", "`/contacts/${encodeURIComponent(String(params.contact))}/notes/${encodeURIComponent(String(params.note))}`"},
 	}
 
 	for _, tt := range tests {

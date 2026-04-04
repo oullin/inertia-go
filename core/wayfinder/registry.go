@@ -3,6 +3,7 @@ package wayfinder
 import (
 	"encoding/json"
 	"log"
+	"net/url"
 	"strings"
 	"sync"
 )
@@ -98,7 +99,7 @@ func (r *Registry) URL(name string, params map[string]string) string {
 	result := route.Pattern
 
 	for key, value := range params {
-		result = strings.ReplaceAll(result, "{"+key+"}", value)
+		result = strings.ReplaceAll(result, "{"+key+"}", url.PathEscape(value))
 	}
 
 	return result

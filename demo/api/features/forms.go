@@ -2,6 +2,7 @@ package features
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -38,7 +39,10 @@ func (a app) useFormHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Form submitted", Message: fmt.Sprintf("Hello, %s!", name)})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Form submitted", Message: fmt.Sprintf("Hello, %s!", name)}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.use-form", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -66,7 +70,10 @@ func (a app) formComponentHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Form submitted", Message: fmt.Sprintf("Hello, %s!", name)})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Form submitted", Message: fmt.Sprintf("Hello, %s!", name)}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.form-component", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -86,7 +93,10 @@ func (a app) fileUploadsHandler(w http.ResponseWriter, r *http.Request) {
 			count++
 		}
 
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Files uploaded", Message: fmt.Sprintf("%d file(s) received.", count)})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Files uploaded", Message: fmt.Sprintf("%d file(s) received.", count)}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.file-uploads", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -126,7 +136,10 @@ func (a app) validationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Valid", Message: "All fields passed validation."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Valid", Message: "All fields passed validation."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.validation", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -155,7 +168,10 @@ func (a app) validationSecondaryHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Secondary form", Message: "Feedback submitted."})
+	if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Secondary form", Message: "Feedback submitted."}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.validation", nil))
 }
 
@@ -195,7 +211,10 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Account created", Message: fmt.Sprintf("Welcome, %s!", username)})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Account created", Message: fmt.Sprintf("Welcome, %s!", username)}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.precognition", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -203,7 +222,14 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) optimisticUpdatesHandler(w http.ResponseWriter, r *http.Request) {
-	contacts, _ := database.ListContacts(a.deps.DB, "", false)
+	contacts, err := database.ListContacts(a.deps.DB, "", false)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+		return
+	}
+
 	items := make([]map[string]any, 0, 10)
 
 	for i, c := range contacts {
@@ -240,7 +266,11 @@ func (a app) optimisticToggleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	database.ToggleContactFavorite(a.deps.DB, id)
-	a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Favorite updated", Message: "Toggle applied."})
+
+	if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Favorite updated", Message: "Toggle applied."}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.optimistic-updates", nil))
 }
 
@@ -254,7 +284,11 @@ func (a app) dottedKeysHandler(w http.ResponseWriter, r *http.Request) {
 		a.deps.Render(w, r, "Features/Forms/DottedKeys", httpx.Props{})
 	case http.MethodPost:
 		httpx.ParseForm(r)
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Dotted keys", Message: "Nested form data received."})
+
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Dotted keys", Message: "Nested form data received."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.forms.dotted-keys", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

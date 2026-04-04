@@ -28,7 +28,7 @@ export interface Note {
   id: number;
   body: string;
   created_at: string;
-  user: { name: string };
+  user?: { name: string };
   contact: { id: number; name: string };
 }
 

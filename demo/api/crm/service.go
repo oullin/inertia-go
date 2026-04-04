@@ -14,6 +14,11 @@ type service struct {
 var errUnauthorized = errors.New("crm: current user required")
 var errEmptyNoteBody = errors.New("crm: note body required")
 
+const (
+	contactsPerPage      = 15
+	organizationsPerPage = 20
+)
+
 func newService(repo databaseRepository) service {
 	return service{repo: repo}
 }
@@ -39,7 +44,7 @@ func (s service) listContacts(search string, favoriteOnly bool) ([]database.Cont
 }
 
 func (s service) listContactsPaginated(search string, favoriteOnly bool, cursor *string, direction string) (database.CursorPage[database.Contact], error) {
-	return s.repo.ListContactsPaginated(strings.TrimSpace(search), favoriteOnly, cursor, direction, 15)
+	return s.repo.ListContactsPaginated(strings.TrimSpace(search), favoriteOnly, cursor, direction, contactsPerPage)
 }
 
 func (s service) getContact(id int64) (*database.Contact, error) {
@@ -87,7 +92,7 @@ func (s service) listOrganizations(search string) ([]database.Organization, erro
 }
 
 func (s service) listOrganizationsPaginated(search string, page int) (database.OffsetPage[database.Organization], error) {
-	return s.repo.ListOrganizationsPaginated(strings.TrimSpace(search), page, 20)
+	return s.repo.ListOrganizationsPaginated(strings.TrimSpace(search), page, organizationsPerPage)
 }
 
 func (s service) getOrganization(id int64) (*database.Organization, error) {
@@ -103,5 +108,5 @@ func (s service) listContactsByOrganization(organizationID int64) ([]database.Co
 }
 
 func (s service) listContactsByOrgPaginated(organizationID int64, cursor *string, direction string) (database.CursorPage[database.Contact], error) {
-	return s.repo.ListContactsByOrgPaginated(organizationID, cursor, direction, 15)
+	return s.repo.ListContactsByOrgPaginated(organizationID, cursor, direction, contactsPerPage)
 }

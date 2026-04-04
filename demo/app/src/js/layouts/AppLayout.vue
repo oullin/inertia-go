@@ -19,7 +19,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/js/components/ui/sidebar";
-import { appRoutes, contactRoutes, organizationRoutes } from "@/js/lib/routes";
+import { appRoutes, contactRoutes, organizationRoutes, featureRoute } from "@/js/lib/routes";
 import type { Breadcrumb, NavGroup, SharedPageProps } from "@/js/types";
 
 const props = withDefaults(defineProps<{ title?: string; breadcrumbs?: Breadcrumb[] }>(), {
@@ -30,10 +30,6 @@ const props = withDefaults(defineProps<{ title?: string; breadcrumbs?: Breadcrum
 const page = usePage<SharedPageProps>();
 const currentPath = computed(() => String(page.url ?? "/").split("?")[0]);
 const user = computed(() => page.props.auth?.user ?? null);
-
-function featureRoute(name: string): string {
-  return page.props.routes?.[name] ?? "/";
-}
 
 const groups = computed(() => [
   {

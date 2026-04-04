@@ -2,6 +2,7 @@ package crm
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -151,7 +152,11 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 	a.deps.Render(w, r, "Contacts/Show", httpx.Props{
 		"contact": contactProp(*contact),
 		"notes": props.Defer(func() any {
-			notes, _ := a.service.listContactNotes(contactID)
+			notes, err := a.service.listContactNotes(contactID)
+
+			if err != nil {
+				slog.Error("list contact notes", "error", err)
+			}
 
 			return notesProps(notes)
 		}),
@@ -165,11 +170,14 @@ func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contac
 		return
 	}
 
-	a.deps.SetFlash(w, flash.Message{
+	if err := a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact deleted",
 		Message: "The contact has been removed.",
-	})
+	}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.index", nil))
 }
 
@@ -205,7 +213,7 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 
 func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 	if err := httpx.ParseForm(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "bad request", http.StatusBadRequest)
 
 		return
 	}
@@ -239,18 +247,20 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.deps.SetFlash(w, flash.Message{
+	if err := a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact created",
 		Message: "The CRM record is ready for follow-up.",
-	})
+	}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
 
 	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(id, 10)}))
 }
 
 func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := httpx.ParseForm(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "bad request", http.StatusBadRequest)
 
 		return
 	}
@@ -259,7 +269,14 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 	errors := form.validate()
 
 	if len(errors) > 0 {
-		existing, _ := a.service.getContact(contactID)
+		existing, err := a.service.getContact(contactID)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			return
+		}
+
 		orgs, err := a.service.listOrganizations("")
 
 		if err != nil {
@@ -284,11 +301,14 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		return
 	}
 
-	a.deps.SetFlash(w, flash.Message{
+	if err := a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact updated",
 		Message: "The CRM record now reflects the latest details.",
-	})
+	}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
 }
 
@@ -299,17 +319,20 @@ func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, conta
 		return
 	}
 
-	a.deps.SetFlash(w, flash.Message{
+	if err := a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Favorite updated",
 		Message: "The contact pin state changed successfully.",
-	})
+	}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
 }
 
 func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := httpx.ParseForm(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "bad request", http.StatusBadRequest)
 
 		return
 	}
@@ -339,11 +362,14 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 		return
 	}
 
-	a.deps.SetFlash(w, flash.Message{
+	if err := a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Note added",
 		Message: "Recent activity has been updated.",
-	})
+	}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
 }
 

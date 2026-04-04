@@ -14,13 +14,16 @@ const page = usePage<SharedPageProps>();
 const breadcrumbs = [{ title: "Features" }, { title: "Forms" }, { title: "Dotted Keys" }];
 
 const form = useForm({
-  "address.street": "",
-  "address.city": "",
-  "address.state": "",
-  "address.zip": "",
-  "contact.emails[0]": "",
-  "contact.emails[1]": "",
-  "contact.phone": "",
+  address: {
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+  },
+  contact: {
+    emails: ["", ""],
+    phone: "",
+  },
 });
 
 function submit() {
@@ -47,26 +50,26 @@ function submit() {
               <div class="grid gap-3">
                 <div class="grid gap-2">
                   <Label for="street">address.street</Label>
-                  <Input id="street" v-model="form['address.street']" placeholder="123 Main St" />
+                  <Input id="street" v-model="form.address.street" placeholder="123 Main St" />
                   <InputError :message="form.errors['address.street']" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                   <div class="grid gap-2">
                     <Label for="city">address.city</Label>
-                    <Input id="city" v-model="form['address.city']" placeholder="Springfield" />
+                    <Input id="city" v-model="form.address.city" placeholder="Springfield" />
                     <InputError :message="form.errors['address.city']" />
                   </div>
                   <div class="grid gap-2">
                     <Label for="state">address.state</Label>
-                    <Input id="state" v-model="form['address.state']" placeholder="IL" />
+                    <Input id="state" v-model="form.address.state" placeholder="IL" />
                     <InputError :message="form.errors['address.state']" />
                   </div>
                 </div>
 
                 <div class="grid gap-2">
                   <Label for="zip">address.zip</Label>
-                  <Input id="zip" v-model="form['address.zip']" placeholder="62701" />
+                  <Input id="zip" v-model="form.address.zip" placeholder="62701" />
                   <InputError :message="form.errors['address.zip']" />
                 </div>
               </div>
@@ -79,7 +82,7 @@ function submit() {
                   <Label for="email0">contact.emails[0]</Label>
                   <Input
                     id="email0"
-                    v-model="form['contact.emails[0]']"
+                    v-model="form.contact.emails[0]"
                     type="email"
                     placeholder="primary@example.com"
                   />
@@ -90,7 +93,7 @@ function submit() {
                   <Label for="email1">contact.emails[1]</Label>
                   <Input
                     id="email1"
-                    v-model="form['contact.emails[1]']"
+                    v-model="form.contact.emails[1]"
                     type="email"
                     placeholder="secondary@example.com"
                   />
@@ -99,7 +102,7 @@ function submit() {
 
                 <div class="grid gap-2">
                   <Label for="phone">contact.phone</Label>
-                  <Input id="phone" v-model="form['contact.phone']" placeholder="(555) 123-4567" />
+                  <Input id="phone" v-model="form.contact.phone" placeholder="(555) 123-4567" />
                   <InputError :message="form.errors['contact.phone']" />
                 </div>
               </div>

@@ -7,6 +7,8 @@ import (
 )
 
 func TestHeaderConstants(t *testing.T) {
+	t.Parallel()
+
 	// Verify header names match the Inertia.js protocol spec.
 	if httpx.HeaderInertia != "X-Inertia" {
 		t.Errorf("HeaderInertia = %q, want %q", httpx.HeaderInertia, "X-Inertia")

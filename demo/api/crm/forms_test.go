@@ -57,6 +57,40 @@ func TestContactFormValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "non-numeric organization_id",
+			form: contactForm{
+				FirstName:      "Mina",
+				LastName:       "Cole",
+				Email:          "mina@example.test",
+				OrganizationID: "abc",
+			},
+			want: map[string]string{
+				"organization_id": "The organization id field must be a valid identifier.",
+			},
+		},
+		{
+			name: "decimal organization_id",
+			form: contactForm{
+				FirstName:      "Mina",
+				LastName:       "Cole",
+				Email:          "mina@example.test",
+				OrganizationID: "12.34",
+			},
+			want: map[string]string{
+				"organization_id": "The organization id field must be a valid identifier.",
+			},
+		},
+		{
+			name: "valid form with organization_id",
+			form: contactForm{
+				FirstName:      "Mina",
+				LastName:       "Cole",
+				Email:          "mina@example.test",
+				OrganizationID: "42",
+			},
+			want: map[string]string{},
+		},
+		{
 			name: "valid form",
 			form: contactForm{
 				FirstName: "Mina",
@@ -91,17 +125,49 @@ func TestContactFormValidate(t *testing.T) {
 func TestOrganizationFormValidate(t *testing.T) {
 	t.Parallel()
 
-	if got := (organizationForm{}).validate()["name"]; got != "The name field is required." {
-		t.Fatalf("validate()[name] = %q", got)
+	tests := []struct {
+		name string
+		form organizationForm
+		want map[string]string
+	}{
+		{
+			name: "missing required fields",
+			form: organizationForm{},
+			want: map[string]string{
+				"name": "The name field is required.",
+			},
+		},
+		{
+			name: "name exceeds max length",
+			form: organizationForm{Name: strings.Repeat("a", 256)},
+			want: map[string]string{
+				"name": "The name field must not exceed 255 characters.",
+			},
+		},
+		{
+			name: "valid form",
+			form: organizationForm{Name: "Acme"},
+			want: map[string]string{},
+		},
 	}
 
-	if got := (organizationForm{Name: "Acme"}).validate(); len(got) != 0 {
-		t.Fatalf("validate() = %#v, want no errors", got)
-	}
+	for _, tt := range tests {
+		tt := tt
 
-	long := organizationForm{Name: strings.Repeat("a", 256)}
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	if got := long.validate()["name"]; got != "The name field must not exceed 255 characters." {
-		t.Fatalf("validate()[name] = %q", got)
+			got := tt.form.validate()
+
+			if len(got) != len(tt.want) {
+				t.Fatalf("len(validate()) = %d, want %d; got=%v", len(got), len(tt.want), got)
+			}
+
+			for key, want := range tt.want {
+				if got[key] != want {
+					t.Fatalf("validate()[%q] = %q, want %q", key, got[key], want)
+				}
+			}
+		})
 	}
 }

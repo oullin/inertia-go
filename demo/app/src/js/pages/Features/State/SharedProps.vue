@@ -11,10 +11,8 @@ const page = usePage<SharedPageProps>();
 
 const breadcrumbs = [{ title: "Features" }, { title: "State" }, { title: "Shared Props" }];
 
-const sharedProps = computed(() => page.props);
-
 const propEntries = computed(() => {
-  return Object.entries(sharedProps.value).map(([key, value]) => ({
+  return Object.entries(page.props).map(([key, value]) => ({
     key,
     value,
     type: Array.isArray(value) ? "array" : typeof value,

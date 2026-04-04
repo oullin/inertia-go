@@ -54,6 +54,8 @@ func issueCSRFCookie(t *testing.T, mw func(http.Handler) http.Handler) (*http.Co
 }
 
 func TestCSRF_SetsCookieOnGET(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +93,8 @@ func TestCSRF_SetsCookieOnGET(t *testing.T) {
 }
 
 func TestCSRF_SafeMethodsPassThrough(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -109,6 +113,8 @@ func TestCSRF_SafeMethodsPassThrough(t *testing.T) {
 }
 
 func TestCSRF_POSTWithoutToken_419(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +131,8 @@ func TestCSRF_POSTWithoutToken_419(t *testing.T) {
 }
 
 func TestCSRF_POSTWithValidToken_XCSRF(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 	tokenCookie, rawToken := issueCSRFCookie(t, mw)
 
@@ -146,6 +154,8 @@ func TestCSRF_POSTWithValidToken_XCSRF(t *testing.T) {
 }
 
 func TestCSRF_POSTWithValidToken_XXSRF(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 	tokenCookie, _ := issueCSRFCookie(t, mw)
 
@@ -166,6 +176,8 @@ func TestCSRF_POSTWithValidToken_XXSRF(t *testing.T) {
 }
 
 func TestCSRF_POSTWithValidToken_XXSRF_URLEncoded(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 	tokenCookie, _ := issueCSRFCookie(t, mw)
 
@@ -185,6 +197,8 @@ func TestCSRF_POSTWithValidToken_XXSRF_URLEncoded(t *testing.T) {
 }
 
 func TestCSRF_POSTWithFormField(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 	tokenCookie, rawToken := issueCSRFCookie(t, mw)
 
@@ -208,6 +222,8 @@ func TestCSRF_POSTWithFormField(t *testing.T) {
 }
 
 func TestCSRF_POSTWithWrongToken_419(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	getReq := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -233,6 +249,8 @@ func TestCSRF_POSTWithWrongToken_419(t *testing.T) {
 }
 
 func TestCSRF_MutationMethods(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
@@ -250,6 +268,8 @@ func TestCSRF_MutationMethods(t *testing.T) {
 }
 
 func TestCSRFFromFile(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	csrfPath := filepath.Join(dir, "csrf.yml")
 	cryptoPath := filepath.Join(dir, "crypto.yml")
@@ -312,6 +332,8 @@ key: "` + encodeKey(key) + `"
 }
 
 func TestCSRFFromFile_FileNotFound(t *testing.T) {
+	t.Parallel()
+
 	_, err := middleware.CSRFFromFile("/nonexistent/csrf.yml", "/nonexistent/crypto.yml")
 
 	if err == nil {
@@ -320,6 +342,8 @@ func TestCSRFFromFile_FileNotFound(t *testing.T) {
 }
 
 func TestCSRF_SameSiteStrict(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	mw := middleware.CSRF(config.CSRFConfig{
@@ -340,6 +364,8 @@ func TestCSRF_SameSiteStrict(t *testing.T) {
 }
 
 func TestCSRF_SameSiteNone(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	mw := middleware.CSRF(config.CSRFConfig{
@@ -361,6 +387,8 @@ func TestCSRF_SameSiteNone(t *testing.T) {
 }
 
 func TestCSRF_POSTWithMalformedCookie_RegeneratesToken(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -395,6 +423,8 @@ func TestCSRF_POSTWithMalformedCookie_RegeneratesToken(t *testing.T) {
 }
 
 func TestCSRF_StoresTokenInContext(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	var ctxToken string
@@ -414,6 +444,8 @@ func TestCSRF_StoresTokenInContext(t *testing.T) {
 }
 
 func TestCSRF_POSTWithXXSRFToken_InvalidPayload_419(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	// GET to get a valid cookie.
@@ -443,6 +475,8 @@ func TestCSRF_POSTWithXXSRFToken_InvalidPayload_419(t *testing.T) {
 }
 
 func TestCSRF_TokenSourcePrecedence(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 	tokenCookie, rawToken := issueCSRFCookie(t, mw)
 
@@ -468,6 +502,8 @@ func TestCSRF_TokenSourcePrecedence(t *testing.T) {
 }
 
 func TestCSRF_POSTWithSameOriginFetchSite_SkipsTokenValidation(t *testing.T) {
+	t.Parallel()
+
 	mw, _ := csrfMiddleware(t)
 
 	req := httptest.NewRequest(http.MethodPost, "/submit", nil)
@@ -485,6 +521,8 @@ func TestCSRF_POSTWithSameOriginFetchSite_SkipsTokenValidation(t *testing.T) {
 }
 
 func TestCSRF_OriginOnlyFailedVerification_Returns403(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 	mw := middleware.CSRF(config.CSRFConfig{
 		OriginOnly: true,

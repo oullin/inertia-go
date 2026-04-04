@@ -9,6 +9,8 @@ import (
 )
 
 func TestDefaultCSRF(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.DefaultCSRF()
 
 	if cfg.CookieName != "XSRF-TOKEN" {
@@ -25,6 +27,8 @@ func TestDefaultCSRF(t *testing.T) {
 }
 
 func TestLoadCSRF(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	path := filepath.Join(dir, "csrf.yml")
 
@@ -82,6 +86,8 @@ cookie_name: "FILE-TOKEN"
 }
 
 func TestLoadCSRF_FileNotFound(t *testing.T) {
+	t.Parallel()
+
 	_, err := config.LoadCSRF("/nonexistent/csrf.yml")
 
 	if err == nil {

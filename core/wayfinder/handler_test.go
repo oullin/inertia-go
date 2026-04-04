@@ -8,6 +8,8 @@ import (
 )
 
 func TestHandler(t *testing.T) {
+	t.Parallel()
+
 	reg := New()
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")

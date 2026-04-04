@@ -112,7 +112,7 @@ function deleteContact() {
             <div v-else class="space-y-3">
               <div v-for="note in notes" :key="note.id" class="rounded-lg bg-muted/30 p-4">
                 <div class="mb-2 flex items-center justify-between gap-3">
-                  <p class="text-sm font-medium">{{ note.user.name }}</p>
+                  <p class="text-sm font-medium">{{ note.user?.name ?? "Unknown" }}</p>
                   <time class="text-muted-foreground text-xs">{{
                     new Date(note.created_at).toLocaleString()
                   }}</time>

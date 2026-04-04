@@ -14,6 +14,8 @@ import (
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
+const contactsPerPage = 15
+
 func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
 	a.deps.Render(w, r, "Features/DataLoading/DeferredProps", httpx.Props{
 		"quickStat": 42,
@@ -66,7 +68,13 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 		cursor = &c
 	}
 
-	page, _ := database.ListContactsPaginated(a.deps.DB, "", false, cursor, "next", 15)
+	page, err := database.ListContactsPaginated(a.deps.DB, "", false, cursor, "next", contactsPerPage)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+		return
+	}
 
 	items := make([]map[string]any, 0, len(page.Data))
 

@@ -20,6 +20,8 @@ type formTagForm struct {
 }
 
 func TestValidate_PassesWithValidData(t *testing.T) {
+	t.Parallel()
+
 	form := testForm{
 		Name:  "John Doe",
 		Email: "john@example.com",
@@ -35,6 +37,8 @@ func TestValidate_PassesWithValidData(t *testing.T) {
 }
 
 func TestValidate_RequiredFields(t *testing.T) {
+	t.Parallel()
+
 	form := testForm{}
 
 	errors := Validate(form)
@@ -57,6 +61,8 @@ func TestValidate_RequiredFields(t *testing.T) {
 }
 
 func TestValidate_InvalidEmail(t *testing.T) {
+	t.Parallel()
+
 	form := testForm{
 		Name:  "John",
 		Email: "not-an-email",
@@ -80,6 +86,8 @@ func TestValidate_InvalidEmail(t *testing.T) {
 }
 
 func TestValidate_MaxLength(t *testing.T) {
+	t.Parallel()
+
 	long := make([]byte, 256)
 
 	for i := range long {
@@ -103,6 +111,8 @@ func TestValidate_MaxLength(t *testing.T) {
 }
 
 func TestValidate_UsesJSONTagForFieldName(t *testing.T) {
+	t.Parallel()
+
 	form := testForm{}
 	errors := Validate(form)
 
@@ -120,6 +130,8 @@ func TestValidate_UsesJSONTagForFieldName(t *testing.T) {
 }
 
 func TestValidate_FallsBackToFormTag(t *testing.T) {
+	t.Parallel()
+
 	form := formTagForm{}
 	errors := Validate(form)
 
@@ -133,6 +145,8 @@ func TestValidate_FallsBackToFormTag(t *testing.T) {
 }
 
 func TestValidate_MaxLength_AtBoundary(t *testing.T) {
+	t.Parallel()
+
 	boundary := make([]byte, 255)
 
 	for i := range boundary {
@@ -152,6 +166,8 @@ func TestValidate_MaxLength_AtBoundary(t *testing.T) {
 }
 
 func TestValidate_MaxLength_Phone(t *testing.T) {
+	t.Parallel()
+
 	long := make([]byte, 256)
 
 	for i := range long {
@@ -182,6 +198,8 @@ func TestValidate_MaxLength_Phone(t *testing.T) {
 }
 
 func TestValidate_ReturnsNilForValidStruct(t *testing.T) {
+	t.Parallel()
+
 	form := testForm{
 		Name:  "Valid",
 		Email: "valid@example.com",

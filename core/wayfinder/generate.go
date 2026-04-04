@@ -100,28 +100,48 @@ func generateFlat(w io.Writer, routes []Route, ts bool) error {
 
 		if len(params) == 0 {
 			if ts {
-				fmt.Fprintf(w, "export function %s(): RouteResult {\n", funcName)
+				if _, err := fmt.Fprintf(w, "export function %s(): RouteResult {\n", funcName); err != nil {
+					return err
+				}
 			} else {
-				fmt.Fprintf(w, "export function %s() {\n", funcName)
+				if _, err := fmt.Fprintf(w, "export function %s() {\n", funcName); err != nil {
+					return err
+				}
 			}
 
-			fmt.Fprintf(w, "  return { url: '%s', method: '%s' }\n", route.Pattern, method)
-			fmt.Fprintln(w, "}")
+			if _, err := fmt.Fprintf(w, "  return { url: '%s', method: '%s' }\n", route.Pattern, method); err != nil {
+				return err
+			}
+
+			if _, err := fmt.Fprintln(w, "}"); err != nil {
+				return err
+			}
 		} else {
 			paramSig := buildParamSignature(params, ts)
 			urlTemplate := buildURLTemplate(route.Pattern)
 
 			if ts {
-				fmt.Fprintf(w, "export function %s(%s): RouteResult {\n", funcName, paramSig)
+				if _, err := fmt.Fprintf(w, "export function %s(%s): RouteResult {\n", funcName, paramSig); err != nil {
+					return err
+				}
 			} else {
-				fmt.Fprintf(w, "export function %s(%s) {\n", funcName, paramSig)
+				if _, err := fmt.Fprintf(w, "export function %s(%s) {\n", funcName, paramSig); err != nil {
+					return err
+				}
 			}
 
-			fmt.Fprintf(w, "  return { url: %s, method: '%s' }\n", urlTemplate, method)
-			fmt.Fprintln(w, "}")
+			if _, err := fmt.Fprintf(w, "  return { url: %s, method: '%s' }\n", urlTemplate, method); err != nil {
+				return err
+			}
+
+			if _, err := fmt.Fprintln(w, "}"); err != nil {
+				return err
+			}
 		}
 
-		fmt.Fprintln(w)
+		if _, err := fmt.Fprintln(w); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -140,10 +160,8 @@ func generateNested(w io.Writer, routes []Route, ts bool) error {
 	for _, groupName := range groupNames {
 		members := groups[groupName]
 
-		if ts {
-			fmt.Fprintf(w, "export const %s = {\n", groupName)
-		} else {
-			fmt.Fprintf(w, "export const %s = {\n", groupName)
+		if _, err := fmt.Fprintf(w, "export const %s = {\n", groupName); err != nil {
+			return err
 		}
 
 		for _, m := range members {
@@ -152,29 +170,43 @@ func generateNested(w io.Writer, routes []Route, ts bool) error {
 
 			if len(params) == 0 {
 				if ts {
-					fmt.Fprintf(w, "  %s: (): RouteResult => ({ url: '%s', method: '%s' }),\n", m.key, m.route.Pattern, method)
+					if _, err := fmt.Fprintf(w, "  %s: (): RouteResult => ({ url: '%s', method: '%s' }),\n", m.key, m.route.Pattern, method); err != nil {
+						return err
+					}
 				} else {
-					fmt.Fprintf(w, "  %s: () => ({ url: '%s', method: '%s' }),\n", m.key, m.route.Pattern, method)
+					if _, err := fmt.Fprintf(w, "  %s: () => ({ url: '%s', method: '%s' }),\n", m.key, m.route.Pattern, method); err != nil {
+						return err
+					}
 				}
 			} else {
 				paramSig := buildParamSignature(params, ts)
 				urlTemplate := buildURLTemplate(m.route.Pattern)
 
 				if ts {
-					fmt.Fprintf(w, "  %s: (%s): RouteResult => ({ url: %s, method: '%s' }),\n", m.key, paramSig, urlTemplate, method)
+					if _, err := fmt.Fprintf(w, "  %s: (%s): RouteResult => ({ url: %s, method: '%s' }),\n", m.key, paramSig, urlTemplate, method); err != nil {
+						return err
+					}
 				} else {
-					fmt.Fprintf(w, "  %s: (%s) => ({ url: %s, method: '%s' }),\n", m.key, paramSig, urlTemplate, method)
+					if _, err := fmt.Fprintf(w, "  %s: (%s) => ({ url: %s, method: '%s' }),\n", m.key, paramSig, urlTemplate, method); err != nil {
+						return err
+					}
 				}
 			}
 		}
 
 		if ts {
-			fmt.Fprintln(w, "} as const")
+			if _, err := fmt.Fprintln(w, "} as const"); err != nil {
+				return err
+			}
 		} else {
-			fmt.Fprintln(w, "}")
+			if _, err := fmt.Fprintln(w, "}"); err != nil {
+				return err
+			}
 		}
 
-		fmt.Fprintln(w)
+		if _, err := fmt.Fprintln(w); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -250,12 +282,12 @@ func buildParamSignature(params []string, ts bool) string {
 	return "params: { " + strings.Join(fields, ", ") + " }"
 }
 
-// buildURLTemplate converts "/contacts/{contact}" to "`/contacts/${params.contact}`".
+// buildURLTemplate converts "/contacts/{contact}" to "`/contacts/${encodeURIComponent(String(params.contact))}`.
 func buildURLTemplate(pattern string) string {
 	result := paramRegex.ReplaceAllStringFunc(pattern, func(match string) string {
 		name := match[1 : len(match)-1]
 
-		return "${params." + name + "}"
+		return "${encodeURIComponent(String(params." + name + "))}"
 	})
 
 	return "`" + result + "`"

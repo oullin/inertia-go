@@ -16,6 +16,8 @@ import (
 )
 
 func TestLoginHandlerRendersPage(t *testing.T) {
+	t.Parallel()
+
 	_, handler := newAuthTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
@@ -34,6 +36,8 @@ func TestLoginHandlerRendersPage(t *testing.T) {
 }
 
 func TestLoginHandlerCreatesSession(t *testing.T) {
+	t.Parallel()
+
 	_, handler := newAuthTestHandler(t)
 
 	body := strings.NewReader(url.Values{
@@ -64,6 +68,8 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 }
 
 func TestLoginHandlerCreatesSessionFromJSON(t *testing.T) {
+	t.Parallel()
+
 	_, handler := newAuthTestHandler(t)
 
 	body := strings.NewReader(`{"email":"test@example.com","password":"password","remember":true}`)
@@ -90,6 +96,8 @@ func TestLoginHandlerCreatesSessionFromJSON(t *testing.T) {
 }
 
 func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
+	t.Parallel()
+
 	_, handler := newAuthTestHandler(t)
 
 	body := strings.NewReader(url.Values{
@@ -124,6 +132,8 @@ func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 }
 
 func TestLogoutHandlerClearsSession(t *testing.T) {
+	t.Parallel()
+
 	_, handler := newAuthTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
@@ -146,6 +156,8 @@ func TestLogoutHandlerClearsSession(t *testing.T) {
 }
 
 func TestWithCurrentUserLoadsUserFromCookie(t *testing.T) {
+	t.Parallel()
+
 	app, _ := newAuthTestHandler(t)
 
 	handler := app.WithCurrentUser(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -203,7 +215,7 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 			testInertia.Redirect(w, r, url)
 		},
 		RouteURL: authTestRouteURL,
-		SetFlash: func(http.ResponseWriter, flash.Message) {},
+		SetFlash: func(http.ResponseWriter, flash.Message) error { return nil },
 	})
 
 	mux := http.NewServeMux()

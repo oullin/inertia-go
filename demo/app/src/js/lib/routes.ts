@@ -5,7 +5,7 @@ function fillPattern(pattern: string, params: Record<string, string | number> = 
   let url = pattern ?? "#!wayfinder:unknown-route";
 
   Object.entries(params).forEach(([key, value]) => {
-    url = url.replaceAll(`{${key}}`, String(value));
+    url = url.replaceAll(`{${key}}`, encodeURIComponent(String(value)));
   });
 
   return url;
@@ -25,6 +25,10 @@ export function useDemoRoute(
   return {
     url: fillPattern(pattern, params),
   };
+}
+
+export function featureRoute(name: string): string {
+  return useDemoRoute(name).url;
 }
 
 export const appRoutes = {

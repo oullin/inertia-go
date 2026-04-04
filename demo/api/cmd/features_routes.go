@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 
-	"github.com/oullin/inertia-go/core/flash"
 	"github.com/oullin/inertia-go/demo/api/auth"
 	"github.com/oullin/inertia-go/demo/api/features"
 )
@@ -20,8 +19,6 @@ func registerFeatureRoutes(mux *http.ServeMux, authApp auth.App) {
 			i.Location(w, r, url)
 		},
 		RouteURL: routes.URL,
-		SetFlash: func(w http.ResponseWriter, msg flash.Message) {
-			flashStore.Set(w, msg)
-		},
+		SetFlash: flashStore.Set,
 	})
 }

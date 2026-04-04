@@ -2,6 +2,7 @@ package flash
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -16,7 +17,7 @@ type Message struct {
 // Store defines the interface for flash message persistence.
 // CookieStore is the default implementation.
 type Store interface {
-	Set(w http.ResponseWriter, msg Message)
+	Set(w http.ResponseWriter, msg Message) error
 	Consume(w http.ResponseWriter, r *http.Request) *Message
 }
 
@@ -84,11 +85,11 @@ func WithSameSite(mode http.SameSite) Option {
 }
 
 // Set serializes msg as JSON, URL-escapes it, and writes it as a cookie.
-func (s *CookieStore) Set(w http.ResponseWriter, msg Message) {
+func (s *CookieStore) Set(w http.ResponseWriter, msg Message) error {
 	data, err := json.Marshal(msg)
 
 	if err != nil {
-		return
+		return fmt.Errorf("flash: marshal: %w", err)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -99,6 +100,8 @@ func (s *CookieStore) Set(w http.ResponseWriter, msg Message) {
 		Secure:   s.secure,
 		SameSite: s.sameSite,
 	})
+
+	return nil
 }
 
 // Consume reads the flash cookie, deletes it, and returns the decoded
@@ -111,10 +114,13 @@ func (s *CookieStore) Consume(w http.ResponseWriter, r *http.Request) *Message {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:   s.cookieName,
-		Value:  "",
-		Path:   s.path,
-		MaxAge: -1,
+		Name:     s.cookieName,
+		Value:    "",
+		Path:     s.path,
+		MaxAge:   -1,
+		HttpOnly: s.httpOnly,
+		Secure:   s.secure,
+		SameSite: s.sameSite,
 	})
 
 	value, err := url.QueryUnescape(cookie.Value)

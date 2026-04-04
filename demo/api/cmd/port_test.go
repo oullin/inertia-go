@@ -261,9 +261,9 @@ func newPortTestMux(t *testing.T) http.Handler {
 
 	i = testInertia
 	flashStore = coreflash.NewCookieStore(coreflash.WithCookieName("beacon_flash"))
+	t.Cleanup(func() { i = nil; flashStore = nil })
 	initRoutes()
 	setupPortTestDB(t)
-	t.Cleanup(func() { i = nil; flashStore = nil })
 
 	mux := http.NewServeMux()
 	authApp := newAuthApp()

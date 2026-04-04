@@ -87,6 +87,7 @@ func (a App) setSession(w http.ResponseWriter, userID int64, remember bool) {
 		Value:    strconv.FormatInt(userID, 10),
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   a.deps.SecureCookie,
 		SameSite: http.SameSiteLaxMode,
 	}
 
@@ -104,6 +105,7 @@ func (a App) clearSession(w http.ResponseWriter) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   a.deps.SecureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
 }

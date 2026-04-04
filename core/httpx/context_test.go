@@ -8,6 +8,8 @@ import (
 )
 
 func TestCSRFToken_ContextRoundTrip(t *testing.T) {
+	t.Parallel()
+
 	ctx := httpx.SetCSRFToken(context.Background(), "test-token-abc")
 	got := httpx.CSRFTokenFromContext(ctx)
 
@@ -17,6 +19,8 @@ func TestCSRFToken_ContextRoundTrip(t *testing.T) {
 }
 
 func TestCSRFTokenFromContext_Missing(t *testing.T) {
+	t.Parallel()
+
 	got := httpx.CSRFTokenFromContext(context.Background())
 
 	if got != "" {
@@ -25,6 +29,8 @@ func TestCSRFTokenFromContext_Missing(t *testing.T) {
 }
 
 func TestLocale_ContextRoundTrip(t *testing.T) {
+	t.Parallel()
+
 	locale := &httpx.Locale{
 		Code:      "es",
 		Name:      "Español",
@@ -48,6 +54,8 @@ func TestLocale_ContextRoundTrip(t *testing.T) {
 }
 
 func TestLocaleFromContext_Missing(t *testing.T) {
+	t.Parallel()
+
 	got := httpx.LocaleFromContext(context.Background())
 
 	if got != nil {
@@ -56,6 +64,8 @@ func TestLocaleFromContext_Missing(t *testing.T) {
 }
 
 func TestPrecognition_ContextRoundTrip(t *testing.T) {
+	t.Parallel()
+
 	ctx := httpx.SetPrecognition(context.Background())
 
 	if !httpx.IsPrecognition(ctx) {
@@ -64,6 +74,8 @@ func TestPrecognition_ContextRoundTrip(t *testing.T) {
 }
 
 func TestIsPrecognition_Missing(t *testing.T) {
+	t.Parallel()
+
 	if httpx.IsPrecognition(context.Background()) {
 		t.Error("IsPrecognition() = true, want false")
 	}

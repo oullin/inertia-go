@@ -10,6 +10,8 @@ import (
 )
 
 func TestPrecognition_SetsVaryHeader(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.Precognition()
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +30,8 @@ func TestPrecognition_SetsVaryHeader(t *testing.T) {
 }
 
 func TestPrecognition_NonPrecognitive_PassesThrough(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.Precognition()
 
 	var called bool
@@ -56,6 +60,8 @@ func TestPrecognition_NonPrecognitive_PassesThrough(t *testing.T) {
 }
 
 func TestPrecognition_SetsContextFlag(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.Precognition()
 
 	var isPrecognition bool
@@ -81,6 +87,8 @@ func TestPrecognition_SetsContextFlag(t *testing.T) {
 }
 
 func TestPrecognition_VaryHeader_AlwaysSet(t *testing.T) {
+	t.Parallel()
+
 	mw := middleware.Precognition()
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

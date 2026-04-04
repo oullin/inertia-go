@@ -1,6 +1,7 @@
 package crm
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -100,7 +101,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 
 func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, organizationID int64) {
 	if err := httpx.ParseForm(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "bad request", http.StatusBadRequest)
 
 		return
 	}
@@ -121,10 +122,13 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 		return
 	}
 
-	a.deps.SetFlash(w, flash.Message{
+	if err := a.deps.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Organization updated",
 		Message: "The company record was saved.",
-	})
+	}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("organizations.show", map[string]string{"organization": strconv.FormatInt(organizationID, 10)}))
 }

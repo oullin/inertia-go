@@ -1,7 +1,12 @@
 ROOT_PATH := $(shell pwd)
 GO_FMT := docker compose -f go-fmt.compose.yaml run --rm go-fmt
 
-.PHONY: format test build tidy demo
+.PHONY: all clean format test build tidy demo
+
+all: build
+
+clean:
+	rm -rf storage/dist
 
 format:
 	cd demo/app && npx oxfmt --write src

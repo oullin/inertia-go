@@ -54,6 +54,8 @@ func writeConfigFile(t *testing.T, content string) string {
 }
 
 func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, err := i18n.LoadConfig(path)
 
@@ -114,6 +116,8 @@ func TestLoadConfig_EnvOverride(t *testing.T) {
 }
 
 func TestLoadConfig_InvalidYAML(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, "default_locale: [\ninvalid")
 	_, err := i18n.LoadConfig(path)
 
@@ -123,6 +127,8 @@ func TestLoadConfig_InvalidYAML(t *testing.T) {
 }
 
 func TestLoadConfig_FileNotFound(t *testing.T) {
+	t.Parallel()
+
 	_, err := i18n.LoadConfig("/nonexistent/i18n.yml")
 
 	if err == nil {
@@ -131,6 +137,8 @@ func TestLoadConfig_FileNotFound(t *testing.T) {
 }
 
 func TestDefault(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 
@@ -142,6 +150,8 @@ func TestDefault(t *testing.T) {
 }
 
 func TestCodes(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 
@@ -153,6 +163,8 @@ func TestCodes(t *testing.T) {
 }
 
 func TestMiddleware_DetectsPrefix(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 
@@ -173,6 +185,8 @@ func TestMiddleware_DetectsPrefix(t *testing.T) {
 }
 
 func TestMiddleware_DefaultLocale(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 
@@ -194,6 +208,8 @@ func TestMiddleware_DefaultLocale(t *testing.T) {
 }
 
 func TestMiddleware_StripsPrefixFromPath(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 
@@ -215,6 +231,8 @@ func TestMiddleware_StripsPrefixFromPath(t *testing.T) {
 }
 
 func TestMiddleware_RootWithPrefix(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 
@@ -235,6 +253,8 @@ func TestMiddleware_RootWithPrefix(t *testing.T) {
 }
 
 func TestMiddleware_UnknownPrefixFallsBackToDefault(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 
@@ -264,6 +284,8 @@ func TestMiddleware_UnknownPrefixFallsBackToDefault(t *testing.T) {
 }
 
 func TestMiddleware_HreflangTrimsTrailingSlash(t *testing.T) {
+	t.Parallel()
+
 	path := writeConfigFile(t, testConfig)
 	cfg, _ := i18n.LoadConfig(path)
 

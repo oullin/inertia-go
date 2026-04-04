@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+const maxJSONDepth = 32
+
 // ParseForm parses the request body based on its Content-Type.
 // It handles application/json (sent by Inertia.js v3 for non-file forms),
 // multipart/form-data, and application/x-www-form-urlencoded.
@@ -33,7 +35,10 @@ func parseJSONForm(r *http.Request) error {
 	}
 
 	values := make(url.Values)
-	flattenJSON("", raw, values)
+
+	if err := flattenJSON("", raw, values, 0); err != nil {
+		return err
+	}
 
 	r.PostForm = values
 	r.Form = make(url.Values)
@@ -57,7 +62,11 @@ func parseJSONForm(r *http.Request) error {
 	return nil
 }
 
-func flattenJSON(prefix string, data map[string]any, out url.Values) {
+func flattenJSON(prefix string, data map[string]any, out url.Values, depth int) error {
+	if depth > maxJSONDepth {
+		return fmt.Errorf("JSON nesting exceeds maximum depth of %d", maxJSONDepth)
+	}
+
 	for key, val := range data {
 		fullKey := key
 
@@ -67,13 +76,17 @@ func flattenJSON(prefix string, data map[string]any, out url.Values) {
 
 		switch v := val.(type) {
 		case map[string]any:
-			flattenJSON(fullKey, v, out)
+			if err := flattenJSON(fullKey, v, out, depth+1); err != nil {
+				return err
+			}
 		case []any:
 			for i, item := range v {
 				arrKey := fmt.Sprintf("%s[%d]", fullKey, i)
 
 				if nested, ok := item.(map[string]any); ok {
-					flattenJSON(arrKey, nested, out)
+					if err := flattenJSON(arrKey, nested, out, depth+1); err != nil {
+						return err
+					}
 				} else {
 					out.Set(arrKey, toFormValue(item))
 				}
@@ -82,6 +95,8 @@ func flattenJSON(prefix string, data map[string]any, out url.Values) {
 			out.Set(fullKey, toFormValue(val))
 		}
 	}
+
+	return nil
 }
 
 func toFormValue(v any) string {

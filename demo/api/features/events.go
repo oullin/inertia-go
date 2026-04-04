@@ -1,6 +1,7 @@
 package features
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,7 +14,10 @@ func (a app) globalEventsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Events/GlobalEvents", httpx.Props{})
 	case http.MethodPost:
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Event", Message: "Global event action completed."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Event", Message: "Global event action completed."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.events.global-events", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -25,7 +29,10 @@ func (a app) visitCallbacksHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		a.deps.Render(w, r, "Features/Events/VisitCallbacks", httpx.Props{})
 	case http.MethodPost:
-		a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Callback", Message: "Visit callback action completed."})
+		if err := a.deps.SetFlash(w, flash.Message{Kind: "success", Title: "Callback", Message: "Visit callback action completed."}); err != nil {
+			slog.Error("flash: set", "error", err)
+		}
+
 		a.deps.Redirect(w, r, a.deps.RouteURL("features.events.visit-callbacks", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

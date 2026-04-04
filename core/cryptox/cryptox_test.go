@@ -23,6 +23,8 @@ func testKey(t *testing.T) []byte {
 }
 
 func TestEncryptDecrypt_Roundtrip(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 	plaintext := "hello-csrf-token-value"
 
@@ -48,6 +50,8 @@ func TestEncryptDecrypt_Roundtrip(t *testing.T) {
 }
 
 func TestEncrypt_ProducesDifferentOutputs(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	a, _ := cryptox.Encrypt("same", key)
@@ -59,6 +63,8 @@ func TestEncrypt_ProducesDifferentOutputs(t *testing.T) {
 }
 
 func TestDecrypt_TamperedMAC(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	encrypted, err := cryptox.Encrypt("token", key)
@@ -91,6 +97,8 @@ func TestDecrypt_TamperedMAC(t *testing.T) {
 }
 
 func TestDecrypt_WrongKey(t *testing.T) {
+	t.Parallel()
+
 	key1 := testKey(t)
 	key2 := testKey(t)
 
@@ -104,6 +112,8 @@ func TestDecrypt_WrongKey(t *testing.T) {
 }
 
 func TestDecrypt_MalformedBase64(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	_, err := cryptox.Decrypt("not-valid-base64!!!", key)
@@ -114,6 +124,8 @@ func TestDecrypt_MalformedBase64(t *testing.T) {
 }
 
 func TestDecrypt_MalformedJSON(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 	bad := base64.StdEncoding.EncodeToString([]byte("{invalid json"))
 
@@ -125,6 +137,8 @@ func TestDecrypt_MalformedJSON(t *testing.T) {
 }
 
 func TestDecrypt_EmptyPayload(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	_, err := cryptox.Decrypt("", key)
@@ -135,6 +149,8 @@ func TestDecrypt_EmptyPayload(t *testing.T) {
 }
 
 func TestEncryptDecrypt_LongPlaintext(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 	plaintext := strings.Repeat("a", 1024)
 
@@ -156,6 +172,8 @@ func TestEncryptDecrypt_LongPlaintext(t *testing.T) {
 }
 
 func TestEncryptDecrypt_EmptyPlaintext(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	encrypted, err := cryptox.Encrypt("", key)

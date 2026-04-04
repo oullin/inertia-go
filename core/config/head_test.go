@@ -9,6 +9,8 @@ import (
 )
 
 func TestDefaultHead(t *testing.T) {
+	t.Parallel()
+
 	head := config.DefaultHead()
 
 	if head.Lang != "en" {
@@ -57,6 +59,8 @@ func TestDefaultHead_EnvOverride(t *testing.T) {
 }
 
 func TestLoadHead(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	path := filepath.Join(dir, "seo.yml")
 
@@ -100,6 +104,8 @@ meta:
 }
 
 func TestLoadHead_FileNotFound(t *testing.T) {
+	t.Parallel()
+
 	_, err := config.LoadHead("/nonexistent/seo.yml")
 
 	if err == nil {

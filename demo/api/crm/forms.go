@@ -53,7 +53,19 @@ func emptyContactForm() contactForm {
 }
 
 func (f contactForm) validate() httpx.ValidationErrors {
-	return validation.Validate(f)
+	errors := validation.Validate(f)
+
+	if f.OrganizationID != "" {
+		if _, err := strconv.ParseInt(f.OrganizationID, 10, 64); err != nil {
+			if errors == nil {
+				errors = make(httpx.ValidationErrors)
+			}
+
+			errors["organization_id"] = "The organization id field must be a valid identifier."
+		}
+	}
+
+	return errors
 }
 
 func (f contactForm) record() database.Contact {

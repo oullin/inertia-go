@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/oullin/inertia-go/core/flash"
@@ -24,7 +25,7 @@ func (a App) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 	if err := httpx.ParseForm(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "bad request", http.StatusBadRequest)
 
 		return
 	}
@@ -38,11 +39,15 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case err == nil:
 			a.setSession(w, user.ID, form.Remember)
-			a.deps.SetFlash(w, flash.Message{
+
+			if err := a.deps.SetFlash(w, flash.Message{
 				Kind:    "success",
 				Title:   "Signed in",
 				Message: "The demo session is now authenticated.",
-			})
+			}); err != nil {
+				slog.Error("flash: set", "error", err)
+			}
+
 			a.deps.Redirect(w, r, a.deps.RouteURL("dashboard", nil))
 
 			return
@@ -67,10 +72,14 @@ func (a App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.clearSession(w)
-	a.deps.SetFlash(w, flash.Message{
+
+	if err := a.deps.SetFlash(w, flash.Message{
 		Kind:    "info",
 		Title:   "Signed out",
 		Message: "Your demo session has been cleared.",
-	})
+	}); err != nil {
+		slog.Error("flash: set", "error", err)
+	}
+
 	a.deps.Redirect(w, r, a.deps.RouteURL("login", nil))
 }
