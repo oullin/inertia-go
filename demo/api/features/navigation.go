@@ -118,7 +118,7 @@ func (a app) redirectsActionHandler(w http.ResponseWriter, r *http.Request) {
 
 		a.container.Redirect(w, r, a.container.RouteURL("features.navigation.redirects", nil))
 	case "external":
-		a.container.Location(w, r, "https://inertiajs.com")
+		a.container.Location(w, r, "https://oullin.io")
 	default:
 		http.NotFound(w, r)
 	}

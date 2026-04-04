@@ -248,7 +248,7 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 		testDB.Close()
 	})
 
-	app := New(Container{
+	app := NewApp(Container{
 		DB:        testDB,
 		CryptoKey: testCryptoKey,
 		Render: func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {

@@ -2,7 +2,10 @@ package httpx
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -73,4 +76,155 @@ func buildDeepMap(depth int) map[string]any {
 	}
 
 	return current
+}
+
+func TestParseForm_JSON(t *testing.T) {
+	t.Parallel()
+
+	body := `{"name":"Alice","age":30,"active":true}`
+	req := httptest.NewRequest(http.MethodPost, "/submit?page=1", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	if err := ParseForm(req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := req.PostFormValue("name"); got != "Alice" {
+		t.Errorf("PostForm name = %q, want %q", got, "Alice")
+	}
+
+	if got := req.PostFormValue("age"); got != "30" {
+		t.Errorf("PostForm age = %q, want %q", got, "30")
+	}
+
+	if got := req.PostFormValue("active"); got != "1" {
+		t.Errorf("PostForm active = %q, want %q", got, "1")
+	}
+
+	if got := req.FormValue("page"); got != "1" {
+		t.Errorf("Form page = %q, want %q", got, "1")
+	}
+
+	if got := req.FormValue("name"); got != "Alice" {
+		t.Errorf("Form name = %q, want %q", got, "Alice")
+	}
+}
+
+func TestParseForm_URLEncoded(t *testing.T) {
+	t.Parallel()
+
+	body := "name=Bob&email=bob%40example.com"
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if err := ParseForm(req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := req.FormValue("name"); got != "Bob" {
+		t.Errorf("name = %q, want %q", got, "Bob")
+	}
+
+	if got := req.FormValue("email"); got != "bob@example.com" {
+		t.Errorf("email = %q, want %q", got, "bob@example.com")
+	}
+}
+
+func TestParseForm_InvalidJSON(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader("{invalid"))
+	req.Header.Set("Content-Type", "application/json")
+
+	if err := ParseForm(req); err == nil {
+		t.Fatal("expected error for invalid JSON, got nil")
+	}
+}
+
+func TestParseJSONForm_NestedObjects(t *testing.T) {
+	t.Parallel()
+
+	body := `{"user":{"name":"Alice","address":{"city":"Berlin"}}}`
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	if err := ParseForm(req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := req.PostFormValue("user.name"); got != "Alice" {
+		t.Errorf("user.name = %q, want %q", got, "Alice")
+	}
+
+	if got := req.PostFormValue("user.address.city"); got != "Berlin" {
+		t.Errorf("user.address.city = %q, want %q", got, "Berlin")
+	}
+}
+
+func TestParseJSONForm_Arrays(t *testing.T) {
+	t.Parallel()
+
+	body := `{"tags":["go","rust"],"items":[{"name":"a"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	if err := ParseForm(req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := req.PostFormValue("tags[0]"); got != "go" {
+		t.Errorf("tags[0] = %q, want %q", got, "go")
+	}
+
+	if got := req.PostFormValue("tags[1]"); got != "rust" {
+		t.Errorf("tags[1] = %q, want %q", got, "rust")
+	}
+
+	if got := req.PostFormValue("items[0].name"); got != "a" {
+		t.Errorf("items[0].name = %q, want %q", got, "a")
+	}
+}
+
+func TestToFormValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input any
+		want  string
+	}{
+		{"bool true", true, "1"},
+		{"bool false", false, "0"},
+		{"nil", nil, ""},
+		{"integer float64", float64(42), "42"},
+		{"fractional float64", float64(3.14), "3.14"},
+		{"string", "hello", "hello"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toFormValue(tt.input)
+
+			if got != tt.want {
+				t.Errorf("toFormValue(%v) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseJSONForm_NoURL(t *testing.T) {
+	t.Parallel()
+
+	body := `{"name":"test"}`
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.URL = nil
+
+	if err := ParseForm(req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := req.PostFormValue("name"); got != "test" {
+		t.Errorf("name = %q, want %q", got, "test")
+	}
 }

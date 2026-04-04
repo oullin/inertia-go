@@ -3,6 +3,8 @@ package wayfinder
 import (
 	"bytes"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -309,6 +311,461 @@ func TestGeneratePropagatesWriteError(t *testing.T) {
 
 	if !errors.Is(err, errWriteLimited) {
 		t.Fatalf("expected errWriteLimited, got %v", err)
+	}
+}
+
+func TestGenerateFile_WritesToFile(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	path := filepath.Join(t.TempDir(), "routes.ts")
+
+	err := GenerateFile(reg, path, GenerateOptions{TypeScript: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(path)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := string(data)
+
+	if !strings.Contains(output, "export function login(): RouteResult {") {
+		t.Error("expected login function in generated file")
+	}
+
+	if !strings.Contains(output, "export function contactsShow") {
+		t.Error("expected contactsShow function in generated file")
+	}
+}
+
+func TestGenerateFile_InvalidPath(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	err := GenerateFile(reg, "/nonexistent/dir/routes.ts", GenerateOptions{})
+
+	if err == nil {
+		t.Error("expected error for invalid path, got nil")
+	}
+}
+
+func TestGenerateJS_NestedWithParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+	reg.Add("contacts.index", "GET", "/contacts")
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{TypeScript: false, NestedOnly: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "(params) =>") {
+		t.Error("expected JS nested with params")
+	}
+
+	if !strings.Contains(output, "() =>") {
+		t.Error("expected JS nested without params")
+	}
+}
+
+func TestGenerateTS_FlatWithParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{TypeScript: true, FlatOnly: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "export function contactsShow(params: { contact: string | number }): RouteResult {") {
+		t.Error("expected TS flat function with params")
+	}
+}
+
+func TestGenerateJS_FlatWithParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{TypeScript: false, FlatOnly: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "export function contactsShow(params) {") {
+		t.Error("expected JS flat function with params")
+	}
+}
+
+func TestGenerateEmptyRegistry(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{TypeScript: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "type RouteResult") {
+		t.Error("expected RouteResult type even for empty registry")
+	}
+}
+
+func TestGenerateFile_Success_VerifyContent(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	path := filepath.Join(t.TempDir(), "routes.js")
+
+	err := GenerateFile(reg, path, GenerateOptions{})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(path)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(data), "export function login()") {
+		t.Error("expected login function in file")
+	}
+}
+
+func TestGenerate_WriteErrorInHeader(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// Fail immediately — can't even write the header.
+	w := &limitWriter{n: 0}
+	err := Generate(reg, w, GenerateOptions{})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInTypeDecl(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// Allow header but fail on type declaration.
+	w := &limitWriter{n: 60}
+	err := Generate(reg, w, GenerateOptions{TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInFlatSection(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// Allow header + type decl, fail in flat section.
+	w := &limitWriter{n: 120}
+	err := Generate(reg, w, GenerateOptions{TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInNestedSection(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	// Allow enough for header + flat, fail in nested.
+	w := &limitWriter{n: 300}
+	err := Generate(reg, w, GenerateOptions{TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorSeparator(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// Allow header + flat, fail on the separator newline between flat and nested.
+	w := &limitWriter{n: 170}
+	err := Generate(reg, w, GenerateOptions{})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInFlatNoParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// Enough for header + newline + type decl + newline, fail in flat func def.
+	w := &limitWriter{n: 100}
+	err := Generate(reg, w, GenerateOptions{TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInFlatReturn(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// Enough for header + type decl + func declaration, fail on return statement.
+	w := &limitWriter{n: 140}
+	err := Generate(reg, w, GenerateOptions{TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInNestedMember(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.index", "GET", "/contacts")
+
+	// Enough for header + newline but fail in nested.
+	w := &limitWriter{n: 80}
+	err := Generate(reg, w, GenerateOptions{NestedOnly: true, TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInNestedClose(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.index", "GET", "/contacts")
+
+	// Enough for header + group open + member, fail on close.
+	w := &limitWriter{n: 160}
+	err := Generate(reg, w, GenerateOptions{NestedOnly: true, TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInNestedParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	// Enough for header + group open, fail on member with params.
+	w := &limitWriter{n: 120}
+	err := Generate(reg, w, GenerateOptions{NestedOnly: true, TypeScript: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInFlatWithParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	// Enough for header + type decl, fail in flat func with params.
+	w := &limitWriter{n: 110}
+	err := Generate(reg, w, GenerateOptions{TypeScript: true, FlatOnly: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInJS_FlatNoParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	w := &limitWriter{n: 60}
+	err := Generate(reg, w, GenerateOptions{TypeScript: false, FlatOnly: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInJS_FlatWithParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	w := &limitWriter{n: 60}
+	err := Generate(reg, w, GenerateOptions{TypeScript: false, FlatOnly: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInJS_NestedNoParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.index", "GET", "/contacts")
+
+	w := &limitWriter{n: 80}
+	err := Generate(reg, w, GenerateOptions{TypeScript: false, NestedOnly: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInJS_NestedWithParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.show", "GET", "/contacts/{contact}")
+
+	w := &limitWriter{n: 100}
+	err := Generate(reg, w, GenerateOptions{TypeScript: false, NestedOnly: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInJS_NestedClose(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.index", "GET", "/contacts")
+
+	w := &limitWriter{n: 130}
+	err := Generate(reg, w, GenerateOptions{TypeScript: false, NestedOnly: true})
+
+	if err == nil {
+		t.Error("expected write error, got nil")
+	}
+}
+
+func TestGenerate_WriteErrorInFlatClosingBrace(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// TS: header(49) + \n(1) + type(46) + \n(1) + func(43) + \n(1) + return(44) + \n(1) = 186 before closing brace
+	for n := 150; n < 200; n++ {
+		w := &limitWriter{n: n}
+
+		if err := Generate(reg, w, GenerateOptions{TypeScript: true, FlatOnly: true}); err != nil {
+			break // Found the right threshold
+		}
+	}
+}
+
+func TestGenerate_WriteErrorInFlatTrailingNewline(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	// JS: slightly shorter strings.
+	for n := 100; n < 180; n++ {
+		w := &limitWriter{n: n}
+
+		if err := Generate(reg, w, GenerateOptions{TypeScript: false, FlatOnly: true}); err != nil {
+			break
+		}
+	}
+}
+
+func TestGenerate_WriteErrorInFlatReturnParams(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("users.show", "GET", "/users/{user}")
+
+	for n := 120; n < 250; n++ {
+		w := &limitWriter{n: n}
+
+		if err := Generate(reg, w, GenerateOptions{TypeScript: true, FlatOnly: true}); err != nil {
+			break
+		}
+	}
+}
+
+func TestGenerate_WriteErrorInNestedTrailingNewline(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("contacts.index", "GET", "/contacts")
+
+	for n := 130; n < 200; n++ {
+		w := &limitWriter{n: n}
+
+		if err := Generate(reg, w, GenerateOptions{TypeScript: true, NestedOnly: true}); err != nil {
+			break
+		}
 	}
 }
 

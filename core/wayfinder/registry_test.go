@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -148,8 +150,6 @@ func TestURLEscapesParams(t *testing.T) {
 }
 
 func TestURLUnknownRoute(t *testing.T) {
-	t.Parallel()
-
 	var buf bytes.Buffer
 
 	log.SetOutput(&buf)
@@ -324,5 +324,78 @@ func TestAddOverwrite(t *testing.T) {
 
 	if len(routes) != 1 {
 		t.Errorf("expected 1 route after overwrite, got %d", len(routes))
+	}
+}
+
+func TestHandle_RegistersOnMux(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	reg.Add("login", "GET", "/login")
+
+	mux := http.NewServeMux()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("login page"))
+	})
+
+	reg.Handle("login", handler, mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", rec.Code)
+	}
+
+	if rec.Body.String() != "login page" {
+		t.Errorf("expected 'login page', got %q", rec.Body.String())
+	}
+}
+
+func TestHandle_UnknownRoute_Skips(t *testing.T) {
+	var buf bytes.Buffer
+
+	log.SetOutput(&buf)
+
+	defer log.SetOutput(os.Stderr)
+
+	reg := New()
+	mux := http.NewServeMux()
+
+	reg.Handle("nonexistent", http.NotFoundHandler(), mux)
+
+	if !strings.Contains(buf.String(), "wayfinder: Handle: unknown route") {
+		t.Errorf("expected warning log, got %q", buf.String())
+	}
+}
+
+func TestGroupHandle(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+	mux := http.NewServeMux()
+
+	reg.Group("contacts", "/contacts", func(g *Group) {
+		g.Add("index", "GET", "")
+
+		g.Handle("index", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("contacts list"))
+		}), mux)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/contacts", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", rec.Code)
+	}
+
+	if rec.Body.String() != "contacts list" {
+		t.Errorf("expected 'contacts list', got %q", rec.Body.String())
 	}
 }

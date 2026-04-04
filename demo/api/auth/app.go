@@ -6,8 +6,8 @@ type App struct {
 	service   service
 }
 
-// New builds the auth runtime with the provided host integrations.
-func New(container Container) App {
+// NewApp builds the auth runtime with the provided host integrations.
+func NewApp(container Container) App {
 	return App{
 		container: container,
 		service:   newService(container.DB),

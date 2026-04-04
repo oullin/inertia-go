@@ -601,6 +601,70 @@ key: "` + encodeKey(key) + `"
 	}
 }
 
+func TestCSRF_SameSiteFetchSite_AllowSameSiteTrue(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+	mw := middleware.CSRF(config.CSRFConfig{
+		AllowSameSite: true,
+	}, key)
+
+	req := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	req.Header.Set("Sec-Fetch-Site", "same-site")
+
+	w := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestCSRFFromFile_InvalidCryptoPath(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	csrfPath := filepath.Join(dir, "csrf.yml")
+
+	csrfContent := `cookie_name: "TOKEN"`
+
+	if err := os.WriteFile(csrfPath, []byte(csrfContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := middleware.CSRFFromFile(csrfPath, "/nonexistent/crypto.yml")
+
+	if err == nil {
+		t.Error("expected error for missing crypto config")
+	}
+}
+
+func TestCSRF_SameSiteFetchSite_AllowSameSiteFalse(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+	mw := middleware.CSRF(config.CSRFConfig{
+		AllowSameSite: false,
+	}, key)
+
+	req := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	req.Header.Set("Sec-Fetch-Site", "same-site")
+
+	w := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(w, req)
+
+	// Should fail because same-site not allowed and no token provided.
+	if w.Code != 419 {
+		t.Errorf("status = %d, want 419", w.Code)
+	}
+}
+
 // --- helpers ---
 
 func findCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {

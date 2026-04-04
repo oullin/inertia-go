@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, watch, nextTick } from "vue";
 import { Head, Link, usePage } from "@inertiajs/vue3";
 import { IconDashboard, IconUsers, IconCode, IconFileText } from "@tabler/icons-vue";
 import LoadingBar from "@/js/components/ui/loading-bar/LoadingBar.vue";
@@ -38,6 +38,25 @@ const breadcrumbs = computed(() =>
     : (((page.props as Record<string, unknown>).breadcrumbs as Breadcrumb[]) ?? []),
 );
 const user = computed(() => page.props.auth?.user ?? null);
+
+function scrollToActiveNavItem() {
+  nextTick(() => {
+    const el = document.querySelector('[data-sidebar="content"] [data-active="true"]');
+    if (el) {
+      el.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    // If element isn't rendered yet, wait for next frame
+    requestAnimationFrame(() => {
+      document
+        .querySelector('[data-sidebar="content"] [data-active="true"]')
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  });
+}
+
+onMounted(scrollToActiveNavItem);
+watch(currentPath, scrollToActiveNavItem);
 
 const groups = computed(() => [
   {

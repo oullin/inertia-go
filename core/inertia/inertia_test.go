@@ -2223,3 +2223,215 @@ func TestHead_NotInJSON(t *testing.T) {
 		t.Errorf("head data should not appear in JSON response, got %s", body)
 	}
 }
+
+func TestHandlePrecognition_NonPrecognitiveRequest(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if handled {
+		t.Error("expected handled=false for non-precognition request")
+	}
+}
+
+func TestHandlePrecognition_NoErrors_Returns204(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	ctx := httpx.SetPrecognition(r.Context())
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true for precognition request")
+	}
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	}
+
+	if got := w.Header().Get(httpx.HeaderPrecognition); got != "true" {
+		t.Errorf("Precognition header = %q, want %q", got, "true")
+	}
+}
+
+func TestHandlePrecognition_WithErrors_Returns422(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	ctx := httpx.SetPrecognition(r.Context())
+	ctx = inertia.SetValidationErrors(ctx, httpx.ValidationErrors{
+		"email": "The email field is required.",
+		"name":  "The name field is required.",
+	})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true")
+	}
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnprocessableEntity)
+	}
+
+	var body map[string]any
+
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("failed to parse response body: %v", err)
+	}
+
+	errors, ok := body["errors"].(map[string]any)
+
+	if !ok {
+		t.Fatal("expected 'errors' key in response")
+	}
+
+	if errors["email"] != "The email field is required." {
+		t.Errorf("email error = %v", errors["email"])
+	}
+}
+
+func TestHandlePrecognition_ValidateOnly_FiltersErrors(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	r.Header.Set(httpx.HeaderValidateOnly, "email")
+
+	ctx := httpx.SetPrecognition(r.Context())
+	ctx = inertia.SetValidationErrors(ctx, httpx.ValidationErrors{
+		"email": "The email field is required.",
+		"name":  "The name field is required.",
+	})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true")
+	}
+
+	var body map[string]any
+
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("failed to parse response body: %v", err)
+	}
+
+	errors, ok := body["errors"].(map[string]any)
+
+	if !ok {
+		t.Fatal("expected 'errors' key in response")
+	}
+
+	if _, has := errors["email"]; !has {
+		t.Error("expected email error to be present")
+	}
+
+	if _, has := errors["name"]; has {
+		t.Error("name error should be filtered out by Validate-Only")
+	}
+}
+
+func TestWithHeadDefaults(t *testing.T) {
+	t.Parallel()
+
+	i, err := inertia.New(testTemplate,
+		inertia.WithVersion("v1"),
+		inertia.WithHeadDefaults(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestWithHeadDefaults_SkippedWhenExplicitHeadSet(t *testing.T) {
+	t.Parallel()
+
+	i, err := inertia.New(testTemplate,
+		inertia.WithVersion("v1"),
+		inertia.WithHead(httpx.Head{Title: "Explicit"}),
+		inertia.WithHeadDefaults(), // Should be ignored because explicit head was set.
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, "Explicit") {
+		t.Error("expected explicit head title to be used")
+	}
+}
+
+func TestSetPrecognition_Context(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
+	// Use inertia.SetPrecognition (the context helper).
+	ctx := inertia.SetPrecognition(r.Context())
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true after SetPrecognition")
+	}
+}

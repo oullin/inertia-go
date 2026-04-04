@@ -1,8 +1,11 @@
 package cryptox_test
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -191,4 +194,249 @@ func TestEncryptDecrypt_EmptyPlaintext(t *testing.T) {
 	if decrypted != "" {
 		t.Errorf("decrypted = %q, want empty", decrypted)
 	}
+}
+
+func TestEncrypt_InvalidKeySize(t *testing.T) {
+	t.Parallel()
+
+	// AES only supports 16, 24, and 32 byte keys. Use 15 bytes which is invalid.
+	badKey := make([]byte, 15)
+
+	_, err := cryptox.Encrypt("test", badKey)
+
+	if err == nil {
+		t.Error("expected error for 15-byte key, got nil")
+	}
+}
+
+func TestDecrypt_InvalidIVLength(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	// Build a payload with a short IV (not 16 bytes).
+	shortIV := base64.StdEncoding.EncodeToString([]byte("short"))
+	value := base64.StdEncoding.EncodeToString([]byte("0123456789abcdef"))
+
+	// Compute a valid MAC so we pass MAC check.
+	p := struct {
+		IV    string `json:"iv"`
+		Value string `json:"value"`
+		MAC   string `json:"mac"`
+		Tag   string `json:"tag"`
+	}{
+		IV:    shortIV,
+		Value: value,
+		MAC:   computeTestMAC(shortIV, value, key),
+		Tag:   "",
+	}
+
+	js, _ := json.Marshal(p)
+	encoded := base64.StdEncoding.EncodeToString(js)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid IV length, got nil")
+	}
+}
+
+func TestDecrypt_InvalidCiphertextLength(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	// Ciphertext not multiple of block size (17 bytes).
+	iv := make([]byte, 16)
+	rand.Read(iv)
+
+	ivB64 := base64.StdEncoding.EncodeToString(iv)
+	valueB64 := base64.StdEncoding.EncodeToString([]byte("12345678901234567")) // 17 bytes
+
+	p := struct {
+		IV    string `json:"iv"`
+		Value string `json:"value"`
+		MAC   string `json:"mac"`
+		Tag   string `json:"tag"`
+	}{
+		IV:    ivB64,
+		Value: valueB64,
+		MAC:   computeTestMAC(ivB64, valueB64, key),
+		Tag:   "",
+	}
+
+	js, _ := json.Marshal(p)
+	encoded := base64.StdEncoding.EncodeToString(js)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid ciphertext length, got nil")
+	}
+}
+
+func TestDecrypt_EmptyCiphertext(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	iv := make([]byte, 16)
+	rand.Read(iv)
+
+	ivB64 := base64.StdEncoding.EncodeToString(iv)
+	valueB64 := base64.StdEncoding.EncodeToString([]byte{}) // empty
+
+	p := struct {
+		IV    string `json:"iv"`
+		Value string `json:"value"`
+		MAC   string `json:"mac"`
+		Tag   string `json:"tag"`
+	}{
+		IV:    ivB64,
+		Value: valueB64,
+		MAC:   computeTestMAC(ivB64, valueB64, key),
+		Tag:   "",
+	}
+
+	js, _ := json.Marshal(p)
+	encoded := base64.StdEncoding.EncodeToString(js)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for empty ciphertext, got nil")
+	}
+}
+
+func TestDecrypt_InvalidMACHex(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	p := struct {
+		IV    string `json:"iv"`
+		Value string `json:"value"`
+		MAC   string `json:"mac"`
+		Tag   string `json:"tag"`
+	}{
+		IV:    base64.StdEncoding.EncodeToString(make([]byte, 16)),
+		Value: base64.StdEncoding.EncodeToString(make([]byte, 16)),
+		MAC:   "not-valid-hex-gg",
+		Tag:   "",
+	}
+
+	js, _ := json.Marshal(p)
+	encoded := base64.StdEncoding.EncodeToString(js)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid MAC hex, got nil")
+	}
+}
+
+func TestDecrypt_InvalidPadding(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	// Encrypt something, then tamper with the last byte to create invalid padding.
+	encrypted, err := cryptox.Encrypt("hello world test", key)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Decode, tamper with the ciphertext (last block), re-compute MAC, re-encode.
+	js, _ := base64.StdEncoding.DecodeString(encrypted)
+
+	var p struct {
+		IV    string `json:"iv"`
+		Value string `json:"value"`
+		MAC   string `json:"mac"`
+		Tag   string `json:"tag"`
+	}
+
+	json.Unmarshal(js, &p)
+
+	// Tamper with the encrypted value to corrupt padding.
+	ct, _ := base64.StdEncoding.DecodeString(p.Value)
+	ct[len(ct)-1] ^= 0xFF // Flip last byte
+
+	p.Value = base64.StdEncoding.EncodeToString(ct)
+	p.MAC = computeTestMAC(p.IV, p.Value, key)
+
+	tampered, _ := json.Marshal(p)
+	tamperedB64 := base64.StdEncoding.EncodeToString(tampered)
+
+	_, err = cryptox.Decrypt(tamperedB64, key)
+
+	if err == nil {
+		t.Error("expected error for corrupted ciphertext (invalid padding), got nil")
+	}
+}
+
+func TestDecrypt_InvalidIVBase64(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	p := struct {
+		IV    string `json:"iv"`
+		Value string `json:"value"`
+		MAC   string `json:"mac"`
+		Tag   string `json:"tag"`
+	}{
+		IV:    "not-valid-base64!!",
+		Value: base64.StdEncoding.EncodeToString(make([]byte, 16)),
+		Tag:   "",
+	}
+
+	p.MAC = computeTestMAC(p.IV, p.Value, key)
+
+	js, _ := json.Marshal(p)
+	encoded := base64.StdEncoding.EncodeToString(js)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid IV base64, got nil")
+	}
+}
+
+func TestDecrypt_InvalidValueBase64(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+	iv := make([]byte, 16)
+	rand.Read(iv)
+
+	p := struct {
+		IV    string `json:"iv"`
+		Value string `json:"value"`
+		MAC   string `json:"mac"`
+		Tag   string `json:"tag"`
+	}{
+		IV:    base64.StdEncoding.EncodeToString(iv),
+		Value: "not-valid-base64!!",
+		Tag:   "",
+	}
+
+	p.MAC = computeTestMAC(p.IV, p.Value, key)
+
+	js, _ := json.Marshal(p)
+	encoded := base64.StdEncoding.EncodeToString(js)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid value base64, got nil")
+	}
+}
+
+func computeTestMAC(ivB64, valueB64 string, key []byte) string {
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(ivB64 + valueB64))
+
+	return hex.EncodeToString(h.Sum(nil))
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func (rt *runtime) newAuth() auth.App {
-	return auth.New(auth.Container{
+	return auth.NewApp(auth.Container{
 		DB:        rt.db,
 		CryptoKey: rt.cryptoKey,
 		Render:    rt.renderPage,
