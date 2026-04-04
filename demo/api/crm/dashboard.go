@@ -20,7 +20,7 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.deps.Render(w, r, "Crm/Dashboard", httpx.Props{
+	a.container.Render(w, r, "Crm/Dashboard", httpx.Props{
 		"recentActivity": recentActivityProps(activity),
 		"totalContacts": props.Defer(func() any {
 			if httputil.SleepCtx(r.Context(), 150*time.Millisecond) != nil {

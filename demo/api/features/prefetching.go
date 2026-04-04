@@ -7,17 +7,17 @@ import (
 )
 
 func (a app) linkPrefetchHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Prefetching/LinkPrefetch", httpx.Props{})
+	a.container.Render(w, r, "Features/Prefetching/LinkPrefetch", httpx.Props{})
 }
 
 func (a app) staleWhileRevalidateHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Prefetching/StaleWhileRevalidate", httpx.Props{})
+	a.container.Render(w, r, "Features/Prefetching/StaleWhileRevalidate", httpx.Props{})
 }
 
 func (a app) manualPrefetchHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Prefetching/ManualPrefetch", httpx.Props{})
+	a.container.Render(w, r, "Features/Prefetching/ManualPrefetch", httpx.Props{})
 }
 
 func (a app) cacheManagementHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Prefetching/CacheManagement", httpx.Props{})
+	a.container.Render(w, r, "Features/Prefetching/CacheManagement", httpx.Props{})
 }

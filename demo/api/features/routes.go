@@ -7,11 +7,11 @@ import (
 )
 
 // RegisterRoutes mounts all feature showcase HTTP routes onto the provided mux.
-func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, deps Container) {
-	a := newApp(deps)
+func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) {
+	a := newApp(container)
 
 	auth := func(h http.HandlerFunc) http.Handler {
-		return deps.RequireAuth(h)
+		return container.RequireAuth(h)
 	}
 
 	// Forms

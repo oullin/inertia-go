@@ -8,20 +8,20 @@ import (
 )
 
 type app struct {
-	deps Container
-	repo *databaseRepository
+	container Container
+	repo      *databaseRepository
 }
 
 // RegisterRoutes mounts the CRM HTTP routes onto the provided mux.
-func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, deps Container) error {
-	app, err := newApp(deps)
+func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) error {
+	app, err := newApp(container)
 
 	if err != nil {
 		return fmt.Errorf("crm: %w", err)
 	}
 
 	auth := func(h http.HandlerFunc) http.Handler {
-		return deps.RequireAuth(h)
+		return container.RequireAuth(h)
 	}
 
 	routes.Handle("dashboard", auth(app.dashboardHandler), mux)
@@ -34,15 +34,15 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, deps Contain
 	return nil
 }
 
-func newApp(deps Container) (app, error) {
-	repo, err := newRepository(deps.DB)
+func newApp(container Container) (app, error) {
+	repo, err := newRepository(container.DB)
 
 	if err != nil {
 		return app{}, err
 	}
 
 	return app{
-		deps: deps,
-		repo: repo,
+		container: container,
+		repo:      repo,
 	}, nil
 }

@@ -47,7 +47,7 @@ func (a app) contactsCreateHandler(w http.ResponseWriter, r *http.Request) {
 		form.OrganizationID = orgID
 	}
 
-	a.deps.Render(w, r, "Contacts/Create", httpx.Props{
+	a.container.Render(w, r, "Contacts/Create", httpx.Props{
 		"form":          contactFormProps(form),
 		"organizations": organizationOptions(orgs),
 	})
@@ -128,7 +128,7 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.deps.Render(w, r, "Contacts/Index", httpx.Props{
+	a.container.Render(w, r, "Contacts/Index", httpx.Props{
 		"filters": map[string]any{
 			"search":   search,
 			"favorite": favoriteOnly,
@@ -153,7 +153,7 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 		return
 	}
 
-	a.deps.Render(w, r, "Contacts/Show", httpx.Props{
+	a.container.Render(w, r, "Contacts/Show", httpx.Props{
 		"contact": contactProp(*contact),
 		"notes": props.Defer(func() any {
 			notes, err := a.repo.ListContactNotes(contactID)
@@ -175,7 +175,7 @@ func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contac
 		return
 	}
 
-	if err := a.deps.SetFlash(w, flash.Message{
+	if err := a.container.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact deleted",
 		Message: "The contact has been removed.",
@@ -183,7 +183,7 @@ func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contac
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.index", nil))
+	a.container.Redirect(w, r, a.container.RouteURL("contacts.index", nil))
 }
 
 func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
@@ -211,7 +211,7 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 		return
 	}
 
-	a.deps.Render(w, r, "Contacts/Edit", httpx.Props{
+	a.container.Render(w, r, "Contacts/Edit", httpx.Props{
 		"contact":       contactProp(*contact),
 		"form":          contactFormProps(newContactFormFromContact(*contact)),
 		"organizations": organizationOptions(orgs),
@@ -239,7 +239,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
-		a.deps.Render(w, r.WithContext(ctx), "Contacts/Create", httpx.Props{
+		a.container.Render(w, r.WithContext(ctx), "Contacts/Create", httpx.Props{
 			"form":          contactFormProps(form),
 			"organizations": organizationOptions(orgs),
 		})
@@ -256,7 +256,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.deps.SetFlash(w, flash.Message{
+	if err := a.container.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact created",
 		Message: "The CRM record is ready for follow-up.",
@@ -264,7 +264,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(id, 10)}))
+	a.container.Redirect(w, r, a.container.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(id, 10)}))
 }
 
 func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
@@ -297,7 +297,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		}
 
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
-		a.deps.Render(w, r.WithContext(ctx), "Contacts/Edit", httpx.Props{
+		a.container.Render(w, r.WithContext(ctx), "Contacts/Edit", httpx.Props{
 			"contact":       contactPropValue(existing),
 			"form":          contactFormProps(form),
 			"organizations": organizationOptions(orgs),
@@ -313,7 +313,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		return
 	}
 
-	if err := a.deps.SetFlash(w, flash.Message{
+	if err := a.container.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Contact updated",
 		Message: "The CRM record now reflects the latest details.",
@@ -321,7 +321,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
+	a.container.Redirect(w, r, a.container.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
 }
 
 func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
@@ -332,7 +332,7 @@ func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, conta
 		return
 	}
 
-	if err := a.deps.SetFlash(w, flash.Message{
+	if err := a.container.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Favorite updated",
 		Message: "The contact pin state changed successfully.",
@@ -340,7 +340,7 @@ func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, conta
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
+	a.container.Redirect(w, r, a.container.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
 }
 
 func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
@@ -361,10 +361,10 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 		return
 	}
 
-	user := a.deps.CurrentUser(r)
+	user := a.container.CurrentUser(r)
 
 	if user == nil {
-		a.deps.Redirect(w, r, a.deps.RouteURL("login", nil))
+		a.container.Redirect(w, r, a.container.RouteURL("login", nil))
 
 		return
 	}
@@ -376,7 +376,7 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 		return
 	}
 
-	if err := a.deps.SetFlash(w, flash.Message{
+	if err := a.container.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Note added",
 		Message: "Recent activity has been updated.",
@@ -384,7 +384,7 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
+	a.container.Redirect(w, r, a.container.RouteURL("contacts.show", map[string]string{"contact": strconv.FormatInt(contactID, 10)}))
 }
 
 func routeIDAndAction(path, prefix string) (int64, string, bool) {

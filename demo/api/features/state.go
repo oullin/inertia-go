@@ -9,13 +9,13 @@ import (
 )
 
 func (a app) rememberHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/State/Remember", httpx.Props{})
+	a.container.Render(w, r, "Features/State/Remember", httpx.Props{})
 }
 
 func (a app) flashDataHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.deps.Render(w, r, "Features/State/FlashData", httpx.Props{})
+		a.container.Render(w, r, "Features/State/FlashData", httpx.Props{})
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("flash: parse form", "error", err)
@@ -34,11 +34,11 @@ func (a app) flashDataHandler(w http.ResponseWriter, r *http.Request) {
 			msg = flash.Message{Kind: "success", Title: "Flash sent", Message: "This is a success flash message."}
 		}
 
-		if err := a.deps.SetFlash(w, msg); err != nil {
+		if err := a.container.SetFlash(w, msg); err != nil {
 			slog.Error("flash: set", "error", err)
 		}
 
-		a.deps.Redirect(w, r, a.deps.RouteURL("features.state.flash-data", nil))
+		a.container.Redirect(w, r, a.container.RouteURL("features.state.flash-data", nil))
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -58,13 +58,13 @@ func (a app) flashDataActionHandler(w http.ResponseWriter, r *http.Request) {
 		msg = flash.Message{Kind: "info", Title: "Info", Message: "Here's some information."}
 	}
 
-	if err := a.deps.SetFlash(w, msg); err != nil {
+	if err := a.container.SetFlash(w, msg); err != nil {
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("features.state.flash-data", nil))
+	a.container.Redirect(w, r, a.container.RouteURL("features.state.flash-data", nil))
 }
 
 func (a app) sharedPropsHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/State/SharedProps", httpx.Props{})
+	a.container.Render(w, r, "Features/State/SharedProps", httpx.Props{})
 }

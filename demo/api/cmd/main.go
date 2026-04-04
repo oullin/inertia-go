@@ -125,7 +125,7 @@ func main() {
 	)
 
 	appMux := http.NewServeMux()
-	authApp := rt.newAuthApp()
+	authApp := rt.newAuth()
 	authApp.RegisterRoutes(appMux)
 
 	if err := rt.registerCRMRoutes(appMux, authApp); err != nil {

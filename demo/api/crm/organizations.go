@@ -38,7 +38,7 @@ func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.deps.Render(w, r, "Organizations/Index", httpx.Props{
+	a.container.Render(w, r, "Organizations/Index", httpx.Props{
 		"filters": map[string]any{
 			"search": search,
 		},
@@ -98,7 +98,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 		return
 	}
 
-	a.deps.Render(w, r, "Organizations/Show", httpx.Props{
+	a.container.Render(w, r, "Organizations/Show", httpx.Props{
 		"organization": organizationProp(*org),
 		"contacts":     cursorContactsProps(contactsPage),
 	})
@@ -128,7 +128,7 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 		return
 	}
 
-	if err := a.deps.SetFlash(w, flash.Message{
+	if err := a.container.SetFlash(w, flash.Message{
 		Kind:    "success",
 		Title:   "Organization updated",
 		Message: "The company record was saved.",
@@ -136,5 +136,5 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("organizations.show", map[string]string{"organization": strconv.FormatInt(organizationID, 10)}))
+	a.container.Redirect(w, r, a.container.RouteURL("organizations.show", map[string]string{"organization": strconv.FormatInt(organizationID, 10)}))
 }

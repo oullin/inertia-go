@@ -7,15 +7,15 @@ import (
 )
 
 func (a app) persistentLayoutsHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Layouts/PersistentLayouts", httpx.Props{})
+	a.container.Render(w, r, "Features/Layouts/PersistentLayouts", httpx.Props{})
 }
 
 func (a app) persistentLayoutsPage2Handler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Layouts/PersistentLayoutsPageTwo", httpx.Props{})
+	a.container.Render(w, r, "Features/Layouts/PersistentLayoutsPageTwo", httpx.Props{})
 }
 
 func (a app) nestedLayoutsHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Layouts/NestedLayouts", httpx.Props{
+	a.container.Render(w, r, "Features/Layouts/NestedLayouts", httpx.Props{
 		"title": "Nested Layouts",
 		"breadcrumbs": []map[string]string{
 			{"title": "Features"},
@@ -26,9 +26,9 @@ func (a app) nestedLayoutsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) headHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Layouts/Head", httpx.Props{})
+	a.container.Render(w, r, "Features/Layouts/Head", httpx.Props{})
 }
 
 func (a app) layoutPropsHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Layouts/LayoutProps", httpx.Props{})
+	a.container.Render(w, r, "Features/Layouts/LayoutProps", httpx.Props{})
 }

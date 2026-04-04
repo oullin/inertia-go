@@ -1,9 +1,9 @@
 package features
 
 type app struct {
-	deps Container
+	container Container
 }
 
-func newApp(deps Container) app {
-	return app{deps: deps}
+func newApp(container Container) app {
+	return app{container: container}
 }

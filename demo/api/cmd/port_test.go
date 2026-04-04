@@ -305,7 +305,7 @@ func newPortTestMux(t *testing.T) (*runtime, http.Handler) {
 	}
 
 	mux := http.NewServeMux()
-	authApp := rt.newAuthApp()
+	authApp := rt.newAuth()
 	authApp.RegisterRoutes(mux)
 
 	if err := rt.registerCRMRoutes(mux, authApp); err != nil {

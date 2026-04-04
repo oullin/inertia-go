@@ -11,7 +11,7 @@ import (
 )
 
 func (a app) useHttpHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/Http/UseHttp", httpx.Props{})
+	a.container.Render(w, r, "Features/Http/UseHttp", httpx.Props{})
 }
 
 func (a app) useHttpApiHandler(w http.ResponseWriter, r *http.Request) {

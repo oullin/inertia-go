@@ -14,19 +14,19 @@ type Container struct {
 }
 
 // RegisterRoutes mounts the error showcase HTTP routes onto the provided mux.
-func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, deps Container) {
+func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) {
 	auth := func(h http.HandlerFunc) http.Handler {
-		return deps.RequireAuth(h)
+		return container.RequireAuth(h)
 	}
 
-	routes.Handle("features.errors.http-error", auth(httpErrorHandler(deps)), mux)
+	routes.Handle("features.errors.http-error", auth(httpErrorHandler(container)), mux)
 	mux.Handle("/features/errors/http-error/{code}", auth(httpErrorTriggerHandler()))
-	routes.Handle("features.errors.network-errors", auth(networkErrorsHandler(deps)), mux)
+	routes.Handle("features.errors.network-errors", auth(networkErrorsHandler(container)), mux)
 }
 
-func httpErrorHandler(deps Container) http.HandlerFunc {
+func httpErrorHandler(container Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		deps.Render(w, r, "Features/Errors/HttpError", httpx.Props{})
+		container.Render(w, r, "Features/Errors/HttpError", httpx.Props{})
 	}
 }
 
@@ -49,8 +49,8 @@ func httpErrorTriggerHandler() http.HandlerFunc {
 	}
 }
 
-func networkErrorsHandler(deps Container) http.HandlerFunc {
+func networkErrorsHandler(container Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		deps.Render(w, r, "Features/Errors/NetworkErrors", httpx.Props{})
+		container.Render(w, r, "Features/Errors/NetworkErrors", httpx.Props{})
 	}
 }

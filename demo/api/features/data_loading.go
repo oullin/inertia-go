@@ -17,14 +17,14 @@ import (
 const contactsPerPage = 15
 
 func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/DataLoading/DeferredProps", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/DeferredProps", httpx.Props{
 		"quickStat": 42,
 		"slowStats": props.Defer(func() any {
 			if httputil.SleepCtx(r.Context(), 800*time.Millisecond) != nil {
 				return nil
 			}
 
-			totalContacts, err := database.CountContacts(a.deps.DB)
+			totalContacts, err := database.CountContacts(a.container.DB)
 
 			if err != nil {
 				slog.Error("count contacts", "error", err)
@@ -52,7 +52,7 @@ func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
-	contacts, err := database.ListContacts(a.deps.DB, "", false)
+	contacts, err := database.ListContacts(a.container.DB, "", false)
 
 	if err != nil {
 		slog.Error("list contacts", "error", err)
@@ -75,10 +75,10 @@ func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	totalContacts, _ := database.CountContacts(a.deps.DB)
-	totalOrgs, _ := database.CountOrganizations(a.deps.DB)
+	totalContacts, _ := database.CountContacts(a.container.DB)
+	totalOrgs, _ := database.CountOrganizations(a.container.DB)
 
-	a.deps.Render(w, r, "Features/DataLoading/PartialReloads", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/PartialReloads", httpx.Props{
 		"users":        users,
 		"stats":        map[string]any{"totalContacts": totalContacts, "totalOrganizations": totalOrgs},
 		"timestamp":    time.Now().Format(time.RFC3339),
@@ -93,7 +93,7 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 		cursor = &c
 	}
 
-	page, err := database.ListContactsPaginated(a.deps.DB, "", false, cursor, "next", contactsPerPage)
+	page, err := database.ListContactsPaginated(a.container.DB, "", false, cursor, "next", contactsPerPage)
 
 	if err != nil {
 		slog.Error("list contacts paginated", "error", err)
@@ -120,7 +120,7 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 		items = append(items, item)
 	}
 
-	a.deps.Render(w, r, "Features/DataLoading/InfiniteScroll", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/InfiniteScroll", httpx.Props{
 		"contacts": map[string]any{
 			"data":        items,
 			"next_cursor": page.NextCursor,
@@ -129,13 +129,13 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/DataLoading/WhenVisible", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/WhenVisible", httpx.Props{
 		"section1": props.Optional(func() any {
 			if httputil.SleepCtx(r.Context(), 500*time.Millisecond) != nil {
 				return nil
 			}
 
-			count, _ := database.CountContacts(a.deps.DB)
+			count, _ := database.CountContacts(a.container.DB)
 
 			return map[string]any{"title": "Contacts", "content": fmt.Sprintf("%d contacts in the database.", count)}
 		}),
@@ -144,7 +144,7 @@ func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			count, _ := database.CountOrganizations(a.deps.DB)
+			count, _ := database.CountOrganizations(a.container.DB)
 
 			return map[string]any{"title": "Organizations", "content": fmt.Sprintf("%d organizations tracked.", count)}
 		}),
@@ -153,7 +153,7 @@ func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			count, _ := database.CountNotes(a.deps.DB)
+			count, _ := database.CountNotes(a.container.DB)
 
 			return map[string]any{"title": "Notes", "content": fmt.Sprintf("%d notes recorded.", count)}
 		}),
@@ -161,13 +161,13 @@ func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) pollingHandler(w http.ResponseWriter, r *http.Request) {
-	contactCount, err := database.CountContacts(a.deps.DB)
+	contactCount, err := database.CountContacts(a.container.DB)
 
 	if err != nil {
 		slog.Error("count contacts", "error", err)
 	}
 
-	a.deps.Render(w, r, "Features/DataLoading/Polling", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/Polling", httpx.Props{
 		"currentTime":  time.Now().Format(time.RFC3339),
 		"randomNumber": rand.Intn(1000),
 		"contactCount": contactCount,
@@ -175,7 +175,7 @@ func (a app) pollingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) propMergingHandler(w http.ResponseWriter, r *http.Request) {
-	notes, err := database.ListRecentNotes(a.deps.DB, 3)
+	notes, err := database.ListRecentNotes(a.container.DB, 3)
 
 	if err != nil {
 		slog.Error("list recent notes", "error", err)
@@ -191,7 +191,7 @@ func (a app) propMergingHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	activityNotes, err := database.ListRecentNotes(a.deps.DB, 2)
+	activityNotes, err := database.ListRecentNotes(a.container.DB, 2)
 
 	if err != nil {
 		slog.Error("list recent activity", "error", err)
@@ -207,7 +207,7 @@ func (a app) propMergingHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	a.deps.Render(w, r, "Features/DataLoading/PropMerging", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/PropMerging", httpx.Props{
 		"notifications": props.Merge(notifications),
 		"activities":    props.Merge(activities),
 		"timestamp":     time.Now().Format(time.RFC3339),
@@ -215,7 +215,7 @@ func (a app) propMergingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) optionalPropsHandler(w http.ResponseWriter, r *http.Request) {
-	a.deps.Render(w, r, "Features/DataLoading/OptionalProps", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/OptionalProps", httpx.Props{
 		"regularData": map[string]any{"message": "Always loaded"},
 		"optionalData": props.Optional(func() any {
 			return map[string]any{"message": "Loaded on demand"}
@@ -237,7 +237,7 @@ func (a app) oncePropsHandler(w http.ResponseWriter, r *http.Request) {
 		pageNum = 1
 	}
 
-	a.deps.Render(w, r, "Features/DataLoading/OnceProps", httpx.Props{
+	a.container.Render(w, r, "Features/DataLoading/OnceProps", httpx.Props{
 		"page":       pageNum,
 		"staticData": props.Once(map[string]any{"cached": true, "message": "This won't change on reload"}),
 		"freshData":  map[string]any{"timestamp": time.Now().Format(time.RFC3339)},

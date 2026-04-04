@@ -31,7 +31,7 @@ func (a App) WithCurrentUser(next http.Handler) http.Handler {
 func (a App) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a.CurrentUser(r) == nil {
-			a.deps.Redirect(w, r, a.deps.RouteURL("login", nil))
+			a.container.Redirect(w, r, a.container.RouteURL("login", nil))
 
 			return
 		}
@@ -44,7 +44,7 @@ func (a App) RequireAuth(next http.Handler) http.Handler {
 func (a App) GuestOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a.CurrentUser(r) != nil {
-			a.deps.Redirect(w, r, a.deps.RouteURL("dashboard", nil))
+			a.container.Redirect(w, r, a.container.RouteURL("dashboard", nil))
 
 			return
 		}
@@ -65,11 +65,11 @@ func (a App) CurrentUser(r *http.Request) *database.User {
 func (a App) loadCurrentUser(r *http.Request) *database.User {
 	cookie, err := r.Cookie(SessionCookieName)
 
-	if err != nil || cookie.Value == "" || a.deps.DB == nil {
+	if err != nil || cookie.Value == "" || a.container.DB == nil {
 		return nil
 	}
 
-	plaintext, err := cryptox.Decrypt(cookie.Value, a.deps.CryptoKey)
+	plaintext, err := cryptox.Decrypt(cookie.Value, a.container.CryptoKey)
 
 	if err != nil {
 		return nil
@@ -81,7 +81,7 @@ func (a App) loadCurrentUser(r *http.Request) *database.User {
 		return nil
 	}
 
-	user, err := database.FindUserByID(a.deps.DB, id)
+	user, err := database.FindUserByID(a.container.DB, id)
 
 	if err != nil {
 		return nil
@@ -91,7 +91,7 @@ func (a App) loadCurrentUser(r *http.Request) *database.User {
 }
 
 func (a App) setSession(w http.ResponseWriter, userID int64, remember bool) error {
-	encrypted, err := cryptox.Encrypt(strconv.FormatInt(userID, 10), a.deps.CryptoKey)
+	encrypted, err := cryptox.Encrypt(strconv.FormatInt(userID, 10), a.container.CryptoKey)
 
 	if err != nil {
 		return fmt.Errorf("auth: encrypt session: %w", err)
@@ -102,7 +102,7 @@ func (a App) setSession(w http.ResponseWriter, userID int64, remember bool) erro
 		Value:    encrypted,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   a.deps.SecureCookie,
+		Secure:   a.container.SecureCookie,
 		SameSite: http.SameSiteLaxMode,
 	}
 
@@ -122,7 +122,7 @@ func (a App) clearSession(w http.ResponseWriter) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   a.deps.SecureCookie,
+		Secure:   a.container.SecureCookie,
 		SameSite: http.SameSiteLaxMode,
 	})
 }

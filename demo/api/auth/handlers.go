@@ -13,7 +13,7 @@ import (
 func (a App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.deps.Render(w, r, "Auth/Login", httpx.Props{
+		a.container.Render(w, r, "Auth/Login", httpx.Props{
 			"status": r.URL.Query().Get("status"),
 		})
 	case http.MethodPost:
@@ -45,7 +45,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if err := a.deps.SetFlash(w, flash.Message{
+			if err := a.container.SetFlash(w, flash.Message{
 				Kind:    "success",
 				Title:   "Signed in",
 				Message: "The demo session is now authenticated.",
@@ -53,7 +53,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 				slog.Error("flash: set", "error", err)
 			}
 
-			a.deps.Redirect(w, r, a.deps.RouteURL("dashboard", nil))
+			a.container.Redirect(w, r, a.container.RouteURL("dashboard", nil))
 
 			return
 		case errors.Is(err, errInvalidCredentials):
@@ -67,7 +67,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := inertia.SetValidationErrors(r.Context(), errorsByField)
-	a.deps.Render(w, r.WithContext(ctx), "Auth/Login", httpx.Props{})
+	a.container.Render(w, r.WithContext(ctx), "Auth/Login", httpx.Props{})
 }
 
 func (a App) logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +79,7 @@ func (a App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	a.clearSession(w)
 
-	if err := a.deps.SetFlash(w, flash.Message{
+	if err := a.container.SetFlash(w, flash.Message{
 		Kind:    "info",
 		Title:   "Signed out",
 		Message: "Your demo session has been cleared.",
@@ -87,5 +87,5 @@ func (a App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Error("flash: set", "error", err)
 	}
 
-	a.deps.Redirect(w, r, a.deps.RouteURL("login", nil))
+	a.container.Redirect(w, r, a.container.RouteURL("login", nil))
 }

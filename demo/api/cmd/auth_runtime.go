@@ -7,7 +7,7 @@ import (
 	"github.com/oullin/inertia-go/demo/api/auth"
 )
 
-func (rt *runtime) newAuthApp() auth.App {
+func (rt *runtime) newAuth() auth.App {
 	return auth.New(auth.Container{
 		DB:        rt.db,
 		CryptoKey: rt.cryptoKey,
