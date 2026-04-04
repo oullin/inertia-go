@@ -1,7 +1,6 @@
 package crm
 
 import (
-	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -12,6 +11,8 @@ import (
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/props"
 )
+
+const contactsPerPage = 15
 
 func (a app) contactsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -31,7 +32,7 @@ func (a app) contactsCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgs, err := a.service.listOrganizations("")
+	orgs, err := a.repo.ListOrganizations("")
 
 	if err != nil {
 		slog.Error("list organizations", "error", err)
@@ -118,7 +119,7 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 
 	direction := r.URL.Query().Get("direction")
 
-	page, err := a.service.listContactsPaginated(search, favoriteOnly, cursor, direction)
+	page, err := a.repo.ListContactsPaginated(search, favoriteOnly, cursor, direction, contactsPerPage)
 
 	if err != nil {
 		slog.Error("list contacts", "error", err)
@@ -137,7 +138,7 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
-	contact, err := a.service.getContact(contactID)
+	contact, err := a.repo.GetContact(contactID)
 
 	if err != nil {
 		slog.Error("get contact", "id", contactID, "error", err)
@@ -155,7 +156,7 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 	a.deps.Render(w, r, "Contacts/Show", httpx.Props{
 		"contact": contactProp(*contact),
 		"notes": props.Defer(func() any {
-			notes, err := a.service.listContactNotes(contactID)
+			notes, err := a.repo.ListContactNotes(contactID)
 
 			if err != nil {
 				slog.Error("list contact notes", "error", err)
@@ -167,7 +168,7 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 }
 
 func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
-	if err := a.service.deleteContact(contactID); err != nil {
+	if err := a.repo.DeleteContact(contactID); err != nil {
 		slog.Error("delete contact", "id", contactID, "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
@@ -186,7 +187,7 @@ func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contac
 }
 
 func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
-	contact, err := a.service.getContact(contactID)
+	contact, err := a.repo.GetContact(contactID)
 
 	if err != nil {
 		slog.Error("get contact", "id", contactID, "error", err)
@@ -201,7 +202,7 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 		return
 	}
 
-	orgs, err := a.service.listOrganizations("")
+	orgs, err := a.repo.ListOrganizations("")
 
 	if err != nil {
 		slog.Error("list organizations", "error", err)
@@ -228,7 +229,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 	errors := form.validate()
 
 	if len(errors) > 0 {
-		orgs, err := a.service.listOrganizations("")
+		orgs, err := a.repo.ListOrganizations("")
 
 		if err != nil {
 			slog.Error("list organizations", "error", err)
@@ -246,7 +247,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := a.service.createContact(form)
+	id, err := a.repo.CreateContact(form.record())
 
 	if err != nil {
 		slog.Error("create contact", "error", err)
@@ -277,7 +278,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 	errors := form.validate()
 
 	if len(errors) > 0 {
-		existing, err := a.service.getContact(contactID)
+		existing, err := a.repo.GetContact(contactID)
 
 		if err != nil {
 			slog.Error("get contact", "id", contactID, "error", err)
@@ -286,7 +287,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 			return
 		}
 
-		orgs, err := a.service.listOrganizations("")
+		orgs, err := a.repo.ListOrganizations("")
 
 		if err != nil {
 			slog.Error("list organizations", "error", err)
@@ -305,7 +306,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 		return
 	}
 
-	if err := a.service.updateContact(contactID, form); err != nil {
+	if err := a.repo.UpdateContact(contactID, form.record()); err != nil {
 		slog.Error("update contact", "id", contactID, "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
@@ -324,7 +325,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 }
 
 func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
-	if err := a.service.toggleFavorite(contactID); err != nil {
+	if err := a.repo.ToggleContactFavorite(contactID); err != nil {
 		slog.Error("toggle favorite", "id", contactID, "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
@@ -360,15 +361,15 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 		return
 	}
 
-	err := a.service.createNote(contactID, a.deps.CurrentUser(r), body)
+	user := a.deps.CurrentUser(r)
 
-	if errors.Is(err, errUnauthorized) {
+	if user == nil {
 		a.deps.Redirect(w, r, a.deps.RouteURL("login", nil))
 
 		return
 	}
 
-	if err != nil {
+	if _, err := a.repo.CreateNote(contactID, user.ID, body); err != nil {
 		slog.Error("create note", "contact_id", contactID, "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 

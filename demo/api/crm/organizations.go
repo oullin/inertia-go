@@ -11,6 +11,8 @@ import (
 	"github.com/oullin/inertia-go/core/inertia"
 )
 
+const organizationsPerPage = 20
+
 func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -27,7 +29,7 @@ func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	page, err := a.service.listOrganizationsPaginated(search, pageNum)
+	page, err := a.repo.ListOrganizationsPaginated(search, pageNum, organizationsPerPage)
 
 	if err != nil {
 		slog.Error("list organizations", "error", err)
@@ -64,7 +66,7 @@ func (a app) organizationByIDHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, organizationID int64) {
-	org, err := a.service.getOrganization(organizationID)
+	org, err := a.repo.GetOrganization(organizationID)
 
 	if err != nil {
 		slog.Error("get organization", "id", organizationID, "error", err)
@@ -87,7 +89,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 
 	direction := r.URL.Query().Get("direction")
 
-	contactsPage, err := a.service.listContactsByOrgPaginated(organizationID, cursor, direction)
+	contactsPage, err := a.repo.ListContactsByOrgPaginated(organizationID, cursor, direction, contactsPerPage)
 
 	if err != nil {
 		slog.Error("list contacts by org", "id", organizationID, "error", err)
@@ -119,7 +121,7 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 		return
 	}
 
-	if err := a.service.updateOrganization(organizationID, form); err != nil {
+	if err := a.repo.UpdateOrganization(organizationID, form.Name); err != nil {
 		slog.Error("update organization", "id", organizationID, "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 

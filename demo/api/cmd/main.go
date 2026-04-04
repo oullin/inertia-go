@@ -133,6 +133,7 @@ func main() {
 	}
 
 	rt.registerFeatureRoutes(appMux, authApp)
+	rt.registerErrorRoutes(appMux, authApp)
 	appMux.Handle("GET /{$}", http.RedirectHandler("/dashboard", http.StatusFound))
 	mux.Handle("/", rt.dashboardAppHandler(authApp.WithCurrentUser(rt.withDemoProps(authApp, appMux)), csrfMiddleware))
 

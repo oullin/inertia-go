@@ -8,7 +8,7 @@ import (
 )
 
 func (rt *runtime) registerCRMRoutes(mux *http.ServeMux, authApp auth.App) error {
-	return crm.RegisterRoutes(mux, crm.Deps{
+	return crm.RegisterRoutes(rt.routes, mux, crm.Container{
 		DB:          rt.db,
 		RequireAuth: authApp.RequireAuth,
 		Render:      rt.renderPage,

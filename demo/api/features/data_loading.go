@@ -52,15 +52,35 @@ func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
-	users := []map[string]any{
-		{"id": 1, "name": "Alice"},
-		{"id": 2, "name": "Bob"},
-		{"id": 3, "name": "Carol"},
+	contacts, err := database.ListContacts(a.deps.DB, "", false)
+
+	if err != nil {
+		slog.Error("list contacts", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+
+		return
 	}
+
+	users := make([]map[string]any, 0, min(len(contacts), 5))
+
+	for i, c := range contacts {
+		if i >= 5 {
+			break
+		}
+
+		users = append(users, map[string]any{
+			"id":    c.ID,
+			"name":  c.FirstName + " " + c.LastName,
+			"email": c.Email,
+		})
+	}
+
+	totalContacts, _ := database.CountContacts(a.deps.DB)
+	totalOrgs, _ := database.CountOrganizations(a.deps.DB)
 
 	a.deps.Render(w, r, "Features/DataLoading/PartialReloads", httpx.Props{
 		"users":        users,
-		"stats":        map[string]any{"total": 3, "active": 2},
+		"stats":        map[string]any{"totalContacts": totalContacts, "totalOrganizations": totalOrgs},
 		"timestamp":    time.Now().Format(time.RFC3339),
 		"randomNumber": rand.Intn(1000),
 	})
@@ -115,21 +135,27 @@ func (a app) whenVisibleHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			return map[string]any{"title": "Section 1", "content": "Loaded on visibility."}
+			count, _ := database.CountContacts(a.deps.DB)
+
+			return map[string]any{"title": "Contacts", "content": fmt.Sprintf("%d contacts in the database.", count)}
 		}),
 		"section2": props.Optional(func() any {
 			if httputil.SleepCtx(r.Context(), 800*time.Millisecond) != nil {
 				return nil
 			}
 
-			return map[string]any{"title": "Section 2", "content": "Also loaded lazily."}
+			count, _ := database.CountOrganizations(a.deps.DB)
+
+			return map[string]any{"title": "Organizations", "content": fmt.Sprintf("%d organizations tracked.", count)}
 		}),
 		"section3": props.Optional(func() any {
 			if httputil.SleepCtx(r.Context(), 1000*time.Millisecond) != nil {
 				return nil
 			}
 
-			return map[string]any{"title": "Section 3", "content": "Third lazy section."}
+			count, _ := database.CountNotes(a.deps.DB)
+
+			return map[string]any{"title": "Notes", "content": fmt.Sprintf("%d notes recorded.", count)}
 		}),
 	})
 }
@@ -149,15 +175,36 @@ func (a app) pollingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) propMergingHandler(w http.ResponseWriter, r *http.Request) {
-	notifications := []map[string]any{
-		{"id": 1, "text": "New contact added", "time": "2m ago"},
-		{"id": 2, "text": "Organization updated", "time": "5m ago"},
-		{"id": 3, "text": "Note created", "time": "12m ago"},
+	notes, err := database.ListRecentNotes(a.deps.DB, 3)
+
+	if err != nil {
+		slog.Error("list recent notes", "error", err)
 	}
 
-	activities := []map[string]any{
-		{"id": 1, "action": "Logged in", "time": "1m ago"},
-		{"id": 2, "action": "Viewed contacts", "time": "3m ago"},
+	notifications := make([]map[string]any, 0, len(notes))
+
+	for _, n := range notes {
+		notifications = append(notifications, map[string]any{
+			"id":    n.ID,
+			"title": n.Body,
+			"body":  n.ContactName,
+		})
+	}
+
+	activityNotes, err := database.ListRecentNotes(a.deps.DB, 2)
+
+	if err != nil {
+		slog.Error("list recent activity", "error", err)
+	}
+
+	activities := make([]map[string]any, 0, len(activityNotes))
+
+	for _, n := range activityNotes {
+		activities = append(activities, map[string]any{
+			"id":          n.ID,
+			"type":        "note",
+			"description": n.Body,
+		})
 	}
 
 	a.deps.Render(w, r, "Features/DataLoading/PropMerging", httpx.Props{

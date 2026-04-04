@@ -3,15 +3,17 @@ package crm
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/oullin/inertia-go/core/wayfinder"
 )
 
 type app struct {
-	deps    Deps
-	service service
+	deps Container
+	repo *databaseRepository
 }
 
 // RegisterRoutes mounts the CRM HTTP routes onto the provided mux.
-func RegisterRoutes(mux *http.ServeMux, deps Deps) error {
+func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, deps Container) error {
 	app, err := newApp(deps)
 
 	if err != nil {
@@ -22,17 +24,17 @@ func RegisterRoutes(mux *http.ServeMux, deps Deps) error {
 		return deps.RequireAuth(h)
 	}
 
-	mux.Handle("/dashboard", auth(app.dashboardHandler))
-	mux.Handle("/contacts", auth(app.contactsHandler))
-	mux.Handle("/contacts/create", auth(app.contactsCreateHandler))
+	routes.Handle("dashboard", auth(app.dashboardHandler), mux)
+	routes.Handle("contacts.index", auth(app.contactsHandler), mux)
+	routes.Handle("contacts.create", auth(app.contactsCreateHandler), mux)
 	mux.Handle("/contacts/", auth(app.contactByIDHandler))
-	mux.Handle("/organizations", auth(app.organizationsHandler))
+	routes.Handle("organizations.index", auth(app.organizationsHandler), mux)
 	mux.Handle("/organizations/", auth(app.organizationByIDHandler))
 
 	return nil
 }
 
-func newApp(deps Deps) (app, error) {
+func newApp(deps Container) (app, error) {
 	repo, err := newRepository(deps.DB)
 
 	if err != nil {
@@ -40,7 +42,7 @@ func newApp(deps Deps) (app, error) {
 	}
 
 	return app{
-		deps:    deps,
-		service: newService(repo),
+		deps: deps,
+		repo: repo,
 	}, nil
 }

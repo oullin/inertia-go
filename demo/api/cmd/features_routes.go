@@ -8,7 +8,7 @@ import (
 )
 
 func (rt *runtime) registerFeatureRoutes(mux *http.ServeMux, authApp auth.App) {
-	features.RegisterRoutes(mux, features.Deps{
+	features.RegisterRoutes(rt.routes, mux, features.Container{
 		DB:          rt.db,
 		RequireAuth: authApp.RequireAuth,
 		Render:      rt.renderPage,

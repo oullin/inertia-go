@@ -11,12 +11,12 @@ type databaseRepository struct {
 	db *sql.DB
 }
 
-func newRepository(db *sql.DB) (databaseRepository, error) {
+func newRepository(db *sql.DB) (*databaseRepository, error) {
 	if db == nil {
-		return databaseRepository{}, errors.New("crm: database connection must not be nil")
+		return nil, errors.New("crm: database connection must not be nil")
 	}
 
-	return databaseRepository{db: db}, nil
+	return &databaseRepository{db: db}, nil
 }
 
 func (r databaseRepository) ListRecentNotes(limit int) ([]database.Note, error) {

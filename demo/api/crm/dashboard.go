@@ -11,7 +11,7 @@ import (
 )
 
 func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
-	activity, err := a.service.recentActivity(10)
+	activity, err := a.repo.ListRecentNotes(10)
 
 	if err != nil {
 		slog.Error("recent activity", "error", err)
@@ -27,7 +27,7 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			n, err := a.service.countContacts()
+			n, err := a.repo.CountContacts()
 
 			if err != nil {
 				slog.Error("count contacts", "error", err)
@@ -40,7 +40,7 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			n, err := a.service.countOrganizations()
+			n, err := a.repo.CountOrganizations()
 
 			if err != nil {
 				slog.Error("count organizations", "error", err)
@@ -53,7 +53,7 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			n, err := a.service.countNotes()
+			n, err := a.repo.CountNotes()
 
 			if err != nil {
 				slog.Error("count notes", "error", err)

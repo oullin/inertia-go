@@ -3,6 +3,7 @@ package wayfinder
 import (
 	"encoding/json"
 	"log"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -105,6 +106,22 @@ func (r *Registry) URL(name string, params map[string]string) string {
 	return result
 }
 
+// Handle registers an HTTP handler on the given mux using the pattern
+// stored for the named route. Unknown names log a warning and skip.
+func (r *Registry) Handle(name string, handler http.Handler, mux *http.ServeMux) {
+	r.mu.RLock()
+	route, ok := r.routes[name]
+	r.mu.RUnlock()
+
+	if !ok {
+		log.Printf("wayfinder: Handle: unknown route %q, skipping", name)
+
+		return
+	}
+
+	mux.Handle(route.Pattern, handler)
+}
+
 func (r *Registry) Manifest() map[string]string {
 	r.mu.RLock()
 
@@ -166,6 +183,12 @@ func (g *Group) Add(name, method, pattern string) *Group {
 	g.registry.Add(fullName, method, fullPattern)
 
 	return g
+}
+
+// Handle registers an HTTP handler via the parent registry using the
+// group-scoped route name.
+func (g *Group) Handle(name string, handler http.Handler, mux *http.ServeMux) {
+	g.registry.Handle(g.namePrefix+"."+name, handler, mux)
 }
 
 // Group creates a nested sub-group.

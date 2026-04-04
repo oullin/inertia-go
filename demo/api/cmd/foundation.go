@@ -96,7 +96,7 @@ func initRoutes() *wayfinder.Registry {
 		g.Add("progress-slow", "GET", "/progress/slow")
 	})
 	routes.Group("features.errors", "/features/errors", func(g *wayfinder.Group) {
-		g.Add("http-exceptions", "GET", "/http-exceptions")
+		g.Add("http-error", "GET", "/http-error")
 		g.Add("network-errors", "GET", "/network-errors")
 	})
 	routes.Group("features.http", "/features/http", func(g *wayfinder.Group) {

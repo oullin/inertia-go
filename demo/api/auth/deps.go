@@ -8,8 +8,8 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
-// Deps contains the host application integrations required by the auth package.
-type Deps struct {
+// Container contains the host application integrations required by the auth package.
+type Container struct {
 	DB           *sql.DB
 	CryptoKey    []byte
 	Render       func(http.ResponseWriter, *http.Request, string, httpx.Props)

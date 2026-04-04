@@ -134,7 +134,7 @@ const featureGroups = computed(() => [
   {
     label: "Errors",
     items: [
-      { title: "HTTP Exceptions", href: featureRoute("features.errors.http-exceptions") },
+      { title: "HTTP Errors", href: featureRoute("features.errors.http-error") },
       { title: "Network Errors", href: featureRoute("features.errors.network-errors") },
     ],
   },

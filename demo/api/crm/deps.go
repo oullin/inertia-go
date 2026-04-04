@@ -9,8 +9,8 @@ import (
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
-// Deps contains the host application integrations required by the CRM package.
-type Deps struct {
+// Container contains the host application integrations required by the CRM package.
+type Container struct {
 	DB          *sql.DB
 	RequireAuth func(http.Handler) http.Handler
 	Render      func(http.ResponseWriter, *http.Request, string, httpx.Props)
