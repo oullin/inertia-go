@@ -20,6 +20,7 @@ import (
 )
 
 //go:embed resources/views/app.html
+var rootTemplateFS embed.FS
 
 type runtime struct {
 	db         *sql.DB
@@ -29,8 +30,6 @@ type runtime struct {
 	flashStore *flash.CookieStore
 	routes     *wayfinder.Registry
 }
-
-var rootTemplateFS embed.FS
 
 func main() {
 	tmpl, err := rootTemplateFS.ReadFile("resources/views/app.html")
