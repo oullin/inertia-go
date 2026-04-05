@@ -13,8 +13,7 @@ format:
 	cd demo/app && npx oxlint --fix src
 	cd core && go vet ./...
 	cd demo/api && go vet ./...
-	$(GO_FMT) format --host-path $(ROOT_PATH)/core
-	$(GO_FMT) format --host-path $(ROOT_PATH)/demo/api
+	$(GO_FMT)
 
 test:
 	cd core && go test -coverprofile=$(ROOT_PATH)/storage/.cache/coverage.out ./...

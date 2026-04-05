@@ -6,4 +6,9 @@ services:
             - .:/work
         environment:
             HOST_PROJECT_PATH: ${PWD}
-        command: ['help']
+        command:
+            - format
+            - --host-path
+            - ${PWD}/core
+            - --host-path
+            - ${PWD}/demo/api

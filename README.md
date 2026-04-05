@@ -31,6 +31,22 @@ go get github.com/oullin/inertia-go/core
 
 **Requires Go 1.26+**
 
+## Development Formatting
+
+From the repo root, format both Go trees with the repo-local Compose file:
+
+```bash
+docker compose -f go-fmt.compose.yaml run --rm go-fmt
+```
+
+Check both Go trees explicitly with repeated `--host-path` values:
+
+```bash
+docker compose -f go-fmt.compose.yaml run --rm go-fmt check --host-path "$PWD/core" --host-path "$PWD/demo/api"
+```
+
+The Compose service bakes in the default `format` command for `core` and `demo/api`. When you override that command with `check` or another subcommand, you must pass both `--host-path` arguments again, matching the upstream consumer workflow.
+
 ## Quick Start
 
 ```go
