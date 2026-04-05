@@ -100,6 +100,7 @@ func TestCSRFConfig_Defaults_FillsEmptyFields(t *testing.T) {
 	t.Parallel()
 
 	cfg := config.CSRFConfig{}
+
 	cfg.Defaults()
 
 	if cfg.CookieName != "XSRF-TOKEN" {

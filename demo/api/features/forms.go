@@ -20,6 +20,7 @@ func (a app) useFormHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("parse form", "error", err)
+
 			http.Error(w, "bad request", http.StatusBadRequest)
 
 			return
@@ -30,16 +31,17 @@ func (a app) useFormHandler(w http.ResponseWriter, r *http.Request) {
 
 		errors := httpx.ValidationErrors{}
 
-		if name == "" {
+		if strings.TrimSpace(name) == "" {
 			errors["name"] = "Name is required."
 		}
 
-		if email == "" {
+		if strings.TrimSpace(email) == "" {
 			errors["email"] = "Email is required."
 		}
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 			a.container.Render(w, r.WithContext(ctx), "Features/Forms/UseForm", httpx.Props{})
 
 			return
@@ -62,6 +64,7 @@ func (a app) formComponentHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("parse form", "error", err)
+
 			http.Error(w, "bad request", http.StatusBadRequest)
 
 			return
@@ -71,12 +74,13 @@ func (a app) formComponentHandler(w http.ResponseWriter, r *http.Request) {
 
 		errors := httpx.ValidationErrors{}
 
-		if name == "" {
+		if strings.TrimSpace(name) == "" {
 			errors["name"] = "Name is required."
 		}
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 			a.container.Render(w, r.WithContext(ctx), "Features/Forms/FormComponent", httpx.Props{})
 
 			return
@@ -99,6 +103,7 @@ func (a app) fileUploadsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("parse form", "error", err)
+
 			http.Error(w, "bad request", http.StatusBadRequest)
 
 			return
@@ -134,6 +139,7 @@ func (a app) validationHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("parse form", "error", err)
+
 			http.Error(w, "bad request", http.StatusBadRequest)
 
 			return
@@ -145,15 +151,15 @@ func (a app) validationHandler(w http.ResponseWriter, r *http.Request) {
 		email := strings.TrimSpace(r.FormValue("email"))
 		age := strings.TrimSpace(r.FormValue("age"))
 
-		if name == "" {
+		if strings.TrimSpace(name) == "" {
 			errors["name"] = "Name is required."
 		}
 
-		if email == "" {
+		if strings.TrimSpace(email) == "" {
 			errors["email"] = "That doesn't look like a valid email."
 		}
 
-		if age != "" {
+		if strings.TrimSpace(age) != "" {
 			if n, err := strconv.Atoi(age); err != nil || n < 18 || n > 120 {
 				errors["age"] = "You must be at least 18 years old."
 			}
@@ -161,6 +167,7 @@ func (a app) validationHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 			a.container.Render(w, r.WithContext(ctx), "Features/Forms/Validation", httpx.Props{})
 
 			return
@@ -185,6 +192,7 @@ func (a app) validationSecondaryHandler(w http.ResponseWriter, r *http.Request) 
 
 	if err := httpx.ParseForm(r); err != nil {
 		slog.Error("parse form", "error", err)
+
 		http.Error(w, "bad request", http.StatusBadRequest)
 
 		return
@@ -193,12 +201,13 @@ func (a app) validationSecondaryHandler(w http.ResponseWriter, r *http.Request) 
 	errors := httpx.ValidationErrors{}
 	feedback := strings.TrimSpace(r.FormValue("feedback"))
 
-	if feedback == "" {
+	if strings.TrimSpace(feedback) == "" {
 		errors["feedback"] = "Feedback is required."
 	}
 
 	if len(errors) > 0 {
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 		a.container.Render(w, r.WithContext(ctx), "Features/Forms/Validation", httpx.Props{})
 
 		return
@@ -218,6 +227,7 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("parse form", "error", err)
+
 			http.Error(w, "bad request", http.StatusBadRequest)
 
 			return
@@ -234,7 +244,7 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 			errors["username"] = "Username must be 3-20 characters."
 		}
 
-		if email == "" || !strings.Contains(email, "@") {
+		if strings.TrimSpace(email) == "" || !strings.Contains(email, "@") {
 			errors["email"] = "A valid email is required."
 		}
 
@@ -248,6 +258,7 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(errors) > 0 {
 			ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 			a.container.Render(w, r.WithContext(ctx), "Features/Forms/Precognition", httpx.Props{})
 
 			return
@@ -268,6 +279,7 @@ func (a app) optimisticUpdatesHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("list contacts", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -327,6 +339,7 @@ func (a app) dottedKeysHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("parse form", "error", err)
+
 			http.Error(w, "bad request", http.StatusBadRequest)
 
 			return

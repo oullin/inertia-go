@@ -35,6 +35,7 @@ func LoadCSRF(path string) (CSRFConfig, error) {
 	defaults := DefaultCSRF()
 
 	v := viper.New()
+
 	v.SetDefault("cookie_name", defaults.CookieName)
 	v.SetDefault("secure", defaults.Secure)
 	v.SetDefault("same_site", defaults.SameSite)
@@ -48,6 +49,7 @@ func LoadCSRF(path string) (CSRFConfig, error) {
 	}
 
 	v.SetEnvPrefix("INERTIA_CSRF")
+
 	v.AutomaticEnv()
 
 	var cfg CSRFConfig
@@ -60,11 +62,11 @@ func LoadCSRF(path string) (CSRFConfig, error) {
 }
 
 func (c *CSRFConfig) Defaults() {
-	if c.CookieName == "" {
+	if strings.TrimSpace(c.CookieName) == "" {
 		c.CookieName = "XSRF-TOKEN"
 	}
 
-	if c.SameSite == "" {
+	if strings.TrimSpace(c.SameSite) == "" {
 		c.SameSite = "lax"
 	}
 }

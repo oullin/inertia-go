@@ -27,6 +27,7 @@ func FindCSRFMetaToken(t *testing.T, body string) string {
 	t.Helper()
 
 	const prefix = `name="csrf-token" content="`
+
 	start := strings.Index(body, prefix)
 
 	if start == -1 {

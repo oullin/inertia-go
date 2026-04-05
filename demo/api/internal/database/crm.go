@@ -13,13 +13,17 @@ import (
 // ErrNotFound is returned when an UPDATE or DELETE affects zero rows.
 
 // CursorPage holds cursor-paginated results.
+
+// OffsetPage holds offset-paginated results.
+
+var ErrNotFound = errors.New("database: record not found")
+
 type CursorPage[T any] struct {
 	Data       []T     `json:"data"`
 	NextCursor *string `json:"next_cursor"`
 	PrevCursor *string `json:"prev_cursor"`
 }
 
-// OffsetPage holds offset-paginated results.
 type OffsetPage[T any] struct {
 	Data        []T `json:"data"`
 	Total       int `json:"total"`
@@ -64,8 +68,6 @@ type Note struct {
 	Body        string
 	CreatedAt   time.Time
 }
-
-var ErrNotFound = errors.New("database: record not found")
 
 func checkRowsAffected(result sql.Result) error {
 	n, err := result.RowsAffected()
@@ -138,7 +140,7 @@ func ListOrganizations(db *sql.DB, search string) ([]Organization, error) {
 
 	var args []any
 
-	if search = strings.TrimSpace(search); search != "" {
+	if search = strings.TrimSpace(search); strings.TrimSpace(search) != "" {
 		query += " WHERE lower(o.name) LIKE lower(?)"
 		args = append(args, "%"+search+"%")
 	}
@@ -238,7 +240,7 @@ func ListContacts(db *sql.DB, search string, favoritesOnly bool) ([]Contact, err
 
 	var args []any
 
-	if search = strings.TrimSpace(search); search != "" {
+	if search = strings.TrimSpace(search); strings.TrimSpace(search) != "" {
 		query += `
 			AND (
 				lower(c.first_name) LIKE lower(?)
@@ -442,7 +444,7 @@ func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor
 
 	var args []any
 
-	if search = strings.TrimSpace(search); search != "" {
+	if search = strings.TrimSpace(search); strings.TrimSpace(search) != "" {
 		query += `
 			AND (
 				lower(c.first_name) LIKE lower(?)
@@ -459,7 +461,7 @@ func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor
 		query += " AND c.is_favorite = 1"
 	}
 
-	if cursor != nil && *cursor != "" {
+	if cursor != nil && strings.TrimSpace(*cursor) != "" {
 		if direction == "prev" {
 			query += " AND c.id < ?"
 		} else {
@@ -504,12 +506,12 @@ func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor
 	page := CursorPage[Contact]{Data: all}
 
 	if len(all) > 0 {
-		if (direction != "prev" && hasExtra) || (direction == "prev" && cursor != nil && *cursor != "") {
+		if (direction != "prev" && hasExtra) || (direction == "prev" && cursor != nil && strings.TrimSpace(*cursor) != "") {
 			next := fmt.Sprintf("%d", all[len(all)-1].ID)
 			page.NextCursor = &next
 		}
 
-		if (direction == "prev" && hasExtra) || (direction != "prev" && cursor != nil && *cursor != "") {
+		if (direction == "prev" && hasExtra) || (direction != "prev" && cursor != nil && strings.TrimSpace(*cursor) != "") {
 			prev := fmt.Sprintf("%d", all[0].ID)
 			page.PrevCursor = &prev
 		}
@@ -538,7 +540,7 @@ func ListOrganizationsPaginated(db *sql.DB, search string, page int, perPage int
 
 	var countArgs []any
 
-	if search = strings.TrimSpace(search); search != "" {
+	if search = strings.TrimSpace(search); strings.TrimSpace(search) != "" {
 		countQuery += " WHERE lower(o.name) LIKE lower(?)"
 		query += " WHERE lower(o.name) LIKE lower(?)"
 		countArgs = append(countArgs, "%"+search+"%")
@@ -609,7 +611,7 @@ func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string
 
 	args := []any{organizationID}
 
-	if cursor != nil && *cursor != "" {
+	if cursor != nil && strings.TrimSpace(*cursor) != "" {
 		if direction == "prev" {
 			query += " AND c.id < ?"
 		} else {
@@ -654,12 +656,12 @@ func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string
 	result := CursorPage[Contact]{Data: all}
 
 	if len(all) > 0 {
-		if (direction != "prev" && hasExtra) || (direction == "prev" && cursor != nil && *cursor != "") {
+		if (direction != "prev" && hasExtra) || (direction == "prev" && cursor != nil && strings.TrimSpace(*cursor) != "") {
 			next := fmt.Sprintf("%d", all[len(all)-1].ID)
 			result.NextCursor = &next
 		}
 
-		if (direction == "prev" && hasExtra) || (direction != "prev" && cursor != nil && *cursor != "") {
+		if (direction == "prev" && hasExtra) || (direction != "prev" && cursor != nil && strings.TrimSpace(*cursor) != "") {
 			prev := fmt.Sprintf("%d", all[0].ID)
 			result.PrevCursor = &prev
 		}

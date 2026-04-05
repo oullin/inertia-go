@@ -73,6 +73,7 @@ func TestSetAndConsume(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	req.AddCookie(findCookie(t, rec, "test_flash"))
 
 	rec2 := httptest.NewRecorder()
@@ -116,9 +117,11 @@ func TestConsumeMirrorsSecurityAttributes(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	req.AddCookie(findCookie(t, rec, "sec_flash"))
 
 	rec2 := httptest.NewRecorder()
+
 	s.Consume(rec2, req)
 
 	dc := findCookie(t, rec2, "sec_flash")
@@ -155,6 +158,7 @@ func TestConsumeWithInvalidJSON(t *testing.T) {
 
 	s := NewCookieStore(WithCookieName("test_flash"))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	req.AddCookie(&http.Cookie{Name: "test_flash", Value: "not-json"})
 
 	rec := httptest.NewRecorder()
@@ -178,6 +182,7 @@ func TestConsumeAfterConsumeReturnsNil(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	req.AddCookie(findCookie(t, rec, "test_flash"))
 
 	rec2 := httptest.NewRecorder()

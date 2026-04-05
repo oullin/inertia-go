@@ -24,12 +24,14 @@ func TestMiddlewareConsumesFlash(t *testing.T) {
 	data, _ := json.Marshal(msg)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	req.AddCookie(&http.Cookie{
 		Name:  "test_flash",
 		Value: url.QueryEscape(string(data)),
 	})
 
 	rec := httptest.NewRecorder()
+
 	handler.ServeHTTP(rec, req)
 
 	// Verify the cookie was consumed (deleted).
@@ -57,11 +59,13 @@ func TestMiddlewareNoFlash(t *testing.T) {
 
 	handler := Middleware(s)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
+
 	handler.ServeHTTP(rec, req)
 
 	if !called {
@@ -84,11 +88,13 @@ func TestMiddlewareNilStoreNoOp(t *testing.T) {
 
 	handler := Middleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
+
 	handler.ServeHTTP(rec, req)
 
 	if !called {
@@ -109,12 +115,14 @@ func TestMiddlewareCustomPropKey(t *testing.T) {
 	data, _ := json.Marshal(msg)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	req.AddCookie(&http.Cookie{
 		Name:  "test_flash",
 		Value: url.QueryEscape(string(data)),
 	})
 
 	rec := httptest.NewRecorder()
+
 	handler.ServeHTTP(rec, req)
 
 	// Verify cookie was still consumed.

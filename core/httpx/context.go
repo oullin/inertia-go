@@ -2,13 +2,13 @@ package httpx
 
 import "context"
 
-type ctxKey struct{ name string }
-
 var (
 	ctxKeyCSRFToken    = &ctxKey{"csrfToken"}
 	ctxKeyLocale       = &ctxKey{"locale"}
 	ctxKeyPrecognition = &ctxKey{"precognition"}
 )
+
+type ctxKey struct{ name string }
 
 // SetCSRFToken stores a CSRF token in the request context. When present,
 // Render automatically adds <meta name="csrf-token" content="TOKEN"> to

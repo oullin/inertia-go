@@ -23,11 +23,11 @@ func engine() *validator.Validate {
 		instance.RegisterTagNameFunc(func(fld reflect.StructField) string {
 			name := fld.Tag.Get("json")
 
-			if name == "" {
+			if strings.TrimSpace(name) == "" {
 				name = fld.Tag.Get("form")
 			}
 
-			if name == "" {
+			if strings.TrimSpace(name) == "" {
 				return fld.Name
 			}
 

@@ -15,6 +15,7 @@ func TestAdd(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	route, ok := reg.Lookup("login")
@@ -36,6 +37,7 @@ func TestAddNormalizesMethod(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "post", "/login")
 
 	route, _ := reg.Lookup("login")
@@ -65,6 +67,7 @@ func TestGroup(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Group("contacts", "/contacts", func(g *Group) {
 		g.Add("index", "GET", "")
 		g.Add("show", "GET", "/{contact}")
@@ -104,8 +107,10 @@ func TestNestedGroup(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Group("contacts", "/contacts", func(g *Group) {
 		g.Add("index", "GET", "")
+
 		g.Group("notes", "", func(ng *Group) {
 			ng.Add("store", "POST", "/{contact}/notes")
 		})
@@ -126,6 +131,7 @@ func TestURL(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	url := reg.URL("contacts.show", map[string]string{"contact": "42"})
@@ -139,6 +145,7 @@ func TestURLEscapesParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	got := reg.URL("contacts.show", map[string]string{"contact": "foo/bar?baz#qux"})
@@ -173,6 +180,7 @@ func TestURLNoParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("dashboard", "GET", "/dashboard")
 
 	url := reg.URL("dashboard", nil)
@@ -186,6 +194,7 @@ func TestURLEncodesParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	url := reg.URL("contacts.show", map[string]string{"contact": "hello world/foo"})
@@ -199,6 +208,7 @@ func TestManifest(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
@@ -217,6 +227,7 @@ func TestManifestProps(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	props := reg.ManifestProps()
@@ -230,6 +241,7 @@ func TestExportOrder(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("c", "GET", "/c")
 	reg.Add("a", "GET", "/a")
 	reg.Add("b", "GET", "/b")
@@ -249,6 +261,7 @@ func TestToJSON(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	data, err := reg.ToJSON()
@@ -310,6 +323,7 @@ func TestAddOverwrite(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 	reg.Add("login", "POST", "/auth/login")
 
@@ -331,12 +345,14 @@ func TestHandle_RegistersOnMux(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	mux := http.NewServeMux()
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
+
 		w.Write([]byte("login page"))
 	})
 
@@ -344,6 +360,7 @@ func TestHandle_RegistersOnMux(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	rec := httptest.NewRecorder()
+
 	mux.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
@@ -383,12 +400,14 @@ func TestGroupHandle(t *testing.T) {
 
 		g.Handle("index", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
+
 			w.Write([]byte("contacts list"))
 		}), mux)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/contacts", nil)
 	rec := httptest.NewRecorder()
+
 	mux.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {

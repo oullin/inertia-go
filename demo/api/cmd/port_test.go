@@ -26,7 +26,9 @@ func TestLoginHandlerRendersPage(t *testing.T) {
 	_, testMux := newPortTestMux(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+
 	req.Header.Set(httpx.HeaderInertia, "true")
+
 	req.RequestURI = "/login"
 	w := httptest.NewRecorder()
 
@@ -37,7 +39,9 @@ func TestLoginHandlerRendersPage(t *testing.T) {
 	}
 
 	page := assert.AssertFromBytes(t, w.Body.Bytes())
+
 	page.AssertComponent(t, "Auth/Login")
+
 	page.AssertHasProp(t, "auth")
 	page.AssertHasProp(t, "routes")
 }
@@ -53,9 +57,12 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 	}.Encode())
 
 	req := httptest.NewRequest(http.MethodPost, "/login", body)
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
+
 	req.AddCookie(csrfCookie)
+
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -91,11 +98,15 @@ func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 	}.Encode())
 
 	req := httptest.NewRequest(http.MethodPost, "/login", body)
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
 	req.Header.Set(httpx.HeaderInertia, "true")
+
 	req.RequestURI = "/login"
+
 	req.AddCookie(csrfCookie)
+
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -105,6 +116,7 @@ func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 	}
 
 	page := assert.AssertFromBytes(t, w.Body.Bytes())
+
 	page.AssertComponent(t, "Auth/Login")
 
 	errors, ok := page.Props["errors"].(map[string]any)
@@ -140,9 +152,13 @@ func TestDashboardRendersForAuthenticatedUser(t *testing.T) {
 	encrypted := mustEncryptSession(t, "1")
 
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+
 	req.Header.Set(httpx.HeaderInertia, "true")
+
 	req.RequestURI = "/dashboard"
+
 	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -152,7 +168,9 @@ func TestDashboardRendersForAuthenticatedUser(t *testing.T) {
 	}
 
 	page := assert.AssertFromBytes(t, w.Body.Bytes())
+
 	page.AssertComponent(t, "Crm/Dashboard")
+
 	page.AssertHasProp(t, "recentActivity")
 	page.AssertHasProp(t, "auth")
 }
@@ -175,7 +193,9 @@ func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+
 			req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
 			w := httptest.NewRecorder()
 
 			testMux.ServeHTTP(w, req)
@@ -208,10 +228,13 @@ func TestStoreContactCreatesRecord(t *testing.T) {
 	}.Encode())
 
 	req := httptest.NewRequest(http.MethodPost, "/contacts", body)
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
+
 	req.AddCookie(csrfCookie)
 	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -248,10 +271,13 @@ func TestStoreNoteAppendsActivity(t *testing.T) {
 	}.Encode())
 
 	req := httptest.NewRequest(http.MethodPost, "/contacts/1/notes", body)
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-CSRF-TOKEN", rawToken)
+
 	req.AddCookie(csrfCookie)
 	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
 	w := httptest.NewRecorder()
 
 	testMux.ServeHTTP(w, req)
@@ -306,6 +332,7 @@ func newPortTestMux(t *testing.T) (*runtime, http.Handler) {
 
 	mux := http.NewServeMux()
 	authApp := rt.newAuth()
+
 	authApp.RegisterRoutes(mux)
 
 	if err := rt.registerCRMRoutes(mux, authApp); err != nil {
@@ -339,6 +366,7 @@ func issuePortCSRFCookie(t *testing.T, handler http.Handler, path string) (*http
 
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, req)
 
 	return testutil.FindCookie(t, w, "XSRF-TOKEN"), testutil.FindCSRFMetaToken(t, w.Body.String())

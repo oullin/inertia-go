@@ -8,11 +8,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var errInvalidCredentials = errors.New("auth: invalid credentials")
+
 type service struct {
 	db *sql.DB
 }
-
-var errInvalidCredentials = errors.New("auth: invalid credentials")
 
 func newService(db *sql.DB) service {
 	return service{db: db}

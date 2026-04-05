@@ -1,7 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, nextTick } from "vue";
 import { Head, Link, usePage } from "@inertiajs/vue3";
-import { IconDashboard, IconUsers, IconCode, IconFileText } from "@tabler/icons-vue";
+import {
+  IconDashboard,
+  IconUsers,
+  IconCode,
+  IconFileText,
+  IconDots,
+  IconLogout,
+} from "@tabler/icons-vue";
+import { Avatar, AvatarFallback } from "@/js/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/js/components/ui/dropdown-menu";
 import LoadingBar from "@/js/components/ui/loading-bar/LoadingBar.vue";
 import { Separator } from "@/js/components/ui/separator";
 import {
@@ -230,17 +244,46 @@ const featureGroups = computed(() => [
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter v-if="user" class="border-t">
-        <div class="flex items-center justify-between gap-3 px-2 py-1 text-sm">
-          <div class="min-w-0">
-            <p class="truncate font-medium">{{ user.name }}</p>
-            <p class="text-muted-foreground truncate text-xs">{{ user.email }}</p>
-          </div>
-          <SidebarMenuButton as-child size="sm" tooltip="Log out">
-            <Link :href="appRoutes.logout().url" method="post" as="button" class="cursor-pointer">
-              <span>Log out</span>
-            </Link>
-          </SidebarMenuButton>
-        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <SidebarMenuButton size="lg" class="w-full cursor-pointer">
+                  <Avatar class="size-8 rounded-lg">
+                    <AvatarFallback class="rounded-lg">
+                      {{
+                        user.name
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)
+                      }}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div class="grid flex-1 text-left text-sm leading-tight">
+                    <span class="truncate font-medium">{{ user.name }}</span>
+                    <span class="text-muted-foreground truncate text-xs">{{ user.email }}</span>
+                  </div>
+                  <IconDots class="ml-auto !size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" class="w-(--reka-popper-anchor-width)">
+                <DropdownMenuItem as-child>
+                  <Link
+                    :href="appRoutes.logout().url"
+                    method="post"
+                    as="button"
+                    class="w-full cursor-pointer"
+                  >
+                    <IconLogout class="!size-4" />
+                    Log out
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
 

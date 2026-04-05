@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/config"
@@ -14,7 +15,7 @@ func TestDefaultCrypto(t *testing.T) {
 
 	cfg := config.DefaultCrypto()
 
-	if cfg.Key != "" {
+	if strings.TrimSpace(cfg.Key) != "" {
 		t.Errorf("Key = %q, want empty", cfg.Key)
 	}
 }
@@ -47,6 +48,7 @@ func TestLoadCrypto(t *testing.T) {
 
 func TestLoadCrypto_EnvOverride(t *testing.T) {
 	envKey := base64.StdEncoding.EncodeToString([]byte("env-key-32-bytes-exactly-here!!!"))
+
 	t.Setenv("INERTIA_CRYPTO_KEY", envKey)
 
 	dir := t.TempDir()

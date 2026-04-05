@@ -191,7 +191,7 @@ func TestEncryptDecrypt_EmptyPlaintext(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if decrypted != "" {
+	if strings.TrimSpace(decrypted) != "" {
 		t.Errorf("decrypted = %q, want empty", decrypted)
 	}
 }
@@ -248,6 +248,7 @@ func TestDecrypt_InvalidCiphertextLength(t *testing.T) {
 
 	// Ciphertext not multiple of block size (17 bytes).
 	iv := make([]byte, 16)
+
 	rand.Read(iv)
 
 	ivB64 := base64.StdEncoding.EncodeToString(iv)
@@ -281,6 +282,7 @@ func TestDecrypt_EmptyCiphertext(t *testing.T) {
 	key := testKey(t)
 
 	iv := make([]byte, 16)
+
 	rand.Read(iv)
 
 	ivB64 := base64.StdEncoding.EncodeToString(iv)
@@ -409,6 +411,7 @@ func TestDecrypt_InvalidValueBase64(t *testing.T) {
 
 	key := testKey(t)
 	iv := make([]byte, 16)
+
 	rand.Read(iv)
 
 	p := struct {
@@ -436,6 +439,7 @@ func TestDecrypt_InvalidValueBase64(t *testing.T) {
 
 func computeTestMAC(ivB64, valueB64 string, key []byte) string {
 	h := hmac.New(sha256.New, key)
+
 	h.Write([]byte(ivB64 + valueB64))
 
 	return hex.EncodeToString(h.Sum(nil))

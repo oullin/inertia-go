@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/oullin/inertia-go/core/httpx"
@@ -56,6 +57,7 @@ func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("list contacts", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -89,7 +91,7 @@ func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
 func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 	var cursor *string
 
-	if c := r.URL.Query().Get("cursor"); c != "" {
+	if c := r.URL.Query().Get("cursor"); strings.TrimSpace(c) != "" {
 		cursor = &c
 	}
 
@@ -97,6 +99,7 @@ func (a app) infiniteScrollHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("list contacts paginated", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return

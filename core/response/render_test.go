@@ -11,6 +11,8 @@ import (
 	"github.com/oullin/inertia-go/core/response"
 )
 
+var errMarshal = &marshalError{}
+
 type testMarshaler struct{}
 
 type failMarshaler struct{}
@@ -22,8 +24,6 @@ func (m *testMarshaler) Unmarshal(b []byte, v any) error { return json.Unmarshal
 
 func (m *failMarshaler) Marshal(v any) ([]byte, error)   { return nil, errMarshal }
 func (m *failMarshaler) Unmarshal(b []byte, v any) error { return errMarshal }
-
-var errMarshal = &marshalError{}
 
 func (e *marshalError) Error() string { return "marshal failed" }
 
@@ -298,6 +298,7 @@ func TestWriteJSON_IncludesMergePropsField(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -319,6 +320,7 @@ func TestWriteJSON_IncludesDeepMergePropsField(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -342,6 +344,7 @@ func TestWriteJSON_IncludesDeferredPropsField(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -374,6 +377,7 @@ func TestWriteJSON_IncludesScrollPropsField(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -401,6 +405,7 @@ func TestWriteJSON_IncludesOncePropsField(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -431,6 +436,7 @@ func TestWriteJSON_OncePropsWithExpiresAt(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -452,6 +458,7 @@ func TestWriteJSON_EncryptHistoryTrue(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -473,6 +480,7 @@ func TestWriteJSON_ClearHistoryTrue(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -493,6 +501,7 @@ func TestWriteJSON_AllFieldsOmittedWhenEmpty(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteJSON(w, page, &testMarshaler{})
 
 	body := w.Body.String()
@@ -574,6 +583,7 @@ func TestWriteHTML_EmbeddedJSONIsValid(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
+
 	response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	body := w.Body.String()
@@ -630,6 +640,7 @@ func TestWriteHTML_InertiaHeadIsEmpty(t *testing.T) {
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
 	w := httptest.NewRecorder()
+
 	response.WriteHTML(w, page, response.HTMLConfig{Template: tmpl, ContainerID: "app", Marshaler: &testMarshaler{}})
 
 	body := w.Body.String()
@@ -751,6 +762,7 @@ func TestWriteHTML_EmptyHeadBackwardCompat(t *testing.T) {
 	page := &response.Page{Component: "Page", Props: map[string]any{}, URL: "/", Version: "v1"}
 
 	w := httptest.NewRecorder()
+
 	response.WriteHTML(w, page, response.HTMLConfig{
 		Template:    tmpl,
 		ContainerID: "app",

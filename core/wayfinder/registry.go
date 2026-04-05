@@ -88,7 +88,9 @@ func (r *Registry) Group(namePrefix, pathPrefix string, fn func(g *Group)) *Regi
 
 func (r *Registry) URL(name string, params map[string]string) string {
 	r.mu.RLock()
+
 	route, ok := r.routes[name]
+
 	r.mu.RUnlock()
 
 	if !ok {
@@ -110,7 +112,9 @@ func (r *Registry) URL(name string, params map[string]string) string {
 // stored for the named route. Unknown names log a warning and skip.
 func (r *Registry) Handle(name string, handler http.Handler, mux *http.ServeMux) {
 	r.mu.RLock()
+
 	route, ok := r.routes[name]
+
 	r.mu.RUnlock()
 
 	if !ok {

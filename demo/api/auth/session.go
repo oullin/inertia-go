@@ -12,17 +12,18 @@ import (
 	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
-type ctxKey string
-
 // SessionCookieName is the cookie used by the demo auth flow.
 const SessionCookieName = "inertia_go_demo_session"
 
 const currentUserKey ctxKey = "current_user"
 
+type ctxKey string
+
 // WithCurrentUser resolves the demo user from the session cookie into request context.
 func (a App) WithCurrentUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), currentUserKey, a.loadCurrentUser(r))
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -65,7 +66,7 @@ func (a App) CurrentUser(r *http.Request) *database.User {
 func (a App) loadCurrentUser(r *http.Request) *database.User {
 	cookie, err := r.Cookie(SessionCookieName)
 
-	if err != nil || cookie.Value == "" || a.container.DB == nil {
+	if err != nil || strings.TrimSpace(cookie.Value) == "" || a.container.DB == nil {
 		return nil
 	}
 

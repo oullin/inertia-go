@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/oullin/inertia-go/core/httpx"
@@ -158,17 +159,19 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 	// 2. Locale head (from i18n middleware via SetLocale)
 	// 3. Per-request context head (from SetHead / SetTitle / SetMeta)
 	i.mu.RLock()
+
 	finalHead := i.head
+
 	i.mu.RUnlock()
 
 	if locale := httpx.LocaleFromContext(ctx); locale != nil {
 		finalHead = httpx.MergeHead(finalHead, locale.Head)
 
-		if finalHead.Lang == "" {
+		if strings.TrimSpace(finalHead.Lang) == "" {
 			finalHead.Lang = locale.Code
 		}
 
-		if finalHead.Direction == "" {
+		if strings.TrimSpace(finalHead.Direction) == "" {
 			finalHead.Direction = locale.Direction
 		}
 	}
@@ -176,7 +179,7 @@ func (i *Inertia) Render(w http.ResponseWriter, r *http.Request, component strin
 	finalHead = httpx.MergeHead(finalHead, headFromContext(ctx))
 
 	// Auto-append CSRF token as a meta tag when present in context.
-	if token := httpx.CSRFTokenFromContext(ctx); token != "" {
+	if token := httpx.CSRFTokenFromContext(ctx); strings.TrimSpace(token) != "" {
 		finalHead.Meta = append(finalHead.Meta, httpx.MetaTag{
 			Name:    "csrf-token",
 			Content: token,
@@ -204,6 +207,7 @@ func (i *Inertia) HandlePrecognition(w http.ResponseWriter, r *http.Request) (ha
 
 func (i *Inertia) writePrecognitionResponse(w http.ResponseWriter, r *http.Request) error {
 	errors := validationErrorsFromContext(r.Context())
+
 	w.Header().Set(httpx.HeaderPrecognition, "true")
 
 	// Filter errors to only requested fields when Validate-Only is present.
@@ -221,6 +225,7 @@ func (i *Inertia) writePrecognitionResponse(w http.ResponseWriter, r *http.Reque
 
 	if len(errors) > 0 {
 		w.Header().Set("Content-Type", "application/json")
+
 		w.WriteHeader(http.StatusUnprocessableEntity)
 
 		data, err := i.jsonMarshaler.Marshal(map[string]any{"errors": errors})
@@ -241,7 +246,9 @@ func (i *Inertia) writePrecognitionResponse(w http.ResponseWriter, r *http.Reque
 
 func (i *Inertia) Middleware(next http.Handler) http.Handler {
 	i.mu.RLock()
+
 	version := i.version
+
 	i.mu.RUnlock()
 
 	return middleware.New(middleware.Config{
@@ -262,7 +269,7 @@ func (i *Inertia) Redirect(w http.ResponseWriter, r *http.Request, url string, s
 func (i *Inertia) Back(w http.ResponseWriter, r *http.Request, status ...int) {
 	url := r.Header.Get("Referer")
 
-	if url == "" {
+	if strings.TrimSpace(url) == "" {
 		url = "/"
 	}
 
@@ -272,6 +279,7 @@ func (i *Inertia) Back(w http.ResponseWriter, r *http.Request, status ...int) {
 func (i *Inertia) Location(w http.ResponseWriter, r *http.Request, url string, status ...int) {
 	if httpx.IsInertiaRequest(r) {
 		w.Header().Set(httpx.HeaderLocation, url)
+
 		w.WriteHeader(http.StatusConflict)
 
 		return
@@ -282,7 +290,9 @@ func (i *Inertia) Location(w http.ResponseWriter, r *http.Request, url string, s
 
 func (i *Inertia) ShareProp(key string, val any) {
 	i.mu.Lock()
+
 	i.sharedProps[key] = val
+
 	i.mu.Unlock()
 }
 
@@ -320,6 +330,7 @@ func (i *Inertia) Version() string {
 
 func (i *Inertia) mergeProps(r *http.Request, pageProps ...httpx.Props) httpx.Props {
 	i.mu.RLock()
+
 	shared := make(httpx.Props, len(i.sharedProps))
 
 	for k, v := range i.sharedProps {

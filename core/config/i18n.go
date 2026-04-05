@@ -37,9 +37,12 @@ func DefaultI18n() *I18nConfig {
 // variable overrides (INERTIA_I18N_*) are applied.
 func LoadI18n(path string) (*I18nConfig, error) {
 	v := viper.New()
+
 	v.SetDefault("default_locale", "en")
 	v.SetDefault("url_prefix", false)
+
 	v.SetEnvPrefix("INERTIA_I18N")
+
 	v.AutomaticEnv()
 
 	v.SetConfigFile(path)
@@ -82,7 +85,7 @@ func LoadI18n(path string) (*I18nConfig, error) {
 		locale.Code = code
 	}
 
-	if cfg.DefaultLocale == "" {
+	if strings.TrimSpace(cfg.DefaultLocale) == "" {
 		cfg.DefaultLocale = "en"
 	}
 

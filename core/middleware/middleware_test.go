@@ -20,6 +20,7 @@ func TestMiddleware_SetsVaryHeader(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if got := w.Header().Get("Vary"); got != httpx.HeaderInertia {
@@ -35,11 +36,13 @@ func TestMiddleware_NonInertiaPassesThrough(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !called {
@@ -59,13 +62,17 @@ func TestMiddleware_VersionMatch(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !called {
@@ -84,10 +91,13 @@ func TestMiddleware_VersionMismatch(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	r.RequestURI = "/test"
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if called {
@@ -111,13 +121,17 @@ func TestMiddleware_VersionMismatchOnlyGET(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !called {
@@ -135,9 +149,12 @@ func TestMiddleware_RedirectConversion_PUTTo303(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodPut, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusSeeOther {
@@ -155,9 +172,12 @@ func TestMiddleware_RedirectConversion_PATCHTo303(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodPatch, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusSeeOther {
@@ -175,9 +195,12 @@ func TestMiddleware_RedirectConversion_DELETETo303(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodDelete, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusSeeOther {
@@ -195,9 +218,12 @@ func TestMiddleware_RedirectConversion_GETStays302(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusFound {
@@ -216,9 +242,12 @@ func TestMiddleware_WriteWithoutExplicitWriteHeader(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
@@ -241,9 +270,12 @@ func TestMiddleware_DoubleWriteHeaderIgnored(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusCreated {
@@ -261,13 +293,16 @@ func TestMiddleware_EmptyClientVersionPassesThrough(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	// No X-Inertia-Version header set.
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !called {
@@ -289,10 +324,13 @@ func TestMiddleware_EmptyServerVersionWithClientVersion(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusConflict {
@@ -308,10 +346,13 @@ func TestMiddleware_VersionMismatchPreservesQueryString(t *testing.T) {
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 	r := httptest.NewRequest(http.MethodGet, "/users?page=2&sort=name", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	r.RequestURI = "/users?page=2&sort=name"
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if loc := w.Header().Get(httpx.HeaderLocation); loc != "/users?page=2&sort=name" {
@@ -327,13 +368,17 @@ func TestMiddleware_VersionMismatchOnPOST_NoConflict(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !called {
@@ -349,13 +394,17 @@ func TestMiddleware_VersionMismatchOnDELETE_NoConflict(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodDelete, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !called {
@@ -375,9 +424,12 @@ func TestMiddleware_RedirectConversion_POSTStays302(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusFound {
@@ -395,9 +447,12 @@ func TestMiddleware_301NotConverted(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodPut, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusMovedPermanently {
@@ -415,9 +470,12 @@ func TestMiddleware_307NotConverted(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodDelete, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusTemporaryRedirect {
@@ -437,9 +495,12 @@ func TestMiddleware_VaryHeaderOnInertiaRequest(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if got := w.Header().Get("Vary"); got != httpx.HeaderInertia {
@@ -455,10 +516,13 @@ func TestMiddleware_VersionMismatchResponseHasNoBody(t *testing.T) {
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Body.Len() > 0 {
@@ -478,6 +542,7 @@ func TestMiddleware_NonInertia302NotConverted(t *testing.T) {
 	// Non-Inertia PUT request — no status interceptor.
 	r := httptest.NewRequest(http.MethodPut, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusFound {
@@ -499,10 +564,14 @@ func TestMiddleware_ConcurrentRequests(t *testing.T) {
 	for n := 0; n < 20; n++ {
 		go func() {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 			r.Header.Set(httpx.HeaderInertia, "true")
 			r.Header.Set(httpx.HeaderVersion, "v1")
+
 			w := httptest.NewRecorder()
+
 			handler.ServeHTTP(w, r)
+
 			done <- struct{}{}
 		}()
 	}

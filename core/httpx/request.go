@@ -22,7 +22,7 @@ func IsPrecognitionRequest(r *http.Request) bool {
 func ValidateOnly(r *http.Request) []string {
 	header := strings.TrimSpace(r.Header.Get(HeaderValidateOnly))
 
-	if header == "" {
+	if strings.TrimSpace(header) == "" {
 		return nil
 	}
 
@@ -30,7 +30,7 @@ func ValidateOnly(r *http.Request) []string {
 	result := make([]string, 0, len(fields))
 
 	for _, f := range fields {
-		if trimmed := strings.TrimSpace(f); trimmed != "" {
+		if trimmed := strings.TrimSpace(f); strings.TrimSpace(trimmed) != "" {
 			result = append(result, trimmed)
 		}
 	}

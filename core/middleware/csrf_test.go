@@ -43,11 +43,13 @@ func issueCSRFCookie(t *testing.T, mw func(http.Handler) http.Handler) (*http.Co
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawToken = httpx.CSRFTokenFromContext(r.Context())
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, req)
 
 	return findCookie(t, w, "XSRF-TOKEN"), rawToken
@@ -64,6 +66,7 @@ func TestCSRF_SetsCookieOnGET(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	resp := w.Result()
@@ -104,6 +107,7 @@ func TestCSRF_SafeMethodsPassThrough(t *testing.T) {
 	for _, method := range []string{http.MethodGet, http.MethodHead, http.MethodOptions} {
 		r := httptest.NewRequest(method, "/", nil)
 		w := httptest.NewRecorder()
+
 		handler.ServeHTTP(w, r)
 
 		if w.Code != http.StatusOK {
@@ -123,6 +127,7 @@ func TestCSRF_POSTWithoutToken_419(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != 419 {
@@ -142,10 +147,13 @@ func TestCSRF_POSTWithValidToken_XCSRF(t *testing.T) {
 	}))
 
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	postReq.AddCookie(tokenCookie)
+
 	postReq.Header.Set("X-CSRF-TOKEN", rawToken)
 
 	postW := httptest.NewRecorder()
+
 	postHandler.ServeHTTP(postW, postReq)
 
 	if postW.Code != http.StatusOK {
@@ -161,7 +169,9 @@ func TestCSRF_POSTWithValidToken_XXSRF(t *testing.T) {
 
 	// POST with cookie + X-XSRF-TOKEN header (encrypted value from cookie).
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	postReq.AddCookie(tokenCookie)
+
 	postReq.Header.Set("X-XSRF-TOKEN", tokenCookie.Value)
 
 	postW := httptest.NewRecorder()
@@ -182,7 +192,9 @@ func TestCSRF_POSTWithValidToken_XXSRF_URLEncoded(t *testing.T) {
 	tokenCookie, _ := issueCSRFCookie(t, mw)
 
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	postReq.AddCookie(tokenCookie)
+
 	postReq.Header.Set("X-XSRF-TOKEN", url.QueryEscape(tokenCookie.Value))
 
 	postW := httptest.NewRecorder()
@@ -204,10 +216,13 @@ func TestCSRF_POSTWithFormField(t *testing.T) {
 
 	// POST with _token form field.
 	form := url.Values{}
+
 	form.Set("_token", rawToken)
 
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(form.Encode()))
+
 	postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	postReq.AddCookie(tokenCookie)
 
 	postW := httptest.NewRecorder()
@@ -228,6 +243,7 @@ func TestCSRF_POSTWithWrongToken_419(t *testing.T) {
 
 	getReq := httptest.NewRequest(http.MethodGet, "/", nil)
 	getW := httptest.NewRecorder()
+
 	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})).ServeHTTP(getW, getReq)
@@ -235,10 +251,13 @@ func TestCSRF_POSTWithWrongToken_419(t *testing.T) {
 	tokenCookie := findCookie(t, getW, "XSRF-TOKEN")
 
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	postReq.AddCookie(tokenCookie)
+
 	postReq.Header.Set("X-CSRF-TOKEN", "wrong-token")
 
 	postW := httptest.NewRecorder()
+
 	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})).ServeHTTP(postW, postReq)
@@ -311,6 +330,7 @@ key: "` + encodeKey(key) + `"
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
@@ -356,6 +376,7 @@ func TestCSRF_SameSiteStrict(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
@@ -379,6 +400,7 @@ func TestCSRF_SameSiteNone(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
@@ -397,9 +419,11 @@ func TestCSRF_POSTWithMalformedCookie_RegeneratesToken(t *testing.T) {
 
 	// Send a GET with a cookie that has invalid encrypted value.
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.AddCookie(&http.Cookie{Name: "XSRF-TOKEN", Value: "not-valid-encrypted-payload"})
 
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	// Should succeed on GET (new token generated and cookie set).
@@ -431,14 +455,16 @@ func TestCSRF_StoresTokenInContext(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctxToken = httpx.CSRFTokenFromContext(r.Context())
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
-	if ctxToken == "" {
+	if strings.TrimSpace(ctxToken) == "" {
 		t.Error("expected CSRF token to be stored in context")
 	}
 }
@@ -460,7 +486,9 @@ func TestCSRF_POSTWithXXSRFToken_InvalidPayload_419(t *testing.T) {
 
 	// POST with tampered X-XSRF-TOKEN header.
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	postReq.AddCookie(tokenCookie)
+
 	postReq.Header.Set("X-XSRF-TOKEN", "tampered-encrypted-value")
 
 	postW := httptest.NewRecorder()
@@ -483,11 +511,14 @@ func TestCSRF_TokenSourcePrecedence(t *testing.T) {
 	// POST with valid _token form field and invalid X-CSRF-TOKEN header.
 	// The _token field should take precedence.
 	form := url.Values{}
+
 	form.Set("_token", rawToken)
 
 	postReq := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(form.Encode()))
+
 	postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	postReq.Header.Set("X-CSRF-TOKEN", "wrong-token")
+
 	postReq.AddCookie(tokenCookie)
 
 	postW := httptest.NewRecorder()
@@ -507,6 +538,7 @@ func TestCSRF_POSTWithSameOriginFetchSite_SkipsTokenValidation(t *testing.T) {
 	mw, _ := csrfMiddleware(t)
 
 	req := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 
 	w := httptest.NewRecorder()
@@ -585,6 +617,7 @@ key: "` + encodeKey(key) + `"
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	// Verify env-overridden cookie name.
@@ -610,6 +643,7 @@ func TestCSRF_SameSiteFetchSite_AllowSameSiteTrue(t *testing.T) {
 	}, key)
 
 	req := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	req.Header.Set("Sec-Fetch-Site", "same-site")
 
 	w := httptest.NewRecorder()
@@ -651,6 +685,7 @@ func TestCSRF_SameSiteFetchSite_AllowSameSiteFalse(t *testing.T) {
 	}, key)
 
 	req := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
 	req.Header.Set("Sec-Fetch-Site", "same-site")
 
 	w := httptest.NewRecorder()

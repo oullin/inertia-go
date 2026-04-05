@@ -27,8 +27,11 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 	routes.Handle("dashboard", auth(app.dashboardHandler), mux)
 	routes.Handle("contacts.index", auth(app.contactsHandler), mux)
 	routes.Handle("contacts.create", auth(app.contactsCreateHandler), mux)
+
 	mux.Handle("/contacts/", auth(app.contactByIDHandler))
+
 	routes.Handle("organizations.index", auth(app.organizationsHandler), mux)
+
 	mux.Handle("/organizations/", auth(app.organizationByIDHandler))
 
 	return nil

@@ -131,6 +131,7 @@ func (res *Result) evaluate(included map[string]any) error {
 // type appears more than once the outermost instance wins.
 func walkPropChain(val any) propTraits {
 	var t propTraits
+
 	cur := val
 
 	for {
@@ -290,7 +291,7 @@ func (res *Result) recordMetadata(key string, traits propTraits, mergeIntent str
 // splitHeader splits a comma-separated header value into trimmed,
 // non-empty tokens.
 func splitHeader(val string) []string {
-	if val == "" {
+	if strings.TrimSpace(val) == "" {
 		return nil
 	}
 
@@ -300,7 +301,7 @@ func splitHeader(val string) []string {
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
 
-		if p != "" {
+		if strings.TrimSpace(p) != "" {
 			out = append(out, p)
 		}
 	}

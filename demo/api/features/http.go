@@ -29,7 +29,7 @@ func (a app) useHttpApiHandler(w http.ResponseWriter, r *http.Request) {
 
 	name := strings.TrimSpace(r.FormValue("name"))
 
-	if name == "" {
+	if strings.TrimSpace(name) == "" {
 		name = "World"
 	}
 

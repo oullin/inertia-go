@@ -55,7 +55,7 @@ func emptyContactForm() contactForm {
 func (f contactForm) validate() httpx.ValidationErrors {
 	errors := validation.Validate(f)
 
-	if f.OrganizationID != "" {
+	if strings.TrimSpace(f.OrganizationID) != "" {
 		if _, err := strconv.ParseInt(f.OrganizationID, 10, 64); err != nil {
 			if errors == nil {
 				errors = make(httpx.ValidationErrors)
@@ -91,7 +91,7 @@ func (f organizationForm) validate() httpx.ValidationErrors {
 func parseOrganizationID(raw string) *int64 {
 	raw = strings.TrimSpace(raw)
 
-	if raw == "" {
+	if strings.TrimSpace(raw) == "" {
 		return nil
 	}
 

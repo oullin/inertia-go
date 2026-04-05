@@ -3,6 +3,7 @@ package httpx_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/httpx"
@@ -28,7 +29,7 @@ func TestIsInertiaRequest(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 
-			if tt.header != "" {
+			if strings.TrimSpace(tt.header) != "" {
 				r.Header.Set(httpx.HeaderInertia, tt.header)
 			}
 
@@ -43,6 +44,7 @@ func TestIsPrecognitionRequest(t *testing.T) {
 	t.Parallel()
 
 	r := httptest.NewRequest("POST", "/", nil)
+
 	r.Header.Set("Precognition", "true")
 
 	if !httpx.IsPrecognitionRequest(r) {
@@ -64,6 +66,7 @@ func TestValidateOnly(t *testing.T) {
 	t.Parallel()
 
 	r := httptest.NewRequest("POST", "/", nil)
+
 	r.Header.Set("Validate-Only", "name,email,phone")
 
 	fields := httpx.ValidateOnly(r)
@@ -85,6 +88,7 @@ func TestValidateOnly_WithSpaces(t *testing.T) {
 	t.Parallel()
 
 	r := httptest.NewRequest("POST", "/", nil)
+
 	r.Header.Set("Validate-Only", " name , email ")
 
 	fields := httpx.ValidateOnly(r)
@@ -112,6 +116,7 @@ func TestValidateOnly_Empty(t *testing.T) {
 	t.Parallel()
 
 	r := httptest.NewRequest("POST", "/", nil)
+
 	r.Header.Set("Validate-Only", "")
 
 	if fields := httpx.ValidateOnly(r); fields != nil {

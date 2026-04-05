@@ -6,8 +6,6 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
-type contextKey struct{ name string }
-
 var (
 	ctxKeyProps            = &contextKey{"props"}
 	ctxKeyTemplateData     = &contextKey{"templateData"}
@@ -16,6 +14,8 @@ var (
 	ctxKeyClearHistory     = &contextKey{"clearHistory"}
 	ctxKeyHead             = &contextKey{"head"}
 )
+
+type contextKey struct{ name string }
 
 // SetProp stores a single prop on the request context. Props set this
 // way are merged into the response during Render, with higher priority

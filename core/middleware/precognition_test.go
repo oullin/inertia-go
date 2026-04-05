@@ -20,6 +20,7 @@ func TestPrecognition_SetsVaryHeader(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	vary := w.Header().Get("Vary")
@@ -48,6 +49,7 @@ func TestPrecognition_NonPrecognitive_PassesThrough(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !called {
@@ -68,13 +70,16 @@ func TestPrecognition_SetsContextFlag(t *testing.T) {
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		isPrecognition = httpx.IsPrecognition(r.Context())
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
+
 	r.Header.Set("Precognition", "true")
 
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if !isPrecognition {
@@ -97,9 +102,11 @@ func TestPrecognition_VaryHeader_AlwaysSet(t *testing.T) {
 
 	// Precognition request should also have Vary header.
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
+
 	r.Header.Set("Precognition", "true")
 
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	vary := w.Header().Get("Vary")
@@ -125,6 +132,7 @@ func TestPrecognition_VaryHeader_DeduplicatesExisting(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	doubleWrapped.ServeHTTP(w, r)
 
 	vary := w.Header().Get("Vary")
@@ -148,6 +156,7 @@ func TestPrecognition_VaryHeader_AppendsToExisting(t *testing.T) {
 
 	// Pre-set a different Vary value.
 	w.Header().Set("Vary", "Accept")
+
 	handler.ServeHTTP(w, r)
 
 	vary := w.Header().Get("Vary")

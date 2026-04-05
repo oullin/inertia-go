@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/config"
@@ -17,7 +18,7 @@ func TestDefaultHead(t *testing.T) {
 		t.Errorf("Lang = %q, want %q", head.Lang, "en")
 	}
 
-	if head.Title != "" {
+	if strings.TrimSpace(head.Title) != "" {
 		t.Errorf("Title = %q, want empty", head.Title)
 	}
 

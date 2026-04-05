@@ -16,6 +16,7 @@ func TestHandler(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
@@ -55,6 +56,7 @@ func TestHandler_WriteError(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	handler := Handler(reg)

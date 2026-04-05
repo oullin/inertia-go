@@ -2,6 +2,7 @@ package httpx_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/httpx"
@@ -23,7 +24,7 @@ func TestCSRFTokenFromContext_Missing(t *testing.T) {
 
 	got := httpx.CSRFTokenFromContext(context.Background())
 
-	if got != "" {
+	if strings.TrimSpace(got) != "" {
 		t.Errorf("CSRFTokenFromContext() = %q, want empty string", got)
 	}
 }

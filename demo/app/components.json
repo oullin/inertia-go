@@ -5,7 +5,7 @@
   "tailwind": {
     "config": "",
     "css": "src/js/styles/app.css",
-    "baseColor": "neutral"
+    "baseColor": "rose"
   },
   "aliases": {
     "components": "@/js/components",

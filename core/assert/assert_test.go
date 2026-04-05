@@ -13,6 +13,13 @@ import (
 // --- Failure paths ---
 
 // mockTB captures assertion failures without failing the real test.
+
+const testTemplate = `<!DOCTYPE html>
+<html>
+<head>{{ .inertiaHead }}</head>
+<body>{{ .inertia }}</body>
+</html>`
+
 type mockTB struct {
 	testing.TB
 	failed bool
@@ -22,23 +29,23 @@ type failReader struct{}
 
 type readError struct{}
 
-const testTemplate = `<!DOCTYPE html>
-<html>
-<head>{{ .inertiaHead }}</head>
-<body>{{ .inertia }}</body>
-</html>`
-
 func TestAssertFromBytes(t *testing.T) {
 	t.Parallel()
 
 	body := []byte(`{"component":"Users/Index","props":{"name":"alice"},"url":"/users","version":"v1"}`)
 
 	a := assert.AssertFromBytes(t, body)
+
 	a.AssertComponent(t, "Users/Index")
+
 	a.AssertURL(t, "/users")
+
 	a.AssertVersion(t, "v1")
+
 	a.AssertHasProp(t, "name")
+
 	a.AssertPropEquals(t, "name", "alice")
+
 	a.AssertMissingProp(t, "nonexistent")
 }
 
@@ -61,9 +68,13 @@ func TestAssertFromHandler(t *testing.T) {
 	r.RequestURI = "/dashboard"
 
 	a := assert.AssertFromHandler(t, i, handler, r)
+
 	a.AssertComponent(t, "Dashboard")
+
 	a.AssertURL(t, "/dashboard")
+
 	a.AssertVersion(t, "v1")
+
 	a.AssertPropEquals(t, "title", "Test Dashboard")
 }
 
@@ -82,6 +93,7 @@ func TestAssertComponent_Failure(t *testing.T) {
 
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertComponent(m, "WrongComponent")
 
 	if !m.failed {
@@ -94,6 +106,7 @@ func TestAssertURL_Failure(t *testing.T) {
 
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertURL(m, "/wrong")
 
 	if !m.failed {
@@ -106,6 +119,7 @@ func TestAssertVersion_Failure(t *testing.T) {
 
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertVersion(m, "wrong")
 
 	if !m.failed {
@@ -118,6 +132,7 @@ func TestAssertHasProp_Failure(t *testing.T) {
 
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertHasProp(m, "nonexistent")
 
 	if !m.failed {
@@ -130,6 +145,7 @@ func TestAssertPropEquals_Failure(t *testing.T) {
 
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertPropEquals(m, "name", "wrong-value")
 
 	if !m.failed {
@@ -142,6 +158,7 @@ func TestAssertPropEquals_MissingKey(t *testing.T) {
 
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertPropEquals(m, "missing", "any")
 
 	if !m.failed {
@@ -154,6 +171,7 @@ func TestAssertMissingProp_Failure(t *testing.T) {
 
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertMissingProp(m, "name")
 
 	if !m.failed {
@@ -165,6 +183,7 @@ func TestAssertFromBytes_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
 	m := &mockTB{}
+
 	assert.AssertFromBytes(m, []byte(`not json`))
 
 	if !m.failed {
@@ -176,6 +195,7 @@ func TestAssertFromReader_ReadError(t *testing.T) {
 	t.Parallel()
 
 	m := &mockTB{}
+
 	assert.AssertFromReader(m, &failReader{})
 
 	if !m.failed {
@@ -199,6 +219,7 @@ func TestAssertFromHandler_Non200(t *testing.T) {
 	m := &mockTB{}
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.RequestURI = "/"
+
 	assert.AssertFromHandler(m, i, handler, r)
 
 	if !m.failed {
@@ -333,7 +354,9 @@ func TestAssertFromHandler_WithSharedProps(t *testing.T) {
 	r.RequestURI = "/"
 
 	a := assert.AssertFromHandler(t, i, handler, r)
+
 	a.AssertHasProp(t, "app_name")
+
 	a.AssertPropEquals(t, "app_name", "TestApp")
 }
 
@@ -348,6 +371,7 @@ func TestAssertFromHandler_WithContextProps(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := inertia.SetProp(r.Context(), "user", "alice")
+
 		i.Render(w, r.WithContext(ctx), "Page")
 	})
 
@@ -355,7 +379,9 @@ func TestAssertFromHandler_WithContextProps(t *testing.T) {
 	r.RequestURI = "/"
 
 	a := assert.AssertFromHandler(t, i, handler, r)
+
 	a.AssertHasProp(t, "user")
+
 	a.AssertPropEquals(t, "user", "alice")
 }
 

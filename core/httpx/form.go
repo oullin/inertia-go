@@ -29,6 +29,7 @@ func ParseForm(r *http.Request) error {
 
 func parseJSONForm(r *http.Request) error {
 	const maxBodySize = 32 << 20 // 32 MiB — matches multipart limit
+
 	r.Body = http.MaxBytesReader(nil, r.Body, maxBodySize)
 
 	var raw map[string]any
@@ -73,7 +74,7 @@ func flattenJSON(prefix string, data map[string]any, out url.Values, depth int) 
 	for key, val := range data {
 		fullKey := key
 
-		if prefix != "" {
+		if strings.TrimSpace(prefix) != "" {
 			fullKey = prefix + "." + key
 		}
 

@@ -20,7 +20,9 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 	}
 
 	routes.Handle("features.errors.http-error", auth(httpErrorHandler(container)), mux)
+
 	mux.Handle("/features/errors/http-error/{code}", auth(httpErrorTriggerHandler()))
+
 	routes.Handle("features.errors.network-errors", auth(networkErrorsHandler(container)), mux)
 }
 

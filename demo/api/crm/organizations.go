@@ -23,7 +23,7 @@ func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 	search := strings.TrimSpace(r.URL.Query().Get("search"))
 	pageNum := 1
 
-	if p := r.URL.Query().Get("page"); p != "" {
+	if p := r.URL.Query().Get("page"); strings.TrimSpace(p) != "" {
 		if n, err := strconv.Atoi(p); err == nil && n > 0 {
 			pageNum = n
 		}
@@ -33,6 +33,7 @@ func (a app) organizationsHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("list organizations", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -70,6 +71,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 
 	if err != nil {
 		slog.Error("get organization", "id", organizationID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -83,7 +85,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 
 	var cursor *string
 
-	if c := r.URL.Query().Get("cursor"); c != "" {
+	if c := r.URL.Query().Get("cursor"); strings.TrimSpace(c) != "" {
 		cursor = &c
 	}
 
@@ -93,6 +95,7 @@ func (a app) showOrganizationHandler(w http.ResponseWriter, r *http.Request, org
 
 	if err != nil {
 		slog.Error("list contacts by org", "id", organizationID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -116,6 +119,7 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 
 	if len(errors) > 0 {
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 		a.showOrganizationHandler(w, r.WithContext(ctx), organizationID)
 
 		return
@@ -123,6 +127,7 @@ func (a app) updateOrganizationHandler(w http.ResponseWriter, r *http.Request, o
 
 	if err := a.repo.UpdateOrganization(organizationID, form.Name); err != nil {
 		slog.Error("update organization", "id", organizationID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return

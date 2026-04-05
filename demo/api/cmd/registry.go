@@ -12,9 +12,11 @@ import (
 
 func initRoutes() *wayfinder.Registry {
 	routes := wayfinder.New()
+
 	routes.Add("login", "GET", "/login")
 	routes.Add("logout", "POST", "/logout")
 	routes.Add("dashboard", "GET", "/dashboard")
+
 	routes.Group("contacts", "/contacts", func(g *wayfinder.Group) {
 		g.Add("index", "GET", "")
 		g.Add("create", "GET", "/create")
@@ -24,6 +26,7 @@ func initRoutes() *wayfinder.Registry {
 		g.Add("update", "POST", "/{contact}")
 		g.Add("destroy", "DELETE", "/{contact}")
 		g.Add("favorite", "POST", "/{contact}/favorite")
+
 		g.Group("notes", "", func(ng *wayfinder.Group) {
 			ng.Add("store", "POST", "/{contact}/notes")
 		})

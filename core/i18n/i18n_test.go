@@ -172,11 +172,13 @@ func TestMiddleware_DetectsPrefix(t *testing.T) {
 
 	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/es/dashboard", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if capturedPath != "/dashboard" {
@@ -194,11 +196,13 @@ func TestMiddleware_DefaultLocale(t *testing.T) {
 
 	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	// No prefix detected, path should remain unchanged.
@@ -217,12 +221,14 @@ func TestMiddleware_StripsPrefixFromPath(t *testing.T) {
 
 	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedURI = r.RequestURI
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/ar/settings?tab=profile", nil)
 	r.RequestURI = "/ar/settings?tab=profile"
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if capturedURI != "/settings?tab=profile" {
@@ -240,11 +246,13 @@ func TestMiddleware_RootWithPrefix(t *testing.T) {
 
 	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	r := httptest.NewRequest(http.MethodGet, "/es", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if capturedPath != "/" {
@@ -265,6 +273,7 @@ func TestMiddleware_UnknownPrefixFallsBackToDefault(t *testing.T) {
 	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		capturedLocale = httpx.LocaleFromContext(r.Context())
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -272,6 +281,7 @@ func TestMiddleware_UnknownPrefixFallsBackToDefault(t *testing.T) {
 	// and the default locale ("en") should be used.
 	r := httptest.NewRequest(http.MethodGet, "/xx/dashboard", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if capturedPath != "/xx/dashboard" {
@@ -293,6 +303,7 @@ func TestMiddleware_HreflangTrimsTrailingSlash(t *testing.T) {
 
 	handler := i18n.Middleware(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedLocale = httpx.LocaleFromContext(r.Context())
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -300,6 +311,7 @@ func TestMiddleware_HreflangTrimsTrailingSlash(t *testing.T) {
 	// with the prefix should produce "/es" not "/es/".
 	r := httptest.NewRequest(http.MethodGet, "/es/admin/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if capturedLocale == nil {

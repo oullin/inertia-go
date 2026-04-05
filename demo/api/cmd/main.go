@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/oullin/inertia-go/core/config"
 	"github.com/oullin/inertia-go/core/flash"
@@ -40,7 +41,7 @@ func main() {
 
 	version := "dev"
 
-	if v := os.Getenv("APP_VERSION"); v != "" {
+	if v := os.Getenv("APP_VERSION"); strings.TrimSpace(v) != "" {
 		version = v
 	}
 
@@ -118,6 +119,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+
 	mux.Handle(
 		"/assets/",
 		http.StripPrefix("/assets/", http.FileServer(http.Dir(distPath))),
@@ -125,6 +127,7 @@ func main() {
 
 	appMux := http.NewServeMux()
 	authApp := rt.newAuth()
+
 	authApp.RegisterRoutes(appMux)
 
 	if err := rt.registerCRMRoutes(appMux, authApp); err != nil {
@@ -132,17 +135,20 @@ func main() {
 	}
 
 	rt.registerFeatureRoutes(appMux, authApp)
+
 	rt.registerErrorRoutes(appMux, authApp)
+
 	appMux.Handle("GET /{$}", http.RedirectHandler("/dashboard", http.StatusFound))
+
 	mux.Handle("/", rt.dashboardAppHandler(authApp.WithCurrentUser(rt.withDemoProps(authApp, appMux)), csrfMiddleware))
 
 	addr := ":8080"
 
-	if port := os.Getenv("PORT"); port != "" {
+	if port := os.Getenv("PORT"); strings.TrimSpace(port) != "" {
 		addr = ":" + port
 	}
 
-	if url := os.Getenv("PORTLESS_URL"); url != "" {
+	if url := os.Getenv("PORTLESS_URL"); strings.TrimSpace(url) != "" {
 		fmt.Printf("Server running at %s\n", url)
 	} else {
 		fmt.Printf("Server running at http://localhost%s\n", addr)

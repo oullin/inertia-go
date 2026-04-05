@@ -12,6 +12,9 @@ import (
 // Top-level routes (no dot) go into the "app" group.
 
 // limitWriter fails after n bytes.
+
+var errWriteLimited = errors.New("write limit reached")
+
 type limitWriter struct {
 	n int
 }
@@ -20,6 +23,7 @@ func TestGenerateTypeScript(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
@@ -62,6 +66,7 @@ func TestGenerateJavaScript(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
@@ -92,6 +97,7 @@ func TestGenerateFlatOnly(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 
 	var buf bytes.Buffer
@@ -117,6 +123,7 @@ func TestGenerateNestedOnly(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 
 	var buf bytes.Buffer
@@ -142,6 +149,7 @@ func TestGenerateCustomHeader(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	var buf bytes.Buffer
@@ -163,6 +171,7 @@ func TestGenerateNestedGrouping(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 	reg.Add("contacts.store", "POST", "/contacts")
@@ -199,6 +208,7 @@ func TestGenerateTopLevelRoutes(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 	reg.Add("logout", "POST", "/logout")
 
@@ -246,6 +256,7 @@ func TestGenerateHyphenatedRoutes(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("features.forms.use-form", "GET", "/features/forms/use-form")
 	reg.Add("use-http", "GET", "/use-http")
 
@@ -276,8 +287,6 @@ func TestGenerateHyphenatedRoutes(t *testing.T) {
 	}
 }
 
-var errWriteLimited = errors.New("write limit reached")
-
 func (lw *limitWriter) Write(p []byte) (int, error) {
 	if lw.n <= 0 {
 		return 0, errWriteLimited
@@ -298,6 +307,7 @@ func TestGeneratePropagatesWriteError(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	// Allow just enough bytes for the header, then fail.
@@ -318,6 +328,7 @@ func TestGenerateFile_WritesToFile(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
@@ -350,6 +361,7 @@ func TestGenerateFile_InvalidPath(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	err := GenerateFile(reg, "/nonexistent/dir/routes.ts", GenerateOptions{})
@@ -363,6 +375,7 @@ func TestGenerateJS_NestedWithParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 	reg.Add("contacts.index", "GET", "/contacts")
 
@@ -389,6 +402,7 @@ func TestGenerateTS_FlatWithParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	var buf bytes.Buffer
@@ -410,6 +424,7 @@ func TestGenerateJS_FlatWithParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	var buf bytes.Buffer
@@ -451,6 +466,7 @@ func TestGenerateFile_Success_VerifyContent(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	path := filepath.Join(t.TempDir(), "routes.js")
@@ -476,6 +492,7 @@ func TestGenerate_WriteErrorInHeader(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// Fail immediately — can't even write the header.
@@ -491,6 +508,7 @@ func TestGenerate_WriteErrorInTypeDecl(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// Allow header but fail on type declaration.
@@ -506,6 +524,7 @@ func TestGenerate_WriteErrorInFlatSection(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// Allow header + type decl, fail in flat section.
@@ -521,6 +540,7 @@ func TestGenerate_WriteErrorInNestedSection(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	// Allow enough for header + flat, fail in nested.
@@ -536,6 +556,7 @@ func TestGenerate_WriteErrorSeparator(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// Allow header + flat, fail on the separator newline between flat and nested.
@@ -551,6 +572,7 @@ func TestGenerate_WriteErrorInFlatNoParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// Enough for header + newline + type decl + newline, fail in flat func def.
@@ -566,6 +588,7 @@ func TestGenerate_WriteErrorInFlatReturn(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// Enough for header + type decl + func declaration, fail on return statement.
@@ -581,6 +604,7 @@ func TestGenerate_WriteErrorInNestedMember(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 
 	// Enough for header + newline but fail in nested.
@@ -596,6 +620,7 @@ func TestGenerate_WriteErrorInNestedClose(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 
 	// Enough for header + group open + member, fail on close.
@@ -611,6 +636,7 @@ func TestGenerate_WriteErrorInNestedParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	// Enough for header + group open, fail on member with params.
@@ -626,6 +652,7 @@ func TestGenerate_WriteErrorInFlatWithParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	// Enough for header + type decl, fail in flat func with params.
@@ -641,6 +668,7 @@ func TestGenerate_WriteErrorInJS_FlatNoParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	w := &limitWriter{n: 60}
@@ -655,6 +683,7 @@ func TestGenerate_WriteErrorInJS_FlatWithParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	w := &limitWriter{n: 60}
@@ -669,6 +698,7 @@ func TestGenerate_WriteErrorInJS_NestedNoParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 
 	w := &limitWriter{n: 80}
@@ -683,6 +713,7 @@ func TestGenerate_WriteErrorInJS_NestedWithParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.show", "GET", "/contacts/{contact}")
 
 	w := &limitWriter{n: 100}
@@ -697,6 +728,7 @@ func TestGenerate_WriteErrorInJS_NestedClose(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 
 	w := &limitWriter{n: 130}
@@ -711,6 +743,7 @@ func TestGenerate_WriteErrorInFlatClosingBrace(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// TS: header(49) + \n(1) + type(46) + \n(1) + func(43) + \n(1) + return(44) + \n(1) = 186 before closing brace
@@ -727,6 +760,7 @@ func TestGenerate_WriteErrorInFlatTrailingNewline(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("login", "GET", "/login")
 
 	// JS: slightly shorter strings.
@@ -743,6 +777,7 @@ func TestGenerate_WriteErrorInFlatReturnParams(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("users.show", "GET", "/users/{user}")
 
 	for n := 120; n < 250; n++ {
@@ -758,6 +793,7 @@ func TestGenerate_WriteErrorInNestedTrailingNewline(t *testing.T) {
 	t.Parallel()
 
 	reg := New()
+
 	reg.Add("contacts.index", "GET", "/contacts")
 
 	for n := 130; n < 200; n++ {

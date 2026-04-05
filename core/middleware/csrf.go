@@ -48,6 +48,7 @@ func CSRF(cfg config.CSRFConfig, key []byte) func(http.Handler) http.Handler {
 
 				if err := setTokenCookie(w, cfg.CookieName, token, key, cfg.Secure, cfg.SameSiteMode()); err != nil {
 					slog.Error("csrf: set token cookie", "error", err)
+
 					http.Error(w, "csrf: internal error", http.StatusInternalServerError)
 
 					return
@@ -173,17 +174,17 @@ func tokenFromCookie(r *http.Request, name string, key []byte) (string, error) {
 // encrypted cookie value (auto-sent by Axios) and must be decrypted.
 func extractToken(r *http.Request, cookieName string, key []byte) (string, error) {
 	// 1. _token POST form field (raw token from HTML forms).
-	if token := r.PostFormValue("_token"); token != "" {
+	if token := r.PostFormValue("_token"); strings.TrimSpace(token) != "" {
 		return token, nil
 	}
 
 	// 2. X-CSRF-TOKEN header (raw token, typically from meta tag).
-	if token := r.Header.Get("X-CSRF-TOKEN"); token != "" {
+	if token := r.Header.Get("X-CSRF-TOKEN"); strings.TrimSpace(token) != "" {
 		return token, nil
 	}
 
 	// 3. X-XSRF-TOKEN header (encrypted value from cookie, auto-sent by Axios).
-	if encrypted := r.Header.Get("X-XSRF-TOKEN"); encrypted != "" {
+	if encrypted := r.Header.Get("X-XSRF-TOKEN"); strings.TrimSpace(encrypted) != "" {
 		decoded, err := url.QueryUnescape(encrypted)
 
 		if err != nil {

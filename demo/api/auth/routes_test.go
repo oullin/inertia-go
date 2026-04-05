@@ -25,7 +25,9 @@ func TestLoginHandlerRendersPage(t *testing.T) {
 	_, handler := newAuthTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+
 	req.Header.Set(httpx.HeaderInertia, "true")
+
 	req.RequestURI = "/login"
 	w := httptest.NewRecorder()
 
@@ -36,6 +38,7 @@ func TestLoginHandlerRendersPage(t *testing.T) {
 	}
 
 	page := assert.AssertFromBytes(t, w.Body.Bytes())
+
 	page.AssertComponent(t, "Auth/Login")
 }
 
@@ -51,7 +54,9 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 	}.Encode())
 
 	req := httptest.NewRequest(http.MethodPost, "/login", body)
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -85,7 +90,9 @@ func TestLoginHandlerCreatesSessionFromJSON(t *testing.T) {
 	body := strings.NewReader(`{"email":"test@example.com","password":"password","remember":true}`)
 
 	req := httptest.NewRequest(http.MethodPost, "/login", body)
+
 	req.Header.Set("Content-Type", "application/json")
+
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -122,8 +129,10 @@ func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 	}.Encode())
 
 	req := httptest.NewRequest(http.MethodPost, "/login", body)
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set(httpx.HeaderInertia, "true")
+
 	req.RequestURI = "/login"
 	w := httptest.NewRecorder()
 
@@ -134,6 +143,7 @@ func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 	}
 
 	page := assert.AssertFromBytes(t, w.Body.Bytes())
+
 	page.AssertComponent(t, "Auth/Login")
 
 	errors, ok := page.Props["errors"].(map[string]any)
@@ -159,7 +169,9 @@ func TestLogoutHandlerClearsSession(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
+
 	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: encrypted})
+
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -201,7 +213,9 @@ func TestWithCurrentUserLoadsUserFromCookie(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+
 	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: encrypted})
+
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -219,7 +233,9 @@ func TestForgedCookieIsRejected(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+
 	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "1"})
+
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -248,24 +264,31 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 		testDB.Close()
 	})
 
+	renderFn := func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
+		t.Helper()
+
+		if err := testInertia.Render(w, r, component, pageProps); err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+	}
+	redirectFn := func(w http.ResponseWriter, r *http.Request, url string) {
+		testInertia.Redirect(w, r, url)
+	}
+	setFlashFn := func(http.ResponseWriter, flash.Message) error { return nil }
+
 	app := NewApp(Container{
 		DB:        testDB,
 		CryptoKey: testCryptoKey,
-		Render: func(w http.ResponseWriter, r *http.Request, component string, pageProps httpx.Props) {
-			t.Helper()
+		Render:    renderFn,
 
-			if err := testInertia.Render(w, r, component, pageProps); err != nil {
-				t.Fatalf("render failed: %v", err)
-			}
-		},
-		Redirect: func(w http.ResponseWriter, r *http.Request, url string) {
-			testInertia.Redirect(w, r, url)
-		},
+		Redirect: redirectFn,
+
 		RouteURL: authTestRouteURL,
-		SetFlash: func(http.ResponseWriter, flash.Message) error { return nil },
+		SetFlash: setFlashFn,
 	})
 
 	mux := http.NewServeMux()
+
 	app.RegisterRoutes(mux)
 
 	return app, app.WithCurrentUser(mux)
@@ -278,7 +301,7 @@ func authTestRouteURL(name string, params map[string]string) string {
 		"dashboard": "/dashboard",
 	}[name]
 
-	if pattern == "" {
+	if strings.TrimSpace(pattern) == "" {
 		return "#!wayfinder:unknown-route"
 	}
 

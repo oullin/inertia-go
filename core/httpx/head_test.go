@@ -15,7 +15,7 @@ func TestRenderHTML_Empty(t *testing.T) {
 
 	h := httpx.Head{}
 
-	if got := h.RenderHTML(); got != "" {
+	if got := h.RenderHTML(); strings.TrimSpace(got) != "" {
 		t.Errorf("empty Head should render empty string, got: %q", got)
 	}
 }
@@ -403,6 +403,7 @@ func TestApplyEnv_OverridesTitle(t *testing.T) {
 	t.Setenv("INERTIA_SEO_TITLE", "Env Title")
 
 	h := httpx.Head{Title: "YAML Title"}
+
 	h.ApplyEnv()
 
 	if h.Title != "Env Title" {
@@ -414,6 +415,7 @@ func TestApplyEnv_OverridesLang(t *testing.T) {
 	t.Setenv("INERTIA_SEO_LANG", "fr")
 
 	h := httpx.Head{Lang: "en"}
+
 	h.ApplyEnv()
 
 	if h.Lang != "fr" {
@@ -429,6 +431,7 @@ func TestApplyEnv_OverridesExistingMeta(t *testing.T) {
 			{Name: "description", Content: "YAML description"},
 		},
 	}
+
 	h.ApplyEnv()
 
 	if h.Meta[0].Content != "Env description" {
@@ -440,6 +443,7 @@ func TestApplyEnv_AddsNewMetaWhenMissing(t *testing.T) {
 	t.Setenv("INERTIA_SEO_OG_TITLE", "Env OG Title")
 
 	h := httpx.Head{}
+
 	h.ApplyEnv()
 
 	found := false
@@ -463,6 +467,7 @@ func TestApplyEnv_OverridesExistingPropertyMeta(t *testing.T) {
 			{Property: "og:title", Content: "YAML OG Title"},
 		},
 	}
+
 	h.ApplyEnv()
 
 	if h.Meta[0].Content != "Env OG Override" {
@@ -476,6 +481,7 @@ func TestApplyEnv_NoOpWhenEnvEmpty(t *testing.T) {
 	os.Unsetenv("INERTIA_SEO_TITLE")
 
 	h := httpx.Head{Title: "Keep"}
+
 	h.ApplyEnv()
 
 	if h.Title != "Keep" {

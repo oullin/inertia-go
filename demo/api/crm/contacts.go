@@ -36,6 +36,7 @@ func (a app) contactsCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("list organizations", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -43,7 +44,7 @@ func (a app) contactsCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	form := emptyContactForm()
 
-	if orgID := r.URL.Query().Get("organization_id"); orgID != "" {
+	if orgID := r.URL.Query().Get("organization_id"); strings.TrimSpace(orgID) != "" {
 		form.OrganizationID = orgID
 	}
 
@@ -62,7 +63,7 @@ func (a app) contactByIDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if action == "" {
+	if strings.TrimSpace(action) == "" {
 		switch r.Method {
 		case http.MethodGet:
 			a.showContactHandler(w, r, contactID)
@@ -113,7 +114,7 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var cursor *string
 
-	if c := r.URL.Query().Get("cursor"); c != "" {
+	if c := r.URL.Query().Get("cursor"); strings.TrimSpace(c) != "" {
 		cursor = &c
 	}
 
@@ -123,6 +124,7 @@ func (a app) listContactsHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("list contacts", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -142,6 +144,7 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 
 	if err != nil {
 		slog.Error("get contact", "id", contactID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -170,6 +173,7 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := a.repo.DeleteContact(contactID); err != nil {
 		slog.Error("delete contact", "id", contactID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -191,6 +195,7 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 
 	if err != nil {
 		slog.Error("get contact", "id", contactID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -206,6 +211,7 @@ func (a app) editContactHandler(w http.ResponseWriter, r *http.Request, contactI
 
 	if err != nil {
 		slog.Error("list organizations", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -233,12 +239,14 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			slog.Error("list organizations", "error", err)
+
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
 		}
 
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 		a.container.Render(w, r.WithContext(ctx), "Contacts/Create", httpx.Props{
 			"form":          contactFormProps(form),
 			"organizations": organizationOptions(orgs),
@@ -251,6 +259,7 @@ func (a app) storeContactHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("create contact", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -282,6 +291,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 
 		if err != nil {
 			slog.Error("get contact", "id", contactID, "error", err)
+
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
@@ -291,12 +301,14 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 
 		if err != nil {
 			slog.Error("list organizations", "error", err)
+
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
 		}
 
 		ctx := inertia.SetValidationErrors(r.Context(), errors)
+
 		a.container.Render(w, r.WithContext(ctx), "Contacts/Edit", httpx.Props{
 			"contact":       contactPropValue(existing),
 			"form":          contactFormProps(form),
@@ -308,6 +320,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 
 	if err := a.repo.UpdateContact(contactID, form.record()); err != nil {
 		slog.Error("update contact", "id", contactID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -327,6 +340,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := a.repo.ToggleContactFavorite(contactID); err != nil {
 		slog.Error("toggle favorite", "id", contactID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -352,10 +366,11 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 
 	body := strings.TrimSpace(r.FormValue("body"))
 
-	if body == "" {
+	if strings.TrimSpace(body) == "" {
 		ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{
 			"body": "Add note content before saving.",
 		})
+
 		a.showContactHandler(w, r.WithContext(ctx), contactID)
 
 		return
@@ -371,6 +386,7 @@ func (a app) storeNoteHandler(w http.ResponseWriter, r *http.Request, contactID 
 
 	if _, err := a.repo.CreateNote(contactID, user.ID, body); err != nil {
 		slog.Error("create note", "contact_id", contactID, "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -391,7 +407,7 @@ func routeIDAndAction(path, prefix string) (int64, string, bool) {
 	trimmed := strings.TrimPrefix(path, prefix)
 	parts := strings.Split(strings.Trim(trimmed, "/"), "/")
 
-	if len(parts) == 0 || parts[0] == "" {
+	if len(parts) == 0 || strings.TrimSpace(parts[0]) == "" {
 		return 0, "", false
 	}
 
@@ -405,7 +421,7 @@ func routeIDAndAction(path, prefix string) (int64, string, bool) {
 		return id, "", true
 	}
 
-	if len(parts) == 2 && parts[1] != "" {
+	if len(parts) == 2 && strings.TrimSpace(parts[1]) != "" {
 		return id, parts[1], true
 	}
 

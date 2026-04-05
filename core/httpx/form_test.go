@@ -83,6 +83,7 @@ func TestParseForm_JSON(t *testing.T) {
 
 	body := `{"name":"Alice","age":30,"active":true}`
 	req := httptest.NewRequest(http.MethodPost, "/submit?page=1", strings.NewReader(body))
+
 	req.Header.Set("Content-Type", "application/json")
 
 	if err := ParseForm(req); err != nil {
@@ -115,6 +116,7 @@ func TestParseForm_URLEncoded(t *testing.T) {
 
 	body := "name=Bob&email=bob%40example.com"
 	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	if err := ParseForm(req); err != nil {
@@ -134,6 +136,7 @@ func TestParseForm_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
 	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader("{invalid"))
+
 	req.Header.Set("Content-Type", "application/json")
 
 	if err := ParseForm(req); err == nil {
@@ -146,6 +149,7 @@ func TestParseJSONForm_NestedObjects(t *testing.T) {
 
 	body := `{"user":{"name":"Alice","address":{"city":"Berlin"}}}`
 	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+
 	req.Header.Set("Content-Type", "application/json")
 
 	if err := ParseForm(req); err != nil {
@@ -166,6 +170,7 @@ func TestParseJSONForm_Arrays(t *testing.T) {
 
 	body := `{"tags":["go","rust"],"items":[{"name":"a"}]}`
 	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+
 	req.Header.Set("Content-Type", "application/json")
 
 	if err := ParseForm(req); err != nil {
@@ -217,7 +222,9 @@ func TestParseJSONForm_NoURL(t *testing.T) {
 
 	body := `{"name":"test"}`
 	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+
 	req.Header.Set("Content-Type", "application/json")
+
 	req.URL = nil
 
 	if err := ParseForm(req); err != nil {

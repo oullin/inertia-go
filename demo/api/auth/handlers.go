@@ -40,6 +40,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		case err == nil:
 			if err := a.setSession(w, user.ID, form.Remember); err != nil {
 				slog.Error("session: set", "error", err)
+
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 
 				return
@@ -60,6 +61,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 			errorsByField["email"] = "Use test@example.com and password to sign in."
 		default:
 			slog.Error("authenticate", "error", err)
+
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 
 			return
@@ -67,6 +69,7 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := inertia.SetValidationErrors(r.Context(), errorsByField)
+
 	a.container.Render(w, r.WithContext(ctx), "Auth/Login", httpx.Props{})
 }
 

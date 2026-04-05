@@ -19,10 +19,14 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 	routes.Handle("features.forms.form-component", auth(a.formComponentHandler), mux)
 	routes.Handle("features.forms.file-uploads", auth(a.fileUploadsHandler), mux)
 	routes.Handle("features.forms.validation", auth(a.validationHandler), mux)
+
 	mux.Handle("/features/forms/validation/secondary", auth(a.validationSecondaryHandler))
+
 	routes.Handle("features.forms.precognition", auth(a.precognitionHandler), mux)
 	routes.Handle("features.forms.optimistic-updates", auth(a.optimisticUpdatesHandler), mux)
+
 	mux.Handle("POST /features/forms/optimistic-toggle/{id}", auth(a.optimisticToggleHandler))
+
 	routes.Handle("features.forms.use-form-context", auth(a.formContextHandler), mux)
 	routes.Handle("features.forms.dotted-keys", auth(a.dottedKeysHandler), mux)
 	routes.Handle("features.forms.wayfinder", auth(a.wayfinderHandler), mux)
@@ -37,11 +41,14 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 	routes.Handle("features.navigation.async-slow", auth(a.asyncSlowHandler), mux)
 	routes.Handle("features.navigation.manual-visits", auth(a.manualVisitsHandler), mux)
 	routes.Handle("features.navigation.redirects", auth(a.redirectsHandler), mux)
+
 	mux.Handle("POST /features/navigation/redirects/{action}", auth(a.redirectsActionHandler))
+
 	routes.Handle("features.navigation.scroll-management", auth(a.scrollManagementHandler), mux)
 	routes.Handle("features.navigation.instant-visits", auth(a.instantVisitsHandler), mux)
 	routes.Handle("features.navigation.instant-visit-target", auth(a.instantVisitTargetHandler), mux)
 	routes.Handle("features.navigation.url-fragments", auth(a.urlFragmentsHandler), mux)
+
 	mux.Handle("POST /features/navigation/url-fragments/{action}", auth(a.urlFragmentsActionHandler))
 
 	// Data Loading
@@ -63,7 +70,9 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 	// State
 	routes.Handle("features.state.remember", auth(a.rememberHandler), mux)
 	routes.Handle("features.state.flash-data", auth(a.flashDataHandler), mux)
+
 	mux.Handle("POST /features/state/flash-data/{action}", auth(a.flashDataActionHandler))
+
 	routes.Handle("features.state.shared-props", auth(a.sharedPropsHandler), mux)
 
 	// Layouts
@@ -81,5 +90,6 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 
 	// HTTP
 	routes.Handle("features.http.use-http", auth(a.useHttpHandler), mux)
+
 	mux.Handle("/features/http/use-http/api", auth(a.useHttpApiHandler))
 }

@@ -130,6 +130,7 @@ func Decrypt(encoded string, key []byte) (string, error) {
 
 func computeMAC(ivB64, valueB64 string, key []byte) []byte {
 	mac := hmac.New(sha256.New, key)
+
 	mac.Write([]byte(ivB64 + valueB64))
 
 	return mac.Sum(nil)

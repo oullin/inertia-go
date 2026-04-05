@@ -26,11 +26,11 @@ func newLoginForm(r *http.Request) loginForm {
 func (f loginForm) validate() httpx.ValidationErrors {
 	errors := httpx.ValidationErrors{}
 
-	if f.Email == "" {
+	if strings.TrimSpace(f.Email) == "" {
 		errors["email"] = "Enter the demo email address."
 	}
 
-	if f.Password == "" {
+	if strings.TrimSpace(f.Password) == "" {
 		errors["password"] = "Enter the demo password."
 	}
 

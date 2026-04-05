@@ -126,6 +126,7 @@ func TestAlwaysProp_WithFunc(t *testing.T) {
 	t.Parallel()
 
 	fn := func() any { return "lazy" }
+
 	p := props.Always(fn)
 
 	// Prop() should return the func itself, not invoke it.
@@ -168,6 +169,7 @@ func TestOptionalProp_WithFunc(t *testing.T) {
 	t.Parallel()
 
 	fn := func() any { return 42 }
+
 	p := props.Optional(fn)
 
 	if p.Prop() == nil {
@@ -226,6 +228,7 @@ func TestDeferProp_WithFunc(t *testing.T) {
 	t.Parallel()
 
 	fn := func() any { return "lazy" }
+
 	p := props.Defer(fn)
 
 	if p.Prop() == nil {
@@ -249,6 +252,7 @@ func TestOnceProp_WithFunc(t *testing.T) {
 	t.Parallel()
 
 	fn := func() any { return "lazy" }
+
 	p := props.Once(fn)
 
 	if p.Prop() == nil {

@@ -15,6 +15,7 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("recent activity", "error", err)
+
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return

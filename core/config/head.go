@@ -46,8 +46,11 @@ func DefaultHead() httpx.Head {
 // overrides (INERTIA_SEO_*) are applied.
 func LoadHead(path string) (httpx.Head, error) {
 	v := viper.New()
+
 	v.SetDefault("lang", "en")
+
 	v.SetEnvPrefix("INERTIA_SEO")
+
 	v.AutomaticEnv()
 
 	v.SetConfigFile(path)
@@ -63,6 +66,7 @@ func LoadHead(path string) (httpx.Head, error) {
 	}
 
 	head := httpx.MergeHead(DefaultHead(), override)
+
 	head.ApplyEnv()
 
 	return head, nil
