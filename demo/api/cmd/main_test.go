@@ -10,7 +10,9 @@ func TestResolveDistPath(t *testing.T) {
 	t.Run("finds first candidate", func(t *testing.T) {
 		tmp := t.TempDir()
 		origDir, _ := os.Getwd()
+
 		os.Chdir(tmp)
+
 		t.Cleanup(func() { os.Chdir(origDir) })
 
 		os.MkdirAll(filepath.Join(tmp, "storage", "dist", "app"), 0o755)
@@ -29,7 +31,9 @@ func TestResolveDistPath(t *testing.T) {
 	t.Run("no candidates returns error", func(t *testing.T) {
 		tmp := t.TempDir()
 		origDir, _ := os.Getwd()
+
 		os.Chdir(tmp)
+
 		t.Cleanup(func() { os.Chdir(origDir) })
 
 		_, err := resolveDistPath()
@@ -44,11 +48,15 @@ func TestResolveResourcePath(t *testing.T) {
 	t.Run("finds resource file", func(t *testing.T) {
 		tmp := t.TempDir()
 		origDir, _ := os.Getwd()
+
 		os.Chdir(tmp)
+
 		t.Cleanup(func() { os.Chdir(origDir) })
 
 		dir := filepath.Join(tmp, "resources")
+
 		os.MkdirAll(dir, 0o755)
+
 		os.WriteFile(filepath.Join(dir, "seo.yml"), []byte("title: test"), 0o644)
 
 		got, err := resolveResourcePath("seo.yml")
@@ -65,7 +73,9 @@ func TestResolveResourcePath(t *testing.T) {
 	t.Run("no match returns error", func(t *testing.T) {
 		tmp := t.TempDir()
 		origDir, _ := os.Getwd()
+
 		os.Chdir(tmp)
+
 		t.Cleanup(func() { os.Chdir(origDir) })
 
 		_, err := resolveResourcePath("nonexistent.yml")
@@ -78,11 +88,15 @@ func TestResolveResourcePath(t *testing.T) {
 	t.Run("finds in cmd/resources", func(t *testing.T) {
 		tmp := t.TempDir()
 		origDir, _ := os.Getwd()
+
 		os.Chdir(tmp)
+
 		t.Cleanup(func() { os.Chdir(origDir) })
 
 		dir := filepath.Join(tmp, "cmd", "resources")
+
 		os.MkdirAll(dir, 0o755)
+
 		os.WriteFile(filepath.Join(dir, "csrf.yml"), []byte("secure: true"), 0o644)
 
 		got, err := resolveResourcePath("csrf.yml")
@@ -100,11 +114,15 @@ func TestResolveResourcePath(t *testing.T) {
 func TestMustResolveResourcePath(t *testing.T) {
 	tmp := t.TempDir()
 	origDir, _ := os.Getwd()
+
 	os.Chdir(tmp)
+
 	t.Cleanup(func() { os.Chdir(origDir) })
 
 	dir := filepath.Join(tmp, "resources")
+
 	os.MkdirAll(dir, 0o755)
+
 	os.WriteFile(filepath.Join(dir, "test.yml"), []byte("ok"), 0o644)
 
 	got := mustResolveResourcePath("test.yml")

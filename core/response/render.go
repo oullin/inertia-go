@@ -30,6 +30,7 @@ func WriteJSON(w http.ResponseWriter, page *Page, marshaler httpx.JSONMarshaler)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set(httpx.HeaderInertia, "true")
+
 	w.WriteHeader(http.StatusOK)
 
 	_, err = w.Write(data)
@@ -65,11 +66,11 @@ func WriteHTML(w http.ResponseWriter, page *Page, cfg HTMLConfig) error {
 		"inertiaHead": template.HTML(cfg.Head.RenderHTML()),
 	}
 
-	if cfg.Head.Lang != "" {
+	if strings.TrimSpace(cfg.Head.Lang) != "" {
 		templateData["inertiaLang"] = cfg.Head.Lang
 	}
 
-	if cfg.Head.Direction != "" {
+	if strings.TrimSpace(cfg.Head.Direction) != "" {
 		templateData["inertiaDir"] = cfg.Head.Direction
 	}
 

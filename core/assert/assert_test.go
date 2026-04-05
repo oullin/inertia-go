@@ -13,6 +13,13 @@ import (
 // --- Failure paths ---
 
 // mockTB captures assertion failures without failing the real test.
+
+const testTemplate = `<!DOCTYPE html>
+<html>
+<head>{{ .inertiaHead }}</head>
+<body>{{ .inertia }}</body>
+</html>`
+
 type mockTB struct {
 	testing.TB
 	failed bool
@@ -22,25 +29,29 @@ type failReader struct{}
 
 type readError struct{}
 
-const testTemplate = `<!DOCTYPE html>
-<html>
-<head>{{ .inertiaHead }}</head>
-<body>{{ .inertia }}</body>
-</html>`
-
 func TestAssertFromBytes(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Users/Index","props":{"name":"alice"},"url":"/users","version":"v1"}`)
 
 	a := assert.AssertFromBytes(t, body)
+
 	a.AssertComponent(t, "Users/Index")
+
 	a.AssertURL(t, "/users")
+
 	a.AssertVersion(t, "v1")
+
 	a.AssertHasProp(t, "name")
+
 	a.AssertPropEquals(t, "name", "alice")
+
 	a.AssertMissingProp(t, "nonexistent")
 }
 
 func TestAssertFromHandler(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"))
 
 	if err != nil {
@@ -57,9 +68,13 @@ func TestAssertFromHandler(t *testing.T) {
 	r.RequestURI = "/dashboard"
 
 	a := assert.AssertFromHandler(t, i, handler, r)
+
 	a.AssertComponent(t, "Dashboard")
+
 	a.AssertURL(t, "/dashboard")
+
 	a.AssertVersion(t, "v1")
+
 	a.AssertPropEquals(t, "title", "Test Dashboard")
 }
 
@@ -74,8 +89,11 @@ func newAssertable() assert.AssertableInertia {
 }
 
 func TestAssertComponent_Failure(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertComponent(m, "WrongComponent")
 
 	if !m.failed {
@@ -84,8 +102,11 @@ func TestAssertComponent_Failure(t *testing.T) {
 }
 
 func TestAssertURL_Failure(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertURL(m, "/wrong")
 
 	if !m.failed {
@@ -94,8 +115,11 @@ func TestAssertURL_Failure(t *testing.T) {
 }
 
 func TestAssertVersion_Failure(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertVersion(m, "wrong")
 
 	if !m.failed {
@@ -104,8 +128,11 @@ func TestAssertVersion_Failure(t *testing.T) {
 }
 
 func TestAssertHasProp_Failure(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertHasProp(m, "nonexistent")
 
 	if !m.failed {
@@ -114,8 +141,11 @@ func TestAssertHasProp_Failure(t *testing.T) {
 }
 
 func TestAssertPropEquals_Failure(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertPropEquals(m, "name", "wrong-value")
 
 	if !m.failed {
@@ -124,8 +154,11 @@ func TestAssertPropEquals_Failure(t *testing.T) {
 }
 
 func TestAssertPropEquals_MissingKey(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertPropEquals(m, "missing", "any")
 
 	if !m.failed {
@@ -134,8 +167,11 @@ func TestAssertPropEquals_MissingKey(t *testing.T) {
 }
 
 func TestAssertMissingProp_Failure(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
 	a := newAssertable()
+
 	a.AssertMissingProp(m, "name")
 
 	if !m.failed {
@@ -144,7 +180,10 @@ func TestAssertMissingProp_Failure(t *testing.T) {
 }
 
 func TestAssertFromBytes_InvalidJSON(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
+
 	assert.AssertFromBytes(m, []byte(`not json`))
 
 	if !m.failed {
@@ -153,7 +192,10 @@ func TestAssertFromBytes_InvalidJSON(t *testing.T) {
 }
 
 func TestAssertFromReader_ReadError(t *testing.T) {
+	t.Parallel()
+
 	m := &mockTB{}
+
 	assert.AssertFromReader(m, &failReader{})
 
 	if !m.failed {
@@ -162,6 +204,8 @@ func TestAssertFromReader_ReadError(t *testing.T) {
 }
 
 func TestAssertFromHandler_Non200(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"))
 
 	if err != nil {
@@ -175,6 +219,7 @@ func TestAssertFromHandler_Non200(t *testing.T) {
 	m := &mockTB{}
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.RequestURI = "/"
+
 	assert.AssertFromHandler(m, i, handler, r)
 
 	if !m.failed {
@@ -191,6 +236,8 @@ func (e *readError) Error() string { return "read failed" }
 // --- Metadata decoding ---
 
 func TestAssert_DeferredPropsDecoded(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Page","props":{},"url":"/","version":"v1","deferredProps":{"sidebar":["stats","forecast"]}}`)
 
 	a := assert.AssertFromBytes(t, body)
@@ -201,6 +248,8 @@ func TestAssert_DeferredPropsDecoded(t *testing.T) {
 }
 
 func TestAssert_MergePropsDecoded(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Page","props":{},"url":"/","version":"v1","mergeProps":["items"]}`)
 
 	a := assert.AssertFromBytes(t, body)
@@ -211,6 +260,8 @@ func TestAssert_MergePropsDecoded(t *testing.T) {
 }
 
 func TestAssert_DeepMergePropsDecoded(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Page","props":{},"url":"/","version":"v1","deepMergeProps":["data"]}`)
 
 	a := assert.AssertFromBytes(t, body)
@@ -221,6 +272,8 @@ func TestAssert_DeepMergePropsDecoded(t *testing.T) {
 }
 
 func TestAssert_ScrollPropsDecoded(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Page","props":{},"url":"/","version":"v1","scrollProps":{"feed":{"pageName":"feedPage","previousPage":null,"nextPage":2,"currentPage":1,"reset":false}}}`)
 
 	a := assert.AssertFromBytes(t, body)
@@ -237,6 +290,8 @@ func TestAssert_ScrollPropsDecoded(t *testing.T) {
 }
 
 func TestAssert_OncePropsDecoded(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Page","props":{},"url":"/","version":"v1","onceProps":{"notes":{"prop":"notes","expiresAt":1700000000}}}`)
 
 	a := assert.AssertFromBytes(t, body)
@@ -257,6 +312,8 @@ func TestAssert_OncePropsDecoded(t *testing.T) {
 }
 
 func TestAssert_EncryptHistoryDecoded(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Page","props":{},"url":"/","version":"v1","encryptHistory":true}`)
 
 	a := assert.AssertFromBytes(t, body)
@@ -267,6 +324,8 @@ func TestAssert_EncryptHistoryDecoded(t *testing.T) {
 }
 
 func TestAssert_ClearHistoryDecoded(t *testing.T) {
+	t.Parallel()
+
 	body := []byte(`{"component":"Page","props":{},"url":"/","version":"v1","clearHistory":true}`)
 
 	a := assert.AssertFromBytes(t, body)
@@ -277,6 +336,8 @@ func TestAssert_ClearHistoryDecoded(t *testing.T) {
 }
 
 func TestAssertFromHandler_WithSharedProps(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"))
 
 	if err != nil {
@@ -293,11 +354,15 @@ func TestAssertFromHandler_WithSharedProps(t *testing.T) {
 	r.RequestURI = "/"
 
 	a := assert.AssertFromHandler(t, i, handler, r)
+
 	a.AssertHasProp(t, "app_name")
+
 	a.AssertPropEquals(t, "app_name", "TestApp")
 }
 
 func TestAssertFromHandler_WithContextProps(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"))
 
 	if err != nil {
@@ -306,6 +371,7 @@ func TestAssertFromHandler_WithContextProps(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := inertia.SetProp(r.Context(), "user", "alice")
+
 		i.Render(w, r.WithContext(ctx), "Page")
 	})
 
@@ -313,11 +379,15 @@ func TestAssertFromHandler_WithContextProps(t *testing.T) {
 	r.RequestURI = "/"
 
 	a := assert.AssertFromHandler(t, i, handler, r)
+
 	a.AssertHasProp(t, "user")
+
 	a.AssertPropEquals(t, "user", "alice")
 }
 
 func TestAssertFromHandler_AutoSetsInertiaHeader(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"))
 
 	if err != nil {

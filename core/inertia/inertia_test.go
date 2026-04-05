@@ -36,6 +36,12 @@ import (
 
 // --- Helpers ---
 
+const testTemplate = `<!DOCTYPE html>
+<html>
+<head>{{ .inertiaHead }}</head>
+<body>{{ .inertia }}</body>
+</html>`
+
 type failReader struct{}
 
 type testJSONMarshaler struct {
@@ -44,14 +50,9 @@ type testJSONMarshaler struct {
 
 type testLogger struct{}
 
-const testTemplate = `<!DOCTYPE html>
-<html>
-<head>{{ .inertiaHead }}</head>
-<body>{{ .inertia }}</body>
-</html>`
-
 func newTestInertia(t *testing.T) *inertia.Inertia {
 	t.Helper()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"))
 
 	if err != nil {
@@ -62,6 +63,8 @@ func newTestInertia(t *testing.T) *inertia.Inertia {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	if i.Version() != "v1" {
@@ -70,6 +73,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestNew_InvalidTemplate(t *testing.T) {
+	t.Parallel()
+
 	_, err := inertia.New("{{ .invalid }", inertia.WithVersion("v1"))
 
 	if err == nil {
@@ -78,11 +83,15 @@ func TestNew_InvalidTemplate(t *testing.T) {
 }
 
 func TestRender_JSONResponse(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/users", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
+
 	r.RequestURI = "/users"
 	w := httptest.NewRecorder()
 
@@ -103,7 +112,7 @@ func TestRender_JSONResponse(t *testing.T) {
 	}
 
 	if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
-		t.Errorf("Content-Type = %q", ct)
+		t.Errorf("Content-Type = %q, want %q", ct, "application/json")
 	}
 
 	if resp.Header.Get(httpx.HeaderInertia) != "true" {
@@ -117,19 +126,21 @@ func TestRender_JSONResponse(t *testing.T) {
 	}
 
 	if page.Component != "Users/Index" {
-		t.Errorf("component = %q", page.Component)
+		t.Errorf("component = %q, want %q", page.Component, "Users/Index")
 	}
 
 	if page.URL != "/users" {
-		t.Errorf("url = %q", page.URL)
+		t.Errorf("url = %q, want %q", page.URL, "/users")
 	}
 
 	if page.Version != "v1" {
-		t.Errorf("version = %q", page.Version)
+		t.Errorf("version = %q, want %q", page.Version, "v1")
 	}
 }
 
 func TestRender_HTMLResponse(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/users", nil)
@@ -149,7 +160,7 @@ func TestRender_HTMLResponse(t *testing.T) {
 	defer resp.Body.Close()
 
 	if ct := resp.Header.Get("Content-Type"); ct != "text/html; charset=utf-8" {
-		t.Errorf("Content-Type = %q", ct)
+		t.Errorf("Content-Type = %q, want %q", ct, "text/html; charset=utf-8")
 	}
 
 	body := w.Body.String()
@@ -164,10 +175,14 @@ func TestRender_HTMLResponse(t *testing.T) {
 }
 
 func TestRender_NoProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -184,32 +199,41 @@ func TestRender_NoProps(t *testing.T) {
 	}
 
 	if page.Component != "Dashboard" {
-		t.Errorf("component = %q", page.Component)
+		t.Errorf("component = %q, want %q", page.Component, "Dashboard")
 	}
 }
 
 func TestSharedProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
+
 	i.ShareProp("app_name", "TestApp")
+
 	i.ShareProps(httpx.Props{"version": "1.0"})
 
 	shared := i.SharedProps()
 
 	if shared["app_name"] != "TestApp" {
-		t.Errorf("app_name = %v", shared["app_name"])
+		t.Errorf("app_name = %v, want %v", shared["app_name"], "TestApp")
 	}
 
 	if shared["version"] != "1.0" {
-		t.Errorf("version = %v", shared["version"])
+		t.Errorf("version = %v, want %v", shared["version"], "1.0")
 	}
 }
 
 func TestSharedProps_MergedInRender(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
+
 	i.ShareProp("app_name", "TestApp")
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -226,19 +250,23 @@ func TestSharedProps_MergedInRender(t *testing.T) {
 	}
 
 	if page.Props["app_name"] != "TestApp" {
-		t.Errorf("shared prop app_name = %v", page.Props["app_name"])
+		t.Errorf("shared prop app_name = %v, want %v", page.Props["app_name"], "TestApp")
 	}
 
 	if page.Props["title"] != "Hello" {
-		t.Errorf("prop title = %v", page.Props["title"])
+		t.Errorf("prop title = %v, want %v", page.Props["title"], "Hello")
 	}
 }
 
 func TestContextProps_MergedInRender(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "user", "alice")
@@ -259,7 +287,7 @@ func TestContextProps_MergedInRender(t *testing.T) {
 	}
 
 	if page.Props["user"] != "alice" {
-		t.Errorf("context prop user = %v", page.Props["user"])
+		t.Errorf("context prop user = %v, want %v", page.Props["user"], "alice")
 	}
 
 	if page.Props["errors"] == nil {
@@ -268,10 +296,14 @@ func TestContextProps_MergedInRender(t *testing.T) {
 }
 
 func TestRender_DeferredProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -300,10 +332,14 @@ func TestRender_DeferredProps(t *testing.T) {
 }
 
 func TestRender_OnceAndScrollProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/feed", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/feed"
 	w := httptest.NewRecorder()
 
@@ -334,6 +370,8 @@ func TestRender_OnceAndScrollProps(t *testing.T) {
 }
 
 func TestRedirect(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -347,10 +385,14 @@ func TestRedirect(t *testing.T) {
 }
 
 func TestBack(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set("Referer", "/previous")
+
 	w := httptest.NewRecorder()
 
 	i.Back(w, r)
@@ -365,6 +407,8 @@ func TestBack(t *testing.T) {
 }
 
 func TestBack_FallbackToRoot(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -378,10 +422,14 @@ func TestBack_FallbackToRoot(t *testing.T) {
 }
 
 func TestLocation_InertiaRequest(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	w := httptest.NewRecorder()
 
 	i.Location(w, r, "https://external.com")
@@ -391,11 +439,13 @@ func TestLocation_InertiaRequest(t *testing.T) {
 	}
 
 	if loc := w.Header().Get(httpx.HeaderLocation); loc != "https://external.com" {
-		t.Errorf("X-Inertia-Location = %q", loc)
+		t.Errorf("X-Inertia-Location = %q, want %q", loc, "https://external.com")
 	}
 }
 
 func TestLocation_NonInertiaRequest(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -409,8 +459,11 @@ func TestLocation_NonInertiaRequest(t *testing.T) {
 }
 
 func TestNewFromFile(t *testing.T) {
+	t.Parallel()
+
 	tmp := t.TempDir()
 	path := tmp + "/app.html"
+
 	os.WriteFile(path, []byte(testTemplate), 0644)
 
 	i, err := inertia.NewFromFile(path, inertia.WithVersion("v1"))
@@ -420,11 +473,13 @@ func TestNewFromFile(t *testing.T) {
 	}
 
 	if i.Version() != "v1" {
-		t.Errorf("Version() = %q", i.Version())
+		t.Errorf("Version() = %q, want %q", i.Version(), "v1")
 	}
 }
 
 func TestNewFromFile_NotFound(t *testing.T) {
+	t.Parallel()
+
 	_, err := inertia.NewFromFile("/nonexistent/path.html")
 
 	if err == nil {
@@ -433,6 +488,8 @@ func TestNewFromFile_NotFound(t *testing.T) {
 }
 
 func TestNewFromReader(t *testing.T) {
+	t.Parallel()
+
 	r := strings.NewReader(testTemplate)
 
 	i, err := inertia.NewFromReader(r, inertia.WithVersion("v1"))
@@ -442,11 +499,13 @@ func TestNewFromReader(t *testing.T) {
 	}
 
 	if i.Version() != "v1" {
-		t.Errorf("Version() = %q", i.Version())
+		t.Errorf("Version() = %q, want %q", i.Version(), "v1")
 	}
 }
 
 func TestNewFromReader_Error(t *testing.T) {
+	t.Parallel()
+
 	_, err := inertia.NewFromReader(&failReader{})
 
 	if err == nil {
@@ -455,6 +514,8 @@ func TestNewFromReader_Error(t *testing.T) {
 }
 
 func TestNewFromTemplate(t *testing.T) {
+	t.Parallel()
+
 	tmpl := template.Must(template.New("root").Parse(testTemplate))
 
 	i, err := inertia.NewFromTemplate(tmpl, inertia.WithVersion("v1"))
@@ -464,13 +525,16 @@ func TestNewFromTemplate(t *testing.T) {
 	}
 
 	if i.Version() != "v1" {
-		t.Errorf("Version() = %q", i.Version())
+		t.Errorf("Version() = %q, want %q", i.Version(), "v1")
 	}
 }
 
 func TestWithVersionFromFile(t *testing.T) {
+	t.Parallel()
+
 	tmp := t.TempDir()
 	path := tmp + "/manifest.json"
+
 	os.WriteFile(path, []byte(`{"app.js":"app.abc123.js"}`), 0644)
 
 	i, err := inertia.New(testTemplate, inertia.WithVersionFromFile(path))
@@ -479,12 +543,14 @@ func TestWithVersionFromFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if i.Version() == "" {
+	if strings.TrimSpace(i.Version()) == "" {
 		t.Error("expected non-empty version from file hash")
 	}
 }
 
 func TestWithVersionFromFile_NotFound(t *testing.T) {
+	t.Parallel()
+
 	_, err := inertia.New(testTemplate, inertia.WithVersionFromFile("/nonexistent"))
 
 	if err == nil {
@@ -493,6 +559,8 @@ func TestWithVersionFromFile_NotFound(t *testing.T) {
 }
 
 func TestWithContainerID(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithContainerID("root"))
 
 	if err != nil {
@@ -513,6 +581,8 @@ func TestWithContainerID(t *testing.T) {
 }
 
 func TestWithEncryptHistory(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"), inertia.WithEncryptHistory())
 
 	if err != nil {
@@ -520,7 +590,9 @@ func TestWithEncryptHistory(t *testing.T) {
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -536,6 +608,7 @@ func TestWithEncryptHistory(t *testing.T) {
 }
 
 func TestWithTemplateFuncs(t *testing.T) {
+	t.Parallel()
 
 	_, err := inertia.New(testTemplate,
 		inertia.WithVersion("v1"),
@@ -550,6 +623,8 @@ func TestWithTemplateFuncs(t *testing.T) {
 }
 
 func TestWithJSONMarshaler(t *testing.T) {
+	t.Parallel()
+
 	m := &testJSONMarshaler{marshalCalled: false}
 
 	i, err := inertia.New(testTemplate,
@@ -562,7 +637,9 @@ func TestWithJSONMarshaler(t *testing.T) {
 	}
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -574,6 +651,8 @@ func TestWithJSONMarshaler(t *testing.T) {
 }
 
 func TestWithLogger(t *testing.T) {
+	t.Parallel()
+
 	l := &testLogger{}
 
 	_, err := inertia.New(testTemplate,
@@ -587,16 +666,21 @@ func TestWithLogger(t *testing.T) {
 }
 
 func TestSetProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProps(r.Context(), httpx.Props{"a": "1", "b": "2"})
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -604,25 +688,30 @@ func TestSetProps(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&page)
 
 	if page.Props["a"] != "1" {
-		t.Errorf("prop a = %v", page.Props["a"])
+		t.Errorf("prop a = %v, want %v", page.Props["a"], "1")
 	}
 
 	if page.Props["b"] != "2" {
-		t.Errorf("prop b = %v", page.Props["b"])
+		t.Errorf("prop b = %v, want %v", page.Props["b"], "2")
 	}
 }
 
 func TestSetEncryptHistory(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetEncryptHistory(r.Context())
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -635,16 +724,21 @@ func TestSetEncryptHistory(t *testing.T) {
 }
 
 func TestSetClearHistory(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetClearHistory(r.Context())
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -657,6 +751,8 @@ func TestSetClearHistory(t *testing.T) {
 }
 
 func TestSetTemplateData(t *testing.T) {
+	t.Parallel()
+
 	tmpl := `<!DOCTYPE html><html><body>{{ .customKey }}|{{ .inertia }}</body></html>`
 
 	i, err := inertia.New(tmpl, inertia.WithVersion("v1"))
@@ -672,16 +768,19 @@ func TestSetTemplateData(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, "custom-value") {
-		t.Errorf("template data not rendered, body = %s", body)
+		t.Errorf("template data not rendered, want body to contain %q, got %s", "custom-value", body)
 	}
 }
 
 func TestSetTemplateDatum(t *testing.T) {
+	t.Parallel()
+
 	tmpl := `<!DOCTYPE html><html><body>{{ .singleKey }}|{{ .inertia }}</body></html>`
 
 	i, err := inertia.New(tmpl, inertia.WithVersion("v1"))
@@ -697,16 +796,19 @@ func TestSetTemplateDatum(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, "single-value") {
-		t.Errorf("template datum not rendered, body = %s", body)
+		t.Errorf("template datum not rendered, want body to contain %q, got %s", "single-value", body)
 	}
 }
 
 func TestRedirect_CustomStatus(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -720,10 +822,14 @@ func TestRedirect_CustomStatus(t *testing.T) {
 }
 
 func TestRender_PropResolutionError(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -737,6 +843,8 @@ func TestRender_PropResolutionError(t *testing.T) {
 }
 
 func TestMiddleware_Method(t *testing.T) {
+	t.Parallel()
+
 	i, err := inertia.New(testTemplate, inertia.WithVersion("v1"))
 
 	if err != nil {
@@ -749,6 +857,7 @@ func TestMiddleware_Method(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	handler.ServeHTTP(w, r)
 
 	if got := w.Header().Get("Vary"); got != httpx.HeaderInertia {
@@ -757,6 +866,8 @@ func TestMiddleware_Method(t *testing.T) {
 }
 
 func TestStdJSONMarshaler_Unmarshal(t *testing.T) {
+	t.Parallel()
+
 	m := &inertia.StdJSONMarshaler{}
 
 	var result map[string]string
@@ -773,6 +884,8 @@ func TestStdJSONMarshaler_Unmarshal(t *testing.T) {
 }
 
 func TestStdJSONMarshaler_Unmarshal_Error(t *testing.T) {
+	t.Parallel()
+
 	m := &inertia.StdJSONMarshaler{}
 
 	var result map[string]string
@@ -817,10 +930,14 @@ func containsStr(s, substr string) bool {
 // --- Response Structure ---
 
 func TestRender_URLPreservesFullRequestURI(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/users?page=2&sort=name", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/users?page=2&sort=name"
 	w := httptest.NewRecorder()
 
@@ -836,10 +953,14 @@ func TestRender_URLPreservesFullRequestURI(t *testing.T) {
 }
 
 func TestRender_URLWithTrailingSlash(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/users/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/users/"
 	w := httptest.NewRecorder()
 
@@ -855,10 +976,14 @@ func TestRender_URLWithTrailingSlash(t *testing.T) {
 }
 
 func TestRender_URLWithTrailingSlashAndQueryParams(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/users/?page=1", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/users/?page=1"
 	w := httptest.NewRecorder()
 
@@ -874,10 +999,14 @@ func TestRender_URLWithTrailingSlashAndQueryParams(t *testing.T) {
 }
 
 func TestRender_JSONOmitsEmptyOptionalFields(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -899,7 +1028,10 @@ func TestRender_JSONOmitsEmptyOptionalFields(t *testing.T) {
 // --- Shared Props ---
 
 func TestSharedProps_ReturnsCopy(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
+
 	i.ShareProp("key", "original")
 
 	copy := i.SharedProps()
@@ -911,11 +1043,16 @@ func TestSharedProps_ReturnsCopy(t *testing.T) {
 }
 
 func TestSharedProps_OverriddenByRenderProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
+
 	i.ShareProp("title", "shared")
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -931,17 +1068,23 @@ func TestSharedProps_OverriddenByRenderProps(t *testing.T) {
 }
 
 func TestSharedProps_OverriddenByContextProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
+
 	i.ShareProp("title", "shared")
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "title", "context-override")
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -954,16 +1097,21 @@ func TestSharedProps_OverriddenByContextProps(t *testing.T) {
 }
 
 func TestRenderProps_OverrideContextProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "title", "context-val")
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page", httpx.Props{"title": "render-val"})
 
 	var page response.Page
@@ -976,17 +1124,23 @@ func TestRenderProps_OverrideContextProps(t *testing.T) {
 }
 
 func TestSharedProps_MergedWithAllSources(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
+
 	i.ShareProp("shared", "shared-val")
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "ctx", "ctx-val")
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page", httpx.Props{"render": "render-val"})
 
 	var page response.Page
@@ -1007,6 +1161,8 @@ func TestSharedProps_MergedWithAllSources(t *testing.T) {
 }
 
 func TestShareProp_ConcurrentSafe(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	done := make(chan struct{})
@@ -1014,6 +1170,7 @@ func TestShareProp_ConcurrentSafe(t *testing.T) {
 	for n := 0; n < 10; n++ {
 		go func(n int) {
 			i.ShareProp("key", n)
+
 			_ = i.SharedProps()
 
 			done <- struct{}{}
@@ -1026,6 +1183,8 @@ func TestShareProp_ConcurrentSafe(t *testing.T) {
 }
 
 func TestShareProp_FuncValueResolvedOnEachRender(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	callCount := 0
@@ -1038,9 +1197,12 @@ func TestShareProp_FuncValueResolvedOnEachRender(t *testing.T) {
 
 	for range 2 {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 		r.Header.Set(httpx.HeaderInertia, "true")
+
 		r.RequestURI = "/"
 		w := httptest.NewRecorder()
+
 		i.Render(w, r, "Page")
 	}
 
@@ -1052,10 +1214,14 @@ func TestShareProp_FuncValueResolvedOnEachRender(t *testing.T) {
 // --- Validation Errors ---
 
 func TestValidationErrors_MultipleFields(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{
@@ -1065,6 +1231,7 @@ func TestValidationErrors_MultipleFields(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -1078,25 +1245,30 @@ func TestValidationErrors_MultipleFields(t *testing.T) {
 	}
 
 	if errors["name"] != "required" {
-		t.Errorf("errors.name = %v", errors["name"])
+		t.Errorf("errors.name = %v, want %v", errors["name"], "required")
 	}
 
 	if errors["email"] != "invalid" {
-		t.Errorf("errors.email = %v", errors["email"])
+		t.Errorf("errors.email = %v, want %v", errors["email"], "invalid")
 	}
 }
 
 func TestValidationErrors_EmptyNotAdded(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{})
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -1109,10 +1281,14 @@ func TestValidationErrors_EmptyNotAdded(t *testing.T) {
 }
 
 func TestValidationErrors_NilNotAdded(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1128,16 +1304,21 @@ func TestValidationErrors_NilNotAdded(t *testing.T) {
 }
 
 func TestValidationErrors_OverridesRenderErrors(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{"field": "required"})
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page", httpx.Props{"errors": "custom"})
 
 	var page response.Page
@@ -1152,15 +1333,19 @@ func TestValidationErrors_OverridesRenderErrors(t *testing.T) {
 	}
 
 	if errors["field"] != "required" {
-		t.Errorf("errors.field = %v", errors["field"])
+		t.Errorf("errors.field = %v, want %v", errors["field"], "required")
 	}
 }
 
 func TestValidationErrors_NestedStructure(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetValidationErrors(r.Context(), httpx.ValidationErrors{
@@ -1169,6 +1354,7 @@ func TestValidationErrors_NestedStructure(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -1183,10 +1369,14 @@ func TestValidationErrors_NestedStructure(t *testing.T) {
 // --- Location ---
 
 func TestLocation_InertiaRequest_EmptyBody(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	w := httptest.NewRecorder()
 
 	i.Location(w, r, "https://external.com")
@@ -1197,6 +1387,8 @@ func TestLocation_InertiaRequest_EmptyBody(t *testing.T) {
 }
 
 func TestLocation_NonInertiaRequest_CustomStatus(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1210,10 +1402,14 @@ func TestLocation_NonInertiaRequest_CustomStatus(t *testing.T) {
 }
 
 func TestLocation_InertiaRequest_IgnoresCustomStatus(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	w := httptest.NewRecorder()
 
 	i.Location(w, r, "/path", http.StatusMovedPermanently)
@@ -1226,6 +1422,8 @@ func TestLocation_InertiaRequest_IgnoresCustomStatus(t *testing.T) {
 // --- Redirect / Back ---
 
 func TestRedirect_SetsLocationHeader(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1239,10 +1437,14 @@ func TestRedirect_SetsLocationHeader(t *testing.T) {
 }
 
 func TestBack_WithCustomStatus303(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set("Referer", "/previous")
+
 	w := httptest.NewRecorder()
 
 	i.Back(w, r, http.StatusSeeOther)
@@ -1259,10 +1461,14 @@ func TestBack_WithCustomStatus303(t *testing.T) {
 // --- Deferred Props Integration ---
 
 func TestRender_DeferredPropsMultipleGroups(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1286,10 +1492,14 @@ func TestRender_DeferredPropsMultipleGroups(t *testing.T) {
 }
 
 func TestRender_DeferredMergePropsInBothFields(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1311,12 +1521,16 @@ func TestRender_DeferredMergePropsInBothFields(t *testing.T) {
 }
 
 func TestRender_DeferredOnPartialReload_Resolved(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "stats")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1340,10 +1554,14 @@ func TestRender_DeferredOnPartialReload_Resolved(t *testing.T) {
 // --- MergeProp Integration ---
 
 func TestRender_MergePropsInJSON(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1361,10 +1579,14 @@ func TestRender_MergePropsInJSON(t *testing.T) {
 }
 
 func TestRender_DeepMergePropsInJSON(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1382,10 +1604,14 @@ func TestRender_DeepMergePropsInJSON(t *testing.T) {
 }
 
 func TestRender_MergeAndDeepMergeTogether(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1410,10 +1636,14 @@ func TestRender_MergeAndDeepMergeTogether(t *testing.T) {
 // --- ScrollProp Integration ---
 
 func TestRender_ScrollPropsAllFieldsInJSON(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1428,28 +1658,32 @@ func TestRender_ScrollPropsAllFieldsInJSON(t *testing.T) {
 	scroll := page.ScrollProps["feed"]
 
 	if scroll.PageName != "feedPage" {
-		t.Errorf("pageName = %q", scroll.PageName)
+		t.Errorf("pageName = %q, want %q", scroll.PageName, "feedPage")
 	}
 
 	// JSON numbers decode as float64.
 	if scroll.CurrentPage != float64(2) {
-		t.Errorf("currentPage = %v", scroll.CurrentPage)
+		t.Errorf("currentPage = %v, want %v", scroll.CurrentPage, float64(2))
 	}
 
 	if scroll.PreviousPage != float64(1) {
-		t.Errorf("previousPage = %v", scroll.PreviousPage)
+		t.Errorf("previousPage = %v, want %v", scroll.PreviousPage, float64(1))
 	}
 
 	if scroll.NextPage != float64(3) {
-		t.Errorf("nextPage = %v", scroll.NextPage)
+		t.Errorf("nextPage = %v, want %v", scroll.NextPage, float64(3))
 	}
 }
 
 func TestRender_ScrollPropsWithReset(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1467,10 +1701,14 @@ func TestRender_ScrollPropsWithReset(t *testing.T) {
 }
 
 func TestRender_ScrollPropsWithMerge(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1490,10 +1728,14 @@ func TestRender_ScrollPropsWithMerge(t *testing.T) {
 // --- OnceProp Integration ---
 
 func TestRender_OncePropsMetadataInJSON(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1506,20 +1748,24 @@ func TestRender_OncePropsMetadataInJSON(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&page)
 
 	if page.OnceProps["notes"].Prop != "notes" {
-		t.Errorf("onceProps[notes].prop = %q", page.OnceProps["notes"].Prop)
+		t.Errorf("onceProps[notes].prop = %q, want %q", page.OnceProps["notes"].Prop, "notes")
 	}
 
 	if page.Props["notes"] != "snapshot" {
-		t.Errorf("notes = %v", page.Props["notes"])
+		t.Errorf("notes = %v, want %v", page.Props["notes"], "snapshot")
 	}
 }
 
 func TestRender_OnceExcluded_AbsentFromProps(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderExceptOnceProps, "notes")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1539,16 +1785,21 @@ func TestRender_OnceExcluded_AbsentFromProps(t *testing.T) {
 // --- History ---
 
 func TestRender_EncryptHistoryFromBothOptionAndContext(t *testing.T) {
+	t.Parallel()
+
 	i, _ := inertia.New(testTemplate, inertia.WithVersion("v1"), inertia.WithEncryptHistory())
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetEncryptHistory(r.Context())
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -1561,10 +1812,14 @@ func TestRender_EncryptHistoryFromBothOptionAndContext(t *testing.T) {
 }
 
 func TestRender_EncryptHistoryDefaultFalseOmitted(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1578,10 +1833,14 @@ func TestRender_EncryptHistoryDefaultFalseOmitted(t *testing.T) {
 }
 
 func TestRender_ClearHistoryOmittedWhenFalse(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 	w := httptest.NewRecorder()
 
@@ -1597,10 +1856,14 @@ func TestRender_ClearHistoryOmittedWhenFalse(t *testing.T) {
 // --- Context Helpers ---
 
 func TestSetProp_MultipleCalls_Accumulate(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "a", "1")
@@ -1608,6 +1871,7 @@ func TestSetProp_MultipleCalls_Accumulate(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -1615,19 +1879,23 @@ func TestSetProp_MultipleCalls_Accumulate(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&page)
 
 	if page.Props["a"] != "1" {
-		t.Errorf("a = %v", page.Props["a"])
+		t.Errorf("a = %v, want %v", page.Props["a"], "1")
 	}
 
 	if page.Props["b"] != "2" {
-		t.Errorf("b = %v", page.Props["b"])
+		t.Errorf("b = %v, want %v", page.Props["b"], "2")
 	}
 }
 
 func TestSetProp_SameKeyOverwritten(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "key", "first")
@@ -1635,6 +1903,7 @@ func TestSetProp_SameKeyOverwritten(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -1647,10 +1916,14 @@ func TestSetProp_SameKeyOverwritten(t *testing.T) {
 }
 
 func TestSetProps_MergesWithExisting(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetProp(r.Context(), "a", "1")
@@ -1658,6 +1931,7 @@ func TestSetProps_MergesWithExisting(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	var page response.Page
@@ -1672,16 +1946,21 @@ func TestSetProps_MergesWithExisting(t *testing.T) {
 }
 
 func TestSetTemplateData_DoesNotAffectJSON(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
+
 	r.RequestURI = "/"
 
 	ctx := inertia.SetTemplateData(r.Context(), httpx.TemplateData{"extra": "val"})
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
@@ -1694,6 +1973,8 @@ func TestSetTemplateData_DoesNotAffectJSON(t *testing.T) {
 // --- Head management ---
 
 func TestWithHead_RendersDefaults(t *testing.T) {
+	t.Parallel()
+
 	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
 	i, err := inertia.New(tmpl,
 		inertia.WithVersion("v1"),
@@ -1711,20 +1992,23 @@ func TestWithHead_RendersDefaults(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, "<title>Default Title</title>") {
-		t.Errorf("missing default title, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>Default Title</title>", body)
 	}
 
 	if !contains(body, `name="description"`) {
-		t.Errorf("missing default description meta, body = %s", body)
+		t.Errorf("body missing %q, got %s", `name="description"`, body)
 	}
 }
 
 func TestWithHeadFromFile(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	path := dir + "/seo.yml"
 
@@ -1748,24 +2032,27 @@ meta:
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, "<title>YAML Title</title>") {
-		t.Errorf("missing YAML title, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>YAML Title</title>", body)
 	}
 
 	if !contains(body, `lang="en"`) {
-		t.Errorf("missing lang attribute, body = %s", body)
+		t.Errorf("body missing %q, got %s", `lang="en"`, body)
 	}
 
 	if !contains(body, "From YAML") {
-		t.Errorf("missing YAML description, body = %s", body)
+		t.Errorf("body missing %q, got %s", "From YAML", body)
 	}
 }
 
 func TestWithHeadFromFile_FileNotFound(t *testing.T) {
+	t.Parallel()
+
 	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
 	_, err := inertia.New(tmpl,
 		inertia.WithVersion("v1"),
@@ -1778,6 +2065,8 @@ func TestWithHeadFromFile_FileNotFound(t *testing.T) {
 }
 
 func TestWithHeadFromFile_InvalidYAML(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	path := dir + "/seo.yml"
 
@@ -1795,6 +2084,8 @@ func TestWithHeadFromFile_InvalidYAML(t *testing.T) {
 }
 
 func TestWithHead_ExplicitOptionWinsOverFileConfig(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	path := dir + "/seo.yml"
 
@@ -1824,20 +2115,23 @@ meta:
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, "<title>Explicit Title</title>") {
-		t.Fatalf("expected explicit title to win, body = %s", body)
+		t.Fatalf("body missing %q, got %s", "<title>Explicit Title</title>", body)
 	}
 
 	if contains(body, "YAML Title") {
-		t.Fatalf("did not expect YAML title override, body = %s", body)
+		t.Fatalf("body should not contain %q, got %s", "YAML Title", body)
 	}
 }
 
 func TestSetHead_OverridesDefault(t *testing.T) {
+	t.Parallel()
+
 	tmpl := `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
 	i, err := inertia.New(tmpl,
 		inertia.WithVersion("v1"),
@@ -1860,25 +2154,28 @@ func TestSetHead_OverridesDefault(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, "<title>Override Title</title>") {
-		t.Errorf("title not overridden, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>Override Title</title>", body)
 	}
 
 	if !contains(body, "Override desc") {
-		t.Errorf("description not overridden, body = %s", body)
+		t.Errorf("body missing %q, got %s", "Override desc", body)
 	}
 
 	// Robots should still be present from defaults.
 	if !contains(body, "index, follow") {
-		t.Errorf("default robots missing, body = %s", body)
+		t.Errorf("body missing %q, got %s", "index, follow", body)
 	}
 }
 
 func TestSetTitle(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1886,14 +2183,17 @@ func TestSetTitle(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	if !contains(w.Body.String(), "<title>My Title</title>") {
-		t.Errorf("missing title, body = %s", w.Body.String())
+		t.Errorf("body missing %q, got %s", "<title>My Title</title>", w.Body.String())
 	}
 }
 
 func TestSetLang(t *testing.T) {
+	t.Parallel()
+
 	tmpl := `<!DOCTYPE html><html lang="{{ .inertiaLang }}"><body>{{ .inertia }}</body></html>`
 	i, _ := inertia.New(tmpl, inertia.WithVersion("v1"))
 
@@ -1902,14 +2202,17 @@ func TestSetLang(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	if !contains(w.Body.String(), `lang="fr"`) {
-		t.Errorf("missing lang, body = %s", w.Body.String())
+		t.Errorf("body missing %q, got %s", `lang="fr"`, w.Body.String())
 	}
 }
 
 func TestSetMeta(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1920,6 +2223,7 @@ func TestSetMeta(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
@@ -1934,6 +2238,8 @@ func TestSetMeta(t *testing.T) {
 }
 
 func TestSetLinks(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1943,14 +2249,17 @@ func TestSetLinks(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	if !contains(w.Body.String(), `rel="canonical"`) {
-		t.Errorf("missing canonical link, body = %s", w.Body.String())
+		t.Errorf("body missing %q, got %s", `rel="canonical"`, w.Body.String())
 	}
 }
 
 func TestCSRFTokenInHead(t *testing.T) {
+	t.Parallel()
+
 	i := newTestInertia(t)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1958,20 +2267,23 @@ func TestCSRFTokenInHead(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, `name="csrf-token"`) {
-		t.Errorf("missing csrf-token meta, body = %s", body)
+		t.Errorf("body missing %q, got %s", `name="csrf-token"`, body)
 	}
 
 	if !contains(body, "test-csrf-token") {
-		t.Errorf("missing csrf token value, body = %s", body)
+		t.Errorf("body missing %q, got %s", "test-csrf-token", body)
 	}
 }
 
 func TestLocaleHeadMerge(t *testing.T) {
+	t.Parallel()
+
 	tmpl := `<!DOCTYPE html><html lang="{{ .inertiaLang }}" dir="{{ .inertiaDir }}"><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
 	i, _ := inertia.New(tmpl,
 		inertia.WithVersion("v1"),
@@ -1998,39 +2310,43 @@ func TestLocaleHeadMerge(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if !contains(body, `lang="ar"`) {
-		t.Errorf("missing lang=ar, body = %s", body)
+		t.Errorf("body missing %q, got %s", `lang="ar"`, body)
 	}
 
 	if !contains(body, `dir="rtl"`) {
-		t.Errorf("missing dir=rtl, body = %s", body)
+		t.Errorf("body missing %q, got %s", `dir="rtl"`, body)
 	}
 
 	if !contains(body, "<title>Arabic Title</title>") {
-		t.Errorf("locale title not applied, body = %s", body)
+		t.Errorf("body missing %q, got %s", "<title>Arabic Title</title>", body)
 	}
 
 	// Global robots default should still be present.
 	if !contains(body, "index, follow") {
-		t.Errorf("global robots default missing, body = %s", body)
+		t.Errorf("body missing %q, got %s", "index, follow", body)
 	}
 
 	if !contains(body, "ar_SA") {
-		t.Errorf("locale og:locale missing, body = %s", body)
+		t.Errorf("body missing %q, got %s", "ar_SA", body)
 	}
 }
 
 func TestHead_NotInJSON(t *testing.T) {
+	t.Parallel()
+
 	i, _ := inertia.New(testTemplate,
 		inertia.WithVersion("v1"),
 		inertia.WithHead(httpx.Head{Title: "Should Not Appear"}),
 	)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderVersion, "v1")
 
@@ -2038,11 +2354,227 @@ func TestHead_NotInJSON(t *testing.T) {
 	r = r.WithContext(ctx)
 
 	w := httptest.NewRecorder()
+
 	i.Render(w, r, "Page")
 
 	body := w.Body.String()
 
 	if contains(body, "Should Not Appear") || contains(body, "Also Not Appear") {
-		t.Errorf("head should not appear in JSON response, body = %s", body)
+		t.Errorf("head data should not appear in JSON response, got %s", body)
+	}
+}
+
+func TestHandlePrecognition_NonPrecognitiveRequest(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if handled {
+		t.Error("expected handled=false for non-precognition request")
+	}
+}
+
+func TestHandlePrecognition_NoErrors_Returns204(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	ctx := httpx.SetPrecognition(r.Context())
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true for precognition request")
+	}
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	}
+
+	if got := w.Header().Get(httpx.HeaderPrecognition); got != "true" {
+		t.Errorf("Precognition header = %q, want %q", got, "true")
+	}
+}
+
+func TestHandlePrecognition_WithErrors_Returns422(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+	ctx := httpx.SetPrecognition(r.Context())
+	ctx = inertia.SetValidationErrors(ctx, httpx.ValidationErrors{
+		"email": "The email field is required.",
+		"name":  "The name field is required.",
+	})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true")
+	}
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnprocessableEntity)
+	}
+
+	var body map[string]any
+
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("failed to parse response body: %v", err)
+	}
+
+	errors, ok := body["errors"].(map[string]any)
+
+	if !ok {
+		t.Fatal("expected 'errors' key in response")
+	}
+
+	if errors["email"] != "The email field is required." {
+		t.Errorf("email error = %v", errors["email"])
+	}
+}
+
+func TestHandlePrecognition_ValidateOnly_FiltersErrors(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
+	r.Header.Set(httpx.HeaderValidateOnly, "email")
+
+	ctx := httpx.SetPrecognition(r.Context())
+	ctx = inertia.SetValidationErrors(ctx, httpx.ValidationErrors{
+		"email": "The email field is required.",
+		"name":  "The name field is required.",
+	})
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true")
+	}
+
+	var body map[string]any
+
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("failed to parse response body: %v", err)
+	}
+
+	errors, ok := body["errors"].(map[string]any)
+
+	if !ok {
+		t.Fatal("expected 'errors' key in response")
+	}
+
+	if _, has := errors["email"]; !has {
+		t.Error("expected email error to be present")
+	}
+
+	if _, has := errors["name"]; has {
+		t.Error("name error should be filtered out by Validate-Only")
+	}
+}
+
+func TestWithHeadDefaults(t *testing.T) {
+	t.Parallel()
+
+	i, err := inertia.New(testTemplate,
+		inertia.WithVersion("v1"),
+		inertia.WithHeadDefaults(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page")
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestWithHeadDefaults_SkippedWhenExplicitHeadSet(t *testing.T) {
+	t.Parallel()
+
+	i, err := inertia.New(testTemplate,
+		inertia.WithVersion("v1"),
+		inertia.WithHead(httpx.Head{Title: "Explicit"}),
+		inertia.WithHeadDefaults(), // Should be ignored because explicit head was set.
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	i.Render(w, r, "Page")
+
+	body := w.Body.String()
+
+	if !contains(body, "Explicit") {
+		t.Error("expected explicit head title to be used")
+	}
+}
+
+func TestSetPrecognition_Context(t *testing.T) {
+	t.Parallel()
+
+	i := newTestInertia(t)
+
+	r := httptest.NewRequest(http.MethodPost, "/submit", nil)
+
+	// Use inertia.SetPrecognition (the context helper).
+	ctx := inertia.SetPrecognition(r.Context())
+	r = r.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+
+	handled, err := i.HandlePrecognition(w, r)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !handled {
+		t.Error("expected handled=true after SetPrecognition")
 	}
 }

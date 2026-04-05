@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/inertia"
@@ -54,6 +55,7 @@ func AssertFromBytes(t testing.TB, body []byte) AssertableInertia {
 // AssertFromReader decodes a JSON body from an io.Reader.
 func AssertFromReader(t testing.TB, body io.Reader) AssertableInertia {
 	t.Helper()
+
 	data, err := io.ReadAll(body)
 
 	if err != nil {
@@ -69,11 +71,12 @@ func AssertFromReader(t testing.TB, body io.Reader) AssertableInertia {
 func AssertFromHandler(t testing.TB, i *inertia.Inertia, handler http.HandlerFunc, r *http.Request) AssertableInertia {
 	t.Helper()
 
-	if r.Header.Get(httpx.HeaderInertia) == "" {
+	if strings.TrimSpace(r.Header.Get(httpx.HeaderInertia)) == "" {
 		r.Header.Set(httpx.HeaderInertia, "true")
 	}
 
 	w := httptest.NewRecorder()
+
 	i.Middleware(handler).ServeHTTP(w, r)
 
 	resp := w.Result()
@@ -127,6 +130,7 @@ func (a AssertableInertia) AssertHasProp(t testing.TB, key string) {
 // using reflect.DeepEqual.
 func (a AssertableInertia) AssertPropEquals(t testing.TB, key string, want any) {
 	t.Helper()
+
 	got, ok := a.Props[key]
 
 	if !ok {

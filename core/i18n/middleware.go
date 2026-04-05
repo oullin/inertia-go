@@ -27,7 +27,7 @@ func Middleware(cfg *config.I18nConfig, next http.Handler) http.Handler {
 		r.URL.Path = cleanPath
 		r.RequestURI = cleanPath
 
-		if q := r.URL.RawQuery; q != "" {
+		if q := r.URL.RawQuery; strings.TrimSpace(q) != "" {
 			r.RequestURI = cleanPath + "?" + q
 		}
 

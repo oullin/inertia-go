@@ -10,7 +10,7 @@ import (
 )
 
 func Open(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)")
 
 	if err != nil {
 		return nil, fmt.Errorf("database open: %w", err)
@@ -33,6 +33,45 @@ func Open(path string) (*sql.DB, error) {
 
 func migrate(db *sql.DB) error {
 	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id          INTEGER PRIMARY KEY AUTOINCREMENT,
+			name        TEXT NOT NULL,
+			email       TEXT NOT NULL UNIQUE,
+			password    TEXT NOT NULL,
+			verified_at DATETIME,
+			created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);
+
+		CREATE TABLE IF NOT EXISTS organizations (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			name       TEXT NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);
+
+		CREATE TABLE IF NOT EXISTS contacts (
+			id              INTEGER PRIMARY KEY AUTOINCREMENT,
+			organization_id INTEGER,
+			first_name      TEXT NOT NULL,
+			last_name       TEXT NOT NULL,
+			email           TEXT NOT NULL,
+			phone           TEXT NOT NULL DEFAULT '',
+			is_favorite     INTEGER NOT NULL DEFAULT 0,
+			created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (organization_id) REFERENCES organizations (id)
+		);
+
+		CREATE TABLE IF NOT EXISTS notes (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			contact_id INTEGER NOT NULL,
+			user_id    INTEGER NOT NULL,
+			body       TEXT NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (contact_id) REFERENCES contacts (id),
+			FOREIGN KEY (user_id) REFERENCES users (id)
+		);
+
 		CREATE TABLE IF NOT EXISTS invites (
 			id         TEXT PRIMARY KEY,
 			name       TEXT NOT NULL,
@@ -62,6 +101,10 @@ func migrate(db *sql.DB) error {
 			key   TEXT PRIMARY KEY,
 			value INTEGER NOT NULL DEFAULT 0
 		);
+
+		CREATE INDEX IF NOT EXISTS idx_contacts_organization_id ON contacts (organization_id);
+		CREATE INDEX IF NOT EXISTS idx_notes_contact_id ON notes (contact_id);
+		CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes (user_id);
 	`)
 
 	return err
@@ -69,10 +112,15 @@ func migrate(db *sql.DB) error {
 
 func Truncate(db *sql.DB) error {
 	_, err := db.Exec(`
+		DELETE FROM notes;
+		DELETE FROM contacts;
+		DELETE FROM organizations;
+		DELETE FROM users;
 		DELETE FROM invites;
 		DELETE FROM uploads;
 		DELETE FROM approvals;
 		DELETE FROM counters;
+		DELETE FROM sqlite_sequence;
 	`)
 
 	return err

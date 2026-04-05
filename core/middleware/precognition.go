@@ -24,6 +24,7 @@ func Precognition() func(http.Handler) http.Handler {
 
 			ctx := httpx.SetPrecognition(r.Context())
 			r = r.WithContext(ctx)
+
 			w.Header().Set(httpx.HeaderPrecognition, "true")
 
 			next.ServeHTTP(w, r)
@@ -32,13 +33,13 @@ func Precognition() func(http.Handler) http.Handler {
 }
 
 func appendVary(h http.Header, value string) {
-	if value == "" {
+	if strings.TrimSpace(value) == "" {
 		return
 	}
 
 	existing := h.Get("Vary")
 
-	if existing == "" {
+	if strings.TrimSpace(existing) == "" {
 		h.Set("Vary", value)
 
 		return

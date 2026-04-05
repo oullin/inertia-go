@@ -26,7 +26,7 @@ watch(isLoading, async (loading) => {
 
     await nextTick();
 
-    transition.value = "width 8s cubic-bezier(0.1, 0.05, 0, 1)";
+    transition.value = "width 2s cubic-bezier(0.4, 0.0, 0.2, 1)";
     width.value = "80%";
   } else {
     transition.value = "width 200ms ease-out";

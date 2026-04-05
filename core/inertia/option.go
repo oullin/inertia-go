@@ -10,16 +10,17 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
-type headSource uint8
-
 // Option configures an Inertia instance during construction.
-type Option func(*Inertia) error
 
 const (
 	headSourceNone headSource = iota
 	headSourceConfig
 	headSourceExplicit
 )
+
+type headSource uint8
+
+type Option func(*Inertia) error
 
 // WithVersion sets a static asset version string.
 func WithVersion(version string) Option {

@@ -31,6 +31,22 @@ go get github.com/oullin/inertia-go/core
 
 **Requires Go 1.26+**
 
+## Development Formatting
+
+From the repo root, format both Go trees with the repo-local Compose file:
+
+```bash
+docker compose -f go-fmt.compose.yaml run --rm go-fmt
+```
+
+Check the mounted repo explicitly from the root host path:
+
+```bash
+docker compose -f go-fmt.compose.yaml run --rm go-fmt check --host-path "$PWD"
+```
+
+The Compose service bakes in the default `format` command for the mounted repo root. When you override that command with `check` or another subcommand, pass a single `--host-path` value rooted at the mounted project.
+
 ## Quick Start
 
 ```go
@@ -74,6 +90,12 @@ func main() {
 | `middleware/` | HTTP middleware -- version checking, `Vary` header, redirect conversion |
 | `response/` | Page object and HTML/JSON response rendering |
 | `assert/` | `AssertableInertia` test helpers |
+| `config/` | YAML + env-based configuration for head, CSRF, i18n, and crypto |
+| `flash/` | Flash messaging with encrypted cookie storage |
+| `validation/` | Struct validation with Inertia-compatible error formatting |
+| `i18n/` | Internationalization middleware -- URL-prefix locale detection, hreflang links |
+| `wayfinder/` | Named route registry -- URL resolution, manifest export, grouped routes |
+| `cryptox/` | AES-256-CBC encryption with HMAC-SHA256 (used internally by CSRF and flash) |
 
 ## SEO / Head Management
 
@@ -245,6 +267,100 @@ The CSRF middleware now mirrors Laravel 13's two-layer approach:
 - fall back to `_token`, `X-CSRF-TOKEN`, or `X-XSRF-TOKEN`
 
 `XSRF-TOKEN` cookies use Laravel-compatible encrypted values and accept URL-encoded `X-XSRF-TOKEN` headers.
+
+## Flash Messages
+
+Flash messages survive a single redirect and are automatically injected as an Inertia prop:
+
+```go
+import "github.com/oullin/inertia-go/core/flash"
+
+store := flash.NewCookieStore(flash.WithKey(encryptionKey), flash.WithSecure(true))
+
+// Set a flash message (typically after a mutation)
+store.Set(w, flash.Message{Kind: "success", Title: "Saved", Message: "Contact updated."})
+
+// Auto-consume flash messages as an Inertia prop ("flash" by default)
+mux.Handle("/", flash.Middleware(store)(next))
+```
+
+The middleware reads the cookie, deletes it, and places the message into the request context so `Render` includes it automatically. Cookie values are encrypted when a key is provided.
+
+## Validation
+
+Validate structs using `validate` tags and get Inertia-compatible error maps keyed by `json`/`form` field names:
+
+```go
+import "github.com/oullin/inertia-go/core/validation"
+
+type CreateContact struct {
+    Name  string `json:"name"  validate:"required"`
+    Email string `json:"email" validate:"required,email"`
+}
+
+errors := validation.Validate(input)
+if errors != nil {
+    ctx := inertia.SetValidationErrors(r.Context(), errors)
+    i.Render(w, r.WithContext(ctx), "Contacts/Create")
+    return
+}
+```
+
+Uses [go-playground/validator](https://github.com/go-playground/validator) under the hood with human-readable error messages.
+
+## Internationalization (i18n)
+
+URL-prefix based locale detection with automatic hreflang link generation:
+
+```go
+import "github.com/oullin/inertia-go/core/i18n"
+
+cfg, err := i18n.LoadConfig("config/i18n.yml")
+
+// Detects locale from URL prefix (/es/dashboard), strips it,
+// sets locale in context, and generates hreflang links.
+mux.Handle("/", i18n.Middleware(cfg, next))
+```
+
+The middleware rewrites the request path so downstream handlers see clean paths (e.g. `/dashboard` instead of `/es/dashboard`). Configuration supports YAML files with `INERTIA_I18N_*` environment variable overrides.
+
+## Route Registry (wayfinder)
+
+Named routes with URL resolution and frontend sharing:
+
+```go
+import "github.com/oullin/inertia-go/core/wayfinder"
+
+routes := wayfinder.New()
+routes.Add("home", "GET", "/")
+routes.Group("contacts", "/contacts", func(g *wayfinder.Group) {
+    g.Add("index", "GET", "/")
+    g.Add("show", "GET", "/{contact}")
+})
+
+// Resolve a URL
+url := routes.URL("contacts.show", map[string]string{"contact": "42"})
+
+// Share route manifest with the frontend
+i.ShareProp("routes", routes.ManifestProps())
+
+// JSON endpoint for Vite plugins or build tools
+mux.Handle("/api/routes", wayfinder.Handler(routes))
+```
+
+## Form Parsing
+
+`httpx.ParseForm` normalizes request bodies across content types so `r.FormValue()` works uniformly:
+
+```go
+// Handles JSON (Inertia v3), multipart, and form-encoded bodies.
+if err := httpx.ParseForm(r); err != nil {
+    http.Error(w, "Bad request", http.StatusBadRequest)
+    return
+}
+
+name := r.FormValue("name")
+```
 
 ## Options
 

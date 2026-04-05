@@ -1,7 +1,6 @@
 package httpx_test
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -11,14 +10,18 @@ import (
 // --- RenderHTML ---
 
 func TestRenderHTML_Empty(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{}
 
-	if got := h.RenderHTML(); got != "" {
+	if got := h.RenderHTML(); strings.TrimSpace(got) != "" {
 		t.Errorf("empty Head should render empty string, got: %q", got)
 	}
 }
 
 func TestRenderHTML_TitleOnly(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{Title: "My Page"}
 	got := h.RenderHTML()
 
@@ -28,6 +31,8 @@ func TestRenderHTML_TitleOnly(t *testing.T) {
 }
 
 func TestRenderHTML_TitleEscapesHTML(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{Title: `Page "with" <special> & chars`}
 	got := h.RenderHTML()
 
@@ -41,6 +46,8 @@ func TestRenderHTML_TitleEscapesHTML(t *testing.T) {
 }
 
 func TestRenderHTML_MetaName(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Meta: []httpx.MetaTag{
 			{Name: "description", Content: "A test page"},
@@ -54,6 +61,8 @@ func TestRenderHTML_MetaName(t *testing.T) {
 }
 
 func TestRenderHTML_MetaProperty(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Meta: []httpx.MetaTag{
 			{Property: "og:title", Content: "OG Title"},
@@ -67,6 +76,8 @@ func TestRenderHTML_MetaProperty(t *testing.T) {
 }
 
 func TestRenderHTML_MetaEmptyContentSkipped(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Title: "Page",
 		Meta: []httpx.MetaTag{
@@ -86,6 +97,8 @@ func TestRenderHTML_MetaEmptyContentSkipped(t *testing.T) {
 }
 
 func TestRenderHTML_MetaEscapesContent(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Meta: []httpx.MetaTag{
 			{Name: "description", Content: `He said "hello" & <goodbye>`},
@@ -99,6 +112,8 @@ func TestRenderHTML_MetaEscapesContent(t *testing.T) {
 }
 
 func TestRenderHTML_LinkTag(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Links: []httpx.LinkTag{
 			{Rel: "canonical", Href: "https://example.com/page"},
@@ -112,6 +127,8 @@ func TestRenderHTML_LinkTag(t *testing.T) {
 }
 
 func TestRenderHTML_LinkHreflang(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Links: []httpx.LinkTag{
 			{Rel: "alternate", Href: "/es/page", HrefLang: "es"},
@@ -125,6 +142,8 @@ func TestRenderHTML_LinkHreflang(t *testing.T) {
 }
 
 func TestRenderHTML_LinkEmptyHrefSkipped(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Title: "Page",
 		Links: []httpx.LinkTag{
@@ -144,6 +163,8 @@ func TestRenderHTML_LinkEmptyHrefSkipped(t *testing.T) {
 }
 
 func TestRenderHTML_LinkWithType(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Links: []httpx.LinkTag{
 			{Rel: "alternate", Href: "/feed", Type: "application/rss+xml"},
@@ -157,6 +178,8 @@ func TestRenderHTML_LinkWithType(t *testing.T) {
 }
 
 func TestRenderHTML_MultipleTags(t *testing.T) {
+	t.Parallel()
+
 	h := httpx.Head{
 		Title: "Full Page",
 		Meta: []httpx.MetaTag{
@@ -189,6 +212,8 @@ func TestRenderHTML_MultipleTags(t *testing.T) {
 // --- MergeHead ---
 
 func TestMergeHead_EmptyBaseReturnsOverride(t *testing.T) {
+	t.Parallel()
+
 	override := httpx.Head{Title: "Override", Lang: "es"}
 	result := httpx.MergeHead(httpx.Head{}, override)
 
@@ -202,6 +227,8 @@ func TestMergeHead_EmptyBaseReturnsOverride(t *testing.T) {
 }
 
 func TestMergeHead_EmptyOverrideReturnsBase(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{Title: "Base", Lang: "en", Direction: "ltr"}
 	result := httpx.MergeHead(base, httpx.Head{})
 
@@ -215,6 +242,8 @@ func TestMergeHead_EmptyOverrideReturnsBase(t *testing.T) {
 }
 
 func TestMergeHead_OverrideTitleReplacesBase(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{Title: "Site Name"}
 	override := httpx.Head{Title: "Page - Site Name"}
 	result := httpx.MergeHead(base, override)
@@ -225,6 +254,8 @@ func TestMergeHead_OverrideTitleReplacesBase(t *testing.T) {
 }
 
 func TestMergeHead_OverrideLangReplacesBase(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{Lang: "en"}
 	override := httpx.Head{Lang: "es"}
 	result := httpx.MergeHead(base, override)
@@ -235,6 +266,8 @@ func TestMergeHead_OverrideLangReplacesBase(t *testing.T) {
 }
 
 func TestMergeHead_OverrideDirectionReplacesBase(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{Direction: "ltr"}
 	override := httpx.Head{Direction: "rtl"}
 	result := httpx.MergeHead(base, override)
@@ -245,6 +278,8 @@ func TestMergeHead_OverrideDirectionReplacesBase(t *testing.T) {
 }
 
 func TestMergeHead_MetaReplaceBySameName(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{
 		Meta: []httpx.MetaTag{
 			{Name: "description", Content: "Base desc"},
@@ -267,6 +302,8 @@ func TestMergeHead_MetaReplaceBySameName(t *testing.T) {
 }
 
 func TestMergeHead_MetaReplaceBySameProperty(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{
 		Meta: []httpx.MetaTag{
 			{Property: "og:title", Content: "Base OG"},
@@ -289,6 +326,8 @@ func TestMergeHead_MetaReplaceBySameProperty(t *testing.T) {
 }
 
 func TestMergeHead_MetaAppendNew(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{
 		Meta: []httpx.MetaTag{
 			{Name: "description", Content: "Desc"},
@@ -307,6 +346,8 @@ func TestMergeHead_MetaAppendNew(t *testing.T) {
 }
 
 func TestMergeHead_LinkReplaceBySameKey(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{
 		Links: []httpx.LinkTag{
 			{Rel: "canonical", Href: "https://old.com"},
@@ -329,6 +370,8 @@ func TestMergeHead_LinkReplaceBySameKey(t *testing.T) {
 }
 
 func TestMergeHead_LinkHreflangMergesByLang(t *testing.T) {
+	t.Parallel()
+
 	base := httpx.Head{
 		Links: []httpx.LinkTag{
 			{Rel: "alternate", Href: "/en", HrefLang: "en"},
@@ -359,6 +402,7 @@ func TestApplyEnv_OverridesTitle(t *testing.T) {
 	t.Setenv("INERTIA_SEO_TITLE", "Env Title")
 
 	h := httpx.Head{Title: "YAML Title"}
+
 	h.ApplyEnv()
 
 	if h.Title != "Env Title" {
@@ -370,6 +414,7 @@ func TestApplyEnv_OverridesLang(t *testing.T) {
 	t.Setenv("INERTIA_SEO_LANG", "fr")
 
 	h := httpx.Head{Lang: "en"}
+
 	h.ApplyEnv()
 
 	if h.Lang != "fr" {
@@ -385,6 +430,7 @@ func TestApplyEnv_OverridesExistingMeta(t *testing.T) {
 			{Name: "description", Content: "YAML description"},
 		},
 	}
+
 	h.ApplyEnv()
 
 	if h.Meta[0].Content != "Env description" {
@@ -396,6 +442,7 @@ func TestApplyEnv_AddsNewMetaWhenMissing(t *testing.T) {
 	t.Setenv("INERTIA_SEO_OG_TITLE", "Env OG Title")
 
 	h := httpx.Head{}
+
 	h.ApplyEnv()
 
 	found := false
@@ -419,6 +466,7 @@ func TestApplyEnv_OverridesExistingPropertyMeta(t *testing.T) {
 			{Property: "og:title", Content: "YAML OG Title"},
 		},
 	}
+
 	h.ApplyEnv()
 
 	if h.Meta[0].Content != "Env OG Override" {
@@ -427,9 +475,10 @@ func TestApplyEnv_OverridesExistingPropertyMeta(t *testing.T) {
 }
 
 func TestApplyEnv_NoOpWhenEnvEmpty(t *testing.T) {
-	os.Unsetenv("INERTIA_SEO_TITLE")
+	t.Setenv("INERTIA_SEO_TITLE", "")
 
 	h := httpx.Head{Title: "Keep"}
+
 	h.ApplyEnv()
 
 	if h.Title != "Keep" {

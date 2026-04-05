@@ -7,6 +7,8 @@ import (
 )
 
 func TestAlwaysProp(t *testing.T) {
+	t.Parallel()
+
 	p := props.Always("hello")
 
 	if got := p.Prop(); got != "hello" {
@@ -15,6 +17,8 @@ func TestAlwaysProp(t *testing.T) {
 }
 
 func TestOptionalProp(t *testing.T) {
+	t.Parallel()
+
 	p := props.Optional(42)
 
 	if got := p.Prop(); got != 42 {
@@ -23,7 +27,11 @@ func TestOptionalProp(t *testing.T) {
 }
 
 func TestDeferProp(t *testing.T) {
+	t.Parallel()
+
 	t.Run("default group", func(t *testing.T) {
+		t.Parallel()
+
 		p := props.Defer("data")
 
 		if p.Group != "default" {
@@ -40,6 +48,8 @@ func TestDeferProp(t *testing.T) {
 	})
 
 	t.Run("custom group", func(t *testing.T) {
+		t.Parallel()
+
 		p := props.Defer("data", "sidebar")
 
 		if p.Group != "sidebar" {
@@ -48,6 +58,8 @@ func TestDeferProp(t *testing.T) {
 	})
 
 	t.Run("merge", func(t *testing.T) {
+		t.Parallel()
+
 		p := props.Defer("data").Merge()
 
 		if !p.IsMerge() {
@@ -57,6 +69,8 @@ func TestDeferProp(t *testing.T) {
 }
 
 func TestOnceProp(t *testing.T) {
+	t.Parallel()
+
 	p := props.Once("once-val")
 
 	if got := p.Prop(); got != "once-val" {
@@ -65,7 +79,11 @@ func TestOnceProp(t *testing.T) {
 }
 
 func TestMergeProp(t *testing.T) {
+	t.Parallel()
+
 	t.Run("shallow", func(t *testing.T) {
+		t.Parallel()
+
 		p := props.Merge([]int{1, 2})
 
 		if p.IsDeep() {
@@ -74,6 +92,8 @@ func TestMergeProp(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
+		t.Parallel()
+
 		p := props.DeepMerge(map[string]int{"a": 1})
 
 		if !p.IsDeep() {
@@ -83,6 +103,8 @@ func TestMergeProp(t *testing.T) {
 }
 
 func TestScrollProp(t *testing.T) {
+	t.Parallel()
+
 	p := props.Scroll([]int{1, 2}, "feedPage", 1, nil, 2).Merge().Reset()
 
 	if !p.IsMerge() {
@@ -101,7 +123,10 @@ func TestScrollProp(t *testing.T) {
 // --- AlwaysProp Extended ---
 
 func TestAlwaysProp_WithFunc(t *testing.T) {
+	t.Parallel()
+
 	fn := func() any { return "lazy" }
+
 	p := props.Always(fn)
 
 	// Prop() should return the func itself, not invoke it.
@@ -111,6 +136,8 @@ func TestAlwaysProp_WithFunc(t *testing.T) {
 }
 
 func TestAlwaysProp_WithNil(t *testing.T) {
+	t.Parallel()
+
 	p := props.Always(nil)
 
 	if p.Prop() != nil {
@@ -119,6 +146,8 @@ func TestAlwaysProp_WithNil(t *testing.T) {
 }
 
 func TestAlwaysProp_WithStruct(t *testing.T) {
+	t.Parallel()
+
 	type info struct{ Name string }
 
 	p := props.Always(info{Name: "test"})
@@ -137,7 +166,10 @@ func TestAlwaysProp_WithStruct(t *testing.T) {
 // --- OptionalProp Extended ---
 
 func TestOptionalProp_WithFunc(t *testing.T) {
+	t.Parallel()
+
 	fn := func() any { return 42 }
+
 	p := props.Optional(fn)
 
 	if p.Prop() == nil {
@@ -146,6 +178,8 @@ func TestOptionalProp_WithFunc(t *testing.T) {
 }
 
 func TestOptionalProp_WithNil(t *testing.T) {
+	t.Parallel()
+
 	p := props.Optional(nil)
 
 	if p.Prop() != nil {
@@ -156,6 +190,8 @@ func TestOptionalProp_WithNil(t *testing.T) {
 // --- DeferProp Extended ---
 
 func TestDeferProp_EmptyGroupDefaultsToDefault(t *testing.T) {
+	t.Parallel()
+
 	p := props.Defer("val", "")
 
 	if p.Group != "default" {
@@ -164,6 +200,8 @@ func TestDeferProp_EmptyGroupDefaultsToDefault(t *testing.T) {
 }
 
 func TestDeferProp_MergeReturnsCopy(t *testing.T) {
+	t.Parallel()
+
 	original := props.Defer("val")
 	merged := original.Merge()
 
@@ -177,6 +215,8 @@ func TestDeferProp_MergeReturnsCopy(t *testing.T) {
 }
 
 func TestDeferProp_IsMergeDefaultFalse(t *testing.T) {
+	t.Parallel()
+
 	p := props.Defer("val")
 
 	if p.IsMerge() {
@@ -185,7 +225,10 @@ func TestDeferProp_IsMergeDefaultFalse(t *testing.T) {
 }
 
 func TestDeferProp_WithFunc(t *testing.T) {
+	t.Parallel()
+
 	fn := func() any { return "lazy" }
+
 	p := props.Defer(fn)
 
 	if p.Prop() == nil {
@@ -194,6 +237,8 @@ func TestDeferProp_WithFunc(t *testing.T) {
 }
 
 func TestDeferProp_PropReturnsValue(t *testing.T) {
+	t.Parallel()
+
 	p := props.Defer("data")
 
 	if p.Prop() != "data" {
@@ -204,7 +249,10 @@ func TestDeferProp_PropReturnsValue(t *testing.T) {
 // --- OnceProp Extended ---
 
 func TestOnceProp_WithFunc(t *testing.T) {
+	t.Parallel()
+
 	fn := func() any { return "lazy" }
+
 	p := props.Once(fn)
 
 	if p.Prop() == nil {
@@ -213,6 +261,8 @@ func TestOnceProp_WithFunc(t *testing.T) {
 }
 
 func TestOnceProp_WithNil(t *testing.T) {
+	t.Parallel()
+
 	p := props.Once(nil)
 
 	if p.Prop() != nil {
@@ -221,6 +271,8 @@ func TestOnceProp_WithNil(t *testing.T) {
 }
 
 func TestOnceProp_ExpiresAt(t *testing.T) {
+	t.Parallel()
+
 	original := props.Once("data")
 	withExpiry := original.ExpiresAt(1700000000)
 
@@ -234,6 +286,8 @@ func TestOnceProp_ExpiresAt(t *testing.T) {
 }
 
 func TestOnceProp_ExpiresAtPreservesValue(t *testing.T) {
+	t.Parallel()
+
 	p := props.Once("data").ExpiresAt(1700000000)
 
 	if got := p.Prop(); got != "data" {
@@ -242,6 +296,8 @@ func TestOnceProp_ExpiresAtPreservesValue(t *testing.T) {
 }
 
 func TestOnceProp_DefaultExpiresAtIsNil(t *testing.T) {
+	t.Parallel()
+
 	p := props.Once("data")
 
 	if p.GetExpiresAt() != nil {
@@ -252,6 +308,8 @@ func TestOnceProp_DefaultExpiresAtIsNil(t *testing.T) {
 // --- MergeProp Extended ---
 
 func TestMergeProp_Prop(t *testing.T) {
+	t.Parallel()
+
 	p := props.Merge([]int{1, 2, 3})
 
 	got, ok := p.Prop().([]int)
@@ -266,6 +324,8 @@ func TestMergeProp_Prop(t *testing.T) {
 }
 
 func TestMergeProp_DeepMergeProp(t *testing.T) {
+	t.Parallel()
+
 	p := props.DeepMerge(map[string]int{"a": 1})
 
 	if !p.IsDeep() {
@@ -284,6 +344,8 @@ func TestMergeProp_DeepMergeProp(t *testing.T) {
 }
 
 func TestMergeProp_ShallowIsNotDeep(t *testing.T) {
+	t.Parallel()
+
 	p := props.Merge([]int{1})
 
 	if p.IsDeep() {
@@ -294,6 +356,8 @@ func TestMergeProp_ShallowIsNotDeep(t *testing.T) {
 // --- ScrollProp Extended ---
 
 func TestScrollProp_DefaultMergeIsFalse(t *testing.T) {
+	t.Parallel()
+
 	p := props.Scroll([]int{1}, "p", 1, nil, 2)
 
 	if p.IsMerge() {
@@ -302,6 +366,8 @@ func TestScrollProp_DefaultMergeIsFalse(t *testing.T) {
 }
 
 func TestScrollProp_DefaultResetIsFalse(t *testing.T) {
+	t.Parallel()
+
 	p := props.Scroll([]int{1}, "p", 1, nil, 2)
 
 	if p.IsReset() {
@@ -310,6 +376,8 @@ func TestScrollProp_DefaultResetIsFalse(t *testing.T) {
 }
 
 func TestScrollProp_MergeReturnsCopy(t *testing.T) {
+	t.Parallel()
+
 	original := props.Scroll([]int{1}, "p", 1, nil, 2)
 	merged := original.Merge()
 
@@ -323,6 +391,8 @@ func TestScrollProp_MergeReturnsCopy(t *testing.T) {
 }
 
 func TestScrollProp_ResetReturnsCopy(t *testing.T) {
+	t.Parallel()
+
 	original := props.Scroll([]int{1}, "p", 1, nil, 2)
 	resetted := original.Reset()
 
@@ -336,6 +406,8 @@ func TestScrollProp_ResetReturnsCopy(t *testing.T) {
 }
 
 func TestScrollProp_AllMetadataFields(t *testing.T) {
+	t.Parallel()
+
 	p := props.Scroll([]int{1, 2}, "myPage", 5, 4, 6)
 
 	if p.PageName != "myPage" {

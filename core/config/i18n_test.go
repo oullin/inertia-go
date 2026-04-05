@@ -9,6 +9,8 @@ import (
 )
 
 func TestDefaultI18n(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.DefaultI18n()
 
 	if cfg.DefaultLocale != "en" {
@@ -149,6 +151,8 @@ func TestLoadI18n_FileNotFound(t *testing.T) {
 }
 
 func TestI18nConfig_Codes(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.DefaultI18n()
 
 	codes := cfg.Codes()
@@ -163,6 +167,8 @@ func TestI18nConfig_Codes(t *testing.T) {
 }
 
 func TestI18nConfig_Default(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.DefaultI18n()
 
 	d := cfg.Default()

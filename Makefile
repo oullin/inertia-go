@@ -1,15 +1,19 @@
 ROOT_PATH := $(shell pwd)
 GO_FMT := docker compose -f go-fmt.compose.yaml run --rm go-fmt
 
-.PHONY: format test build tidy demo seed
+.PHONY: all clean format test build tidy demo
+
+all: build
+
+clean:
+	rm -rf storage/dist
 
 format:
 	cd demo/app && npx oxfmt --write src
 	cd demo/app && npx oxlint --fix src
 	cd core && go vet ./...
 	cd demo/api && go vet ./...
-	$(GO_FMT) format --host-path $(ROOT_PATH)/core
-	$(GO_FMT) format --host-path $(ROOT_PATH)/demo/api
+	$(GO_FMT)
 
 test:
 	cd core && go test -coverprofile=$(ROOT_PATH)/storage/.cache/coverage.out ./...
@@ -31,6 +35,3 @@ tidy:
 demo:
 	pnpm turbo build --filter=@inertia-go/demo
 	cd demo/api && npx portless inertia-go --force go run ./cmd
-
-seed:
-	curl -s -X POST http://localhost:8080/dashboard/seed | python3 -m json.tool

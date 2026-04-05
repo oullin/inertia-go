@@ -6,8 +6,6 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 )
 
-type contextKey struct{ name string }
-
 var (
 	ctxKeyProps            = &contextKey{"props"}
 	ctxKeyTemplateData     = &contextKey{"templateData"}
@@ -16,6 +14,8 @@ var (
 	ctxKeyClearHistory     = &contextKey{"clearHistory"}
 	ctxKeyHead             = &contextKey{"head"}
 )
+
+type contextKey struct{ name string }
 
 // SetProp stores a single prop on the request context. Props set this
 // way are merged into the response during Render, with higher priority
@@ -74,12 +74,17 @@ func SetTemplateDatum(ctx context.Context, key string, val any) context.Context 
 	return context.WithValue(ctx, ctxKeyTemplateData, d)
 }
 
-func propsFromContext(ctx context.Context) httpx.Props {
+// PropsFromContext returns the props stored in the request context.
+func PropsFromContext(ctx context.Context) httpx.Props {
 	if p, ok := ctx.Value(ctxKeyProps).(httpx.Props); ok {
 		return p
 	}
 
 	return make(httpx.Props)
+}
+
+func propsFromContext(ctx context.Context) httpx.Props {
+	return PropsFromContext(ctx)
 }
 
 func validationErrorsFromContext(ctx context.Context) httpx.ValidationErrors {

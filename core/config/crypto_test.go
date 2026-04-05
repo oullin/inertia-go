@@ -4,20 +4,25 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/config"
 )
 
 func TestDefaultCrypto(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.DefaultCrypto()
 
-	if cfg.Key != "" {
+	if strings.TrimSpace(cfg.Key) != "" {
 		t.Errorf("Key = %q, want empty", cfg.Key)
 	}
 }
 
 func TestLoadCrypto(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	path := filepath.Join(dir, "crypto.yml")
 
@@ -43,6 +48,7 @@ func TestLoadCrypto(t *testing.T) {
 
 func TestLoadCrypto_EnvOverride(t *testing.T) {
 	envKey := base64.StdEncoding.EncodeToString([]byte("env-key-32-bytes-exactly-here!!!"))
+
 	t.Setenv("INERTIA_CRYPTO_KEY", envKey)
 
 	dir := t.TempDir()
@@ -67,6 +73,8 @@ func TestLoadCrypto_EnvOverride(t *testing.T) {
 }
 
 func TestLoadCrypto_FileNotFound(t *testing.T) {
+	t.Parallel()
+
 	_, err := config.LoadCrypto("/nonexistent/crypto.yml")
 
 	if err == nil {
@@ -75,6 +83,8 @@ func TestLoadCrypto_FileNotFound(t *testing.T) {
 }
 
 func TestCryptoConfig_DecodedKey(t *testing.T) {
+	t.Parallel()
+
 	raw := make([]byte, 32)
 
 	for i := range raw {
@@ -103,6 +113,8 @@ func TestCryptoConfig_DecodedKey(t *testing.T) {
 }
 
 func TestCryptoConfig_DecodedKey_Empty(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.CryptoConfig{}
 
 	_, err := cfg.DecodedKey()
@@ -113,6 +125,8 @@ func TestCryptoConfig_DecodedKey_Empty(t *testing.T) {
 }
 
 func TestCryptoConfig_DecodedKey_InvalidBase64(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.CryptoConfig{Key: "not-valid-base64!!!"}
 
 	_, err := cfg.DecodedKey()
@@ -123,6 +137,8 @@ func TestCryptoConfig_DecodedKey_InvalidBase64(t *testing.T) {
 }
 
 func TestCryptoConfig_DecodedKey_WrongLength(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.CryptoConfig{
 		Key: base64.StdEncoding.EncodeToString(make([]byte, 16)),
 	}
@@ -135,6 +151,8 @@ func TestCryptoConfig_DecodedKey_WrongLength(t *testing.T) {
 }
 
 func TestCryptoConfig_DecodedKey_LaravelBase64Prefix(t *testing.T) {
+	t.Parallel()
+
 	raw := make([]byte, 32)
 	cfg := config.CryptoConfig{
 		Key: "base64:" + base64.StdEncoding.EncodeToString(raw),

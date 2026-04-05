@@ -24,6 +24,7 @@ func DefaultCrypto() CryptoConfig {
 // and finally environment variable overrides (INERTIA_CRYPTO_*) are applied.
 func LoadCrypto(path string) (CryptoConfig, error) {
 	v := viper.New()
+
 	v.SetDefault("key", "")
 
 	v.SetConfigFile(path)
@@ -33,6 +34,7 @@ func LoadCrypto(path string) (CryptoConfig, error) {
 	}
 
 	v.SetEnvPrefix("INERTIA_CRYPTO")
+
 	v.AutomaticEnv()
 
 	var cfg CryptoConfig
@@ -48,7 +50,7 @@ func LoadCrypto(path string) (CryptoConfig, error) {
 // Key field. It returns an error if the key is missing, not valid base64,
 // or not exactly 32 bytes.
 func (c *CryptoConfig) DecodedKey() ([]byte, error) {
-	if c.Key == "" {
+	if strings.TrimSpace(c.Key) == "" {
 		return nil, fmt.Errorf("crypto: key is required")
 	}
 

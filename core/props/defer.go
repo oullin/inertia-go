@@ -1,22 +1,25 @@
 package props
 
+import "strings"
+
 // DeferProp is excluded from the initial response. The Inertia.js client
 // loads deferred props asynchronously after the page renders.
 // Props can be grouped so multiple deferred values are fetched together.
+
+const defaultDeferGroup = "default"
+
 type DeferProp struct {
 	Value any
 	Group string
 	merge bool
 }
 
-const defaultDeferGroup = "default"
-
 // Defer creates a deferred prop. An optional group name controls which
 // deferred props are loaded together; it defaults to "default".
 func Defer(val any, group ...string) DeferProp {
 	g := defaultDeferGroup
 
-	if len(group) > 0 && group[0] != "" {
+	if len(group) > 0 && strings.TrimSpace(group[0]) != "" {
 		g = group[0]
 	}
 

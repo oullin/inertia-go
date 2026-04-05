@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/oullin/inertia-go/core/httpx"
 )
@@ -38,8 +39,9 @@ func New(cfg Config) func(http.Handler) http.Handler {
 			if r.Method == http.MethodGet {
 				clientVersion := r.Header.Get(httpx.HeaderVersion)
 
-				if clientVersion != "" && clientVersion != cfg.Version {
+				if strings.TrimSpace(clientVersion) != "" && clientVersion != cfg.Version {
 					w.Header().Set(httpx.HeaderLocation, r.RequestURI)
+
 					w.WriteHeader(http.StatusConflict)
 
 					return

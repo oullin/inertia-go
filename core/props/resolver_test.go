@@ -18,7 +18,10 @@ type tryPropValue struct{ val any }
 type tryPropError struct{}
 
 func TestResolve_FullRequest(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/users", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -52,7 +55,10 @@ func TestResolve_FullRequest(t *testing.T) {
 }
 
 func TestResolve_DeferredExcludedOnInitial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -82,7 +88,10 @@ func TestResolve_DeferredExcludedOnInitial(t *testing.T) {
 }
 
 func TestResolve_DeferredIncludedOnPartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Dashboard")
 	r.Header.Set(httpx.HeaderPartialData, "stats")
@@ -108,7 +117,10 @@ func TestResolve_DeferredIncludedOnPartialReload(t *testing.T) {
 }
 
 func TestResolve_OptionalExcludedOnInitial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -128,7 +140,10 @@ func TestResolve_OptionalExcludedOnInitial(t *testing.T) {
 }
 
 func TestResolve_OptionalIncludedOnPartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "optional")
@@ -150,7 +165,10 @@ func TestResolve_OptionalIncludedOnPartialReload(t *testing.T) {
 }
 
 func TestResolve_OnceExcludedWhenInExceptHeader(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderExceptOnceProps, "meta")
 
@@ -171,7 +189,10 @@ func TestResolve_OnceExcludedWhenInExceptHeader(t *testing.T) {
 }
 
 func TestResolve_OnceIncludedOnFirstVisit(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -190,7 +211,10 @@ func TestResolve_OnceIncludedOnFirstVisit(t *testing.T) {
 }
 
 func TestResolve_MergeRecorded(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -214,7 +238,10 @@ func TestResolve_MergeRecorded(t *testing.T) {
 }
 
 func TestResolve_PartialExceptTakesPrecedence(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "a,b,c")
@@ -246,7 +273,10 @@ func TestResolve_PartialExceptTakesPrecedence(t *testing.T) {
 }
 
 func TestResolve_AlwaysIncludedInPartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "name")
@@ -268,7 +298,10 @@ func TestResolve_AlwaysIncludedInPartialReload(t *testing.T) {
 }
 
 func TestResolve_LazyFuncWithError(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -285,7 +318,10 @@ func TestResolve_LazyFuncWithError(t *testing.T) {
 }
 
 func TestResolve_OptionalExcludedOnPartialWithoutOnly(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 
@@ -310,7 +346,10 @@ func TestResolve_OptionalExcludedOnPartialWithoutOnly(t *testing.T) {
 }
 
 func TestResolve_DeferredMergeOnInitial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -337,7 +376,10 @@ func TestResolve_DeferredMergeOnInitial(t *testing.T) {
 }
 
 func TestResolve_DeferredMergeOnPartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "items")
@@ -362,7 +404,10 @@ func TestResolve_DeferredMergeOnPartialReload(t *testing.T) {
 }
 
 func TestResolve_OnceMetadataRecorded(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -385,7 +430,10 @@ func TestResolve_OnceMetadataRecorded(t *testing.T) {
 }
 
 func TestResolve_OnceMetadataExpiresAt(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -408,7 +456,10 @@ func TestResolve_OnceMetadataExpiresAt(t *testing.T) {
 }
 
 func TestResolve_OnceMetadataExpiresAtNilByDefault(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -427,7 +478,10 @@ func TestResolve_OnceMetadataExpiresAtNilByDefault(t *testing.T) {
 }
 
 func TestResolve_ScrollMetadataRecorded(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -458,7 +512,10 @@ func TestResolve_ScrollMetadataRecorded(t *testing.T) {
 func (tp tryPropValue) TryProp() (any, error) { return tp.val, nil }
 
 func TestResolve_TryProper(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	merged := httpx.Props{
@@ -477,7 +534,10 @@ func TestResolve_TryProper(t *testing.T) {
 }
 
 func TestResolve_FuncReturningNil(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -498,7 +558,10 @@ func TestResolve_FuncReturningNil(t *testing.T) {
 }
 
 func TestResolve_FuncWithErrorReturningNil(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -519,7 +582,10 @@ func (tp tryPropError) TryProp() (any, error) {
 }
 
 func TestResolve_TryProperReturningError(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	_, err := props.Resolve(r, "Page", httpx.Props{
@@ -532,11 +598,16 @@ func TestResolve_TryProperReturningError(t *testing.T) {
 }
 
 func TestResolve_TryProperWrappingLazyFunc(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
+	valFn := func() any { return "from-func" }
+
 	result, err := props.Resolve(r, "Page", httpx.Props{
-		"lazy": tryPropValue{val: func() any { return "from-func" }},
+		"lazy": tryPropValue{val: valFn},
 	})
 
 	if err != nil {
@@ -549,7 +620,10 @@ func TestResolve_TryProperWrappingLazyFunc(t *testing.T) {
 }
 
 func TestResolve_ProperChainUnwrapped(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	// AlwaysProp wrapping a value — the resolve loop unwraps Proper.
@@ -569,7 +643,10 @@ func TestResolve_ProperChainUnwrapped(t *testing.T) {
 // --- Partial Filtering ---
 
 func TestResolve_PartialComponentMismatchBehavesLikeInitial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "OtherComponent")
 	r.Header.Set(httpx.HeaderPartialData, "name")
@@ -601,6 +678,8 @@ func TestResolve_PartialComponentMismatchBehavesLikeInitial(t *testing.T) {
 }
 
 func TestResolve_NonInertiaRequestBehavesLikeInitial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	// No X-Inertia header.
 
@@ -630,7 +709,10 @@ func TestResolve_NonInertiaRequestBehavesLikeInitial(t *testing.T) {
 }
 
 func TestResolve_PartialExceptWithoutPartialData(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialExcept, "b")
@@ -661,7 +743,10 @@ func TestResolve_PartialExceptWithoutPartialData(t *testing.T) {
 }
 
 func TestResolve_EmptyPartialDataHeader(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "")
@@ -688,7 +773,10 @@ func TestResolve_EmptyPartialDataHeader(t *testing.T) {
 }
 
 func TestResolve_PartialDataWithWhitespace(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, " a , b ")
@@ -721,7 +809,10 @@ func TestResolve_PartialDataWithWhitespace(t *testing.T) {
 // --- AlwaysProp in Partial ---
 
 func TestResolve_AlwaysNotExcludedByExceptHeader(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialExcept, "always")
@@ -742,7 +833,10 @@ func TestResolve_AlwaysNotExcludedByExceptHeader(t *testing.T) {
 }
 
 func TestResolve_AlwaysWithScalarTypes(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -771,7 +865,10 @@ func TestResolve_AlwaysWithScalarTypes(t *testing.T) {
 // --- MergeProp Filtering ---
 
 func TestResolve_MergeExcludedByPartialExcept(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialExcept, "items")
@@ -796,7 +893,10 @@ func TestResolve_MergeExcludedByPartialExcept(t *testing.T) {
 }
 
 func TestResolve_MergeExcludedByPartialOnly(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "other")
@@ -818,7 +918,10 @@ func TestResolve_MergeExcludedByPartialOnly(t *testing.T) {
 }
 
 func TestResolve_DeepMergeExcludedByPartialExcept(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialExcept, "deep")
@@ -843,7 +946,10 @@ func TestResolve_DeepMergeExcludedByPartialExcept(t *testing.T) {
 }
 
 func TestResolve_MergeOnNonPartialInertiaRequest(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -864,7 +970,10 @@ func TestResolve_MergeOnNonPartialInertiaRequest(t *testing.T) {
 }
 
 func TestResolve_MergeAndDeepMergeSimultaneous(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -888,7 +997,10 @@ func TestResolve_MergeAndDeepMergeSimultaneous(t *testing.T) {
 // --- OnceProp Extended ---
 
 func TestResolve_OnceIncludedOnPartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "meta")
@@ -907,7 +1019,10 @@ func TestResolve_OnceIncludedOnPartialReload(t *testing.T) {
 }
 
 func TestResolve_OnceExcludedByPartialOnly(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "other")
@@ -927,7 +1042,10 @@ func TestResolve_OnceExcludedByPartialOnly(t *testing.T) {
 }
 
 func TestResolve_OnceMetadataRecordedWhenExcludedByExceptOnce(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderExceptOnceProps, "meta")
 
@@ -950,7 +1068,10 @@ func TestResolve_OnceMetadataRecordedWhenExcludedByExceptOnce(t *testing.T) {
 }
 
 func TestResolve_OnceMultiplePropsPartiallyExcluded(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderExceptOnceProps, "cached")
 
@@ -975,7 +1096,10 @@ func TestResolve_OnceMultiplePropsPartiallyExcluded(t *testing.T) {
 // --- ScrollProp Extended ---
 
 func TestResolve_ScrollWithMergeIntentHeader(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderInfiniteScroll, "append")
 
@@ -993,7 +1117,10 @@ func TestResolve_ScrollWithMergeIntentHeader(t *testing.T) {
 }
 
 func TestResolve_ScrollWithoutMergeIntentOrMerge(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1010,7 +1137,10 @@ func TestResolve_ScrollWithoutMergeIntentOrMerge(t *testing.T) {
 }
 
 func TestResolve_ScrollResetFlagInMetadata(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1033,7 +1163,10 @@ func TestResolve_ScrollResetFlagInMetadata(t *testing.T) {
 }
 
 func TestResolve_ScrollExcludedByPartialExcept(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialExcept, "feed")
@@ -1058,7 +1191,10 @@ func TestResolve_ScrollExcludedByPartialExcept(t *testing.T) {
 // --- DeferProp Extended ---
 
 func TestResolve_DeferredMultipleGroupsOnInitial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1085,7 +1221,10 @@ func TestResolve_DeferredMultipleGroupsOnInitial(t *testing.T) {
 }
 
 func TestResolve_DeferredExcludedByPartialExcept(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "stats")
@@ -1105,7 +1244,10 @@ func TestResolve_DeferredExcludedByPartialExcept(t *testing.T) {
 }
 
 func TestResolve_DeferredWithFuncValue(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "stats")
@@ -1136,7 +1278,10 @@ func TestResolve_DeferredWithFuncValue(t *testing.T) {
 // --- Combined Interactions ---
 
 func TestResolve_AllPropTypesOnInitial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1199,7 +1344,10 @@ func TestResolve_AllPropTypesOnInitial(t *testing.T) {
 }
 
 func TestResolve_AllPropTypesOnPartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "regular,deferred,optional,once,merge,scroll,always")
@@ -1248,7 +1396,10 @@ func TestResolve_AllPropTypesOnPartialReload(t *testing.T) {
 }
 
 func TestResolve_MixedExceptAndOnceExcept(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialExcept, "excluded")
@@ -1285,7 +1436,10 @@ func TestResolve_MixedExceptAndOnceExcept(t *testing.T) {
 // --- Nested Wrapper Tests ---
 
 func TestResolve_ScrollWrappingDefer_InitialLoad(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1313,7 +1467,10 @@ func TestResolve_ScrollWrappingDefer_InitialLoad(t *testing.T) {
 }
 
 func TestResolve_ScrollWrappingDefer_PartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "feed")
@@ -1349,7 +1506,10 @@ func TestResolve_ScrollWrappingDefer_PartialReload(t *testing.T) {
 }
 
 func TestResolve_DeferWrappingScroll_InitialLoad(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1377,7 +1537,10 @@ func TestResolve_DeferWrappingScroll_InitialLoad(t *testing.T) {
 }
 
 func TestResolve_DeferWrappingScroll_PartialReload(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "feed")
@@ -1409,7 +1572,10 @@ func TestResolve_DeferWrappingScroll_PartialReload(t *testing.T) {
 }
 
 func TestResolve_ScrollWrappingDeferMerge_InitialLoad(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1437,7 +1603,10 @@ func TestResolve_ScrollWrappingDeferMerge_InitialLoad(t *testing.T) {
 }
 
 func TestResolve_DeferWrappingScrollMerge_PartialWithIntent(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "feed")
@@ -1468,7 +1637,10 @@ func TestResolve_DeferWrappingScrollMerge_PartialWithIntent(t *testing.T) {
 }
 
 func TestResolve_AlwaysWrappingDefer_InitialLoad(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1489,7 +1661,10 @@ func TestResolve_AlwaysWrappingDefer_InitialLoad(t *testing.T) {
 }
 
 func TestResolve_ScrollWrappingOnce_ExcludedByExceptOnce(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderExceptOnceProps, "feed")
 
@@ -1515,7 +1690,10 @@ func TestResolve_ScrollWrappingOnce_ExcludedByExceptOnce(t *testing.T) {
 }
 
 func TestResolve_TripleNesting_DeferScrollMerge_Initial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 
 	result, err := props.Resolve(r, "Page", httpx.Props{
@@ -1539,7 +1717,10 @@ func TestResolve_TripleNesting_DeferScrollMerge_Initial(t *testing.T) {
 }
 
 func TestResolve_TripleNesting_DeferScrollMerge_Partial(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "feed")
@@ -1569,7 +1750,10 @@ func TestResolve_TripleNesting_DeferScrollMerge_Partial(t *testing.T) {
 }
 
 func TestResolve_NestedWithPartialExcept(t *testing.T) {
+	t.Parallel()
+
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
 	r.Header.Set(httpx.HeaderInertia, "true")
 	r.Header.Set(httpx.HeaderPartialComponent, "Page")
 	r.Header.Set(httpx.HeaderPartialData, "feed")

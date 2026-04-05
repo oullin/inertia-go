@@ -1,14 +1,24 @@
 package cryptox_test
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/oullin/inertia-go/core/cryptox"
 )
+
+type testPayload struct {
+	IV    string `json:"iv"`
+	Value string `json:"value"`
+	MAC   string `json:"mac"`
+	Tag   string `json:"tag"`
+}
 
 func testKey(t *testing.T) []byte {
 	t.Helper()
@@ -22,7 +32,39 @@ func testKey(t *testing.T) []byte {
 	return key
 }
 
+func encodePayload(t *testing.T, p testPayload) string {
+	t.Helper()
+
+	js, err := json.Marshal(p)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return base64.StdEncoding.EncodeToString(js)
+}
+
+func decodePayload(t *testing.T, encoded string) testPayload {
+	t.Helper()
+
+	js, err := base64.StdEncoding.DecodeString(encoded)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var p testPayload
+
+	if err := json.Unmarshal(js, &p); err != nil {
+		t.Fatal(err)
+	}
+
+	return p
+}
+
 func TestEncryptDecrypt_Roundtrip(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 	plaintext := "hello-csrf-token-value"
 
@@ -48,6 +90,8 @@ func TestEncryptDecrypt_Roundtrip(t *testing.T) {
 }
 
 func TestEncrypt_ProducesDifferentOutputs(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	a, _ := cryptox.Encrypt("same", key)
@@ -59,6 +103,8 @@ func TestEncrypt_ProducesDifferentOutputs(t *testing.T) {
 }
 
 func TestDecrypt_TamperedMAC(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	encrypted, err := cryptox.Encrypt("token", key)
@@ -68,20 +114,9 @@ func TestDecrypt_TamperedMAC(t *testing.T) {
 	}
 
 	// Decode, tamper with MAC, re-encode.
-	js, _ := base64.StdEncoding.DecodeString(encrypted)
-
-	var p struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-	}
-
-	json.Unmarshal(js, &p)
-
+	p := decodePayload(t, encrypted)
 	p.MAC = strings.Repeat("ff", 32)
-
-	tampered, _ := json.Marshal(p)
-	tamperedB64 := base64.StdEncoding.EncodeToString(tampered)
+	tamperedB64 := encodePayload(t, p)
 
 	_, err = cryptox.Decrypt(tamperedB64, key)
 
@@ -91,6 +126,8 @@ func TestDecrypt_TamperedMAC(t *testing.T) {
 }
 
 func TestDecrypt_WrongKey(t *testing.T) {
+	t.Parallel()
+
 	key1 := testKey(t)
 	key2 := testKey(t)
 
@@ -104,6 +141,8 @@ func TestDecrypt_WrongKey(t *testing.T) {
 }
 
 func TestDecrypt_MalformedBase64(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	_, err := cryptox.Decrypt("not-valid-base64!!!", key)
@@ -114,6 +153,8 @@ func TestDecrypt_MalformedBase64(t *testing.T) {
 }
 
 func TestDecrypt_MalformedJSON(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 	bad := base64.StdEncoding.EncodeToString([]byte("{invalid json"))
 
@@ -125,6 +166,8 @@ func TestDecrypt_MalformedJSON(t *testing.T) {
 }
 
 func TestDecrypt_EmptyPayload(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	_, err := cryptox.Decrypt("", key)
@@ -135,6 +178,8 @@ func TestDecrypt_EmptyPayload(t *testing.T) {
 }
 
 func TestEncryptDecrypt_LongPlaintext(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 	plaintext := strings.Repeat("a", 1024)
 
@@ -156,6 +201,8 @@ func TestEncryptDecrypt_LongPlaintext(t *testing.T) {
 }
 
 func TestEncryptDecrypt_EmptyPlaintext(t *testing.T) {
+	t.Parallel()
+
 	key := testKey(t)
 
 	encrypted, err := cryptox.Encrypt("", key)
@@ -170,7 +217,196 @@ func TestEncryptDecrypt_EmptyPlaintext(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if decrypted != "" {
+	if strings.TrimSpace(decrypted) != "" {
 		t.Errorf("decrypted = %q, want empty", decrypted)
 	}
+}
+
+func TestEncrypt_InvalidKeySize(t *testing.T) {
+	t.Parallel()
+
+	// AES only supports 16, 24, and 32 byte keys. Use 15 bytes which is invalid.
+	badKey := make([]byte, 15)
+
+	_, err := cryptox.Encrypt("test", badKey)
+
+	if err == nil {
+		t.Error("expected error for 15-byte key, got nil")
+	}
+}
+
+func TestDecrypt_InvalidIVLength(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	// Build a payload with a short IV (not 16 bytes).
+	shortIV := base64.StdEncoding.EncodeToString([]byte("short"))
+	value := base64.StdEncoding.EncodeToString([]byte("0123456789abcdef"))
+
+	// Compute a valid MAC so we pass MAC check.
+	encoded := encodePayload(t, testPayload{
+		IV:    shortIV,
+		Value: value,
+		MAC:   computeTestMAC(shortIV, value, key),
+	})
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid IV length, got nil")
+	}
+}
+
+func TestDecrypt_InvalidCiphertextLength(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	// Ciphertext not multiple of block size (17 bytes).
+	iv := make([]byte, 16)
+
+	rand.Read(iv)
+
+	ivB64 := base64.StdEncoding.EncodeToString(iv)
+	valueB64 := base64.StdEncoding.EncodeToString([]byte("12345678901234567")) // 17 bytes
+
+	encoded := encodePayload(t, testPayload{
+		IV:    ivB64,
+		Value: valueB64,
+		MAC:   computeTestMAC(ivB64, valueB64, key),
+	})
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid ciphertext length, got nil")
+	}
+}
+
+func TestDecrypt_EmptyCiphertext(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	iv := make([]byte, 16)
+
+	rand.Read(iv)
+
+	ivB64 := base64.StdEncoding.EncodeToString(iv)
+	valueB64 := base64.StdEncoding.EncodeToString([]byte{}) // empty
+
+	encoded := encodePayload(t, testPayload{
+		IV:    ivB64,
+		Value: valueB64,
+		MAC:   computeTestMAC(ivB64, valueB64, key),
+	})
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for empty ciphertext, got nil")
+	}
+}
+
+func TestDecrypt_InvalidMACHex(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	encoded := encodePayload(t, testPayload{
+		IV:    base64.StdEncoding.EncodeToString(make([]byte, 16)),
+		Value: base64.StdEncoding.EncodeToString(make([]byte, 16)),
+		MAC:   "not-valid-hex-gg",
+	})
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid MAC hex, got nil")
+	}
+}
+
+func TestDecrypt_InvalidPadding(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	// Encrypt something, then tamper with the last byte to create invalid padding.
+	encrypted, err := cryptox.Encrypt("hello world test", key)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Decode, tamper with the ciphertext (last block), re-compute MAC, re-encode.
+	p := decodePayload(t, encrypted)
+
+	// Tamper with the encrypted value to corrupt padding.
+	ct, _ := base64.StdEncoding.DecodeString(p.Value)
+	ct[len(ct)-1] ^= 0xFF // Flip last byte
+
+	p.Value = base64.StdEncoding.EncodeToString(ct)
+	p.MAC = computeTestMAC(p.IV, p.Value, key)
+
+	tamperedB64 := encodePayload(t, p)
+
+	_, err = cryptox.Decrypt(tamperedB64, key)
+
+	if err == nil {
+		t.Error("expected error for corrupted ciphertext (invalid padding), got nil")
+	}
+}
+
+func TestDecrypt_InvalidIVBase64(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+
+	p := testPayload{
+		IV:    "not-valid-base64!!",
+		Value: base64.StdEncoding.EncodeToString(make([]byte, 16)),
+	}
+
+	p.MAC = computeTestMAC(p.IV, p.Value, key)
+
+	encoded := encodePayload(t, p)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid IV base64, got nil")
+	}
+}
+
+func TestDecrypt_InvalidValueBase64(t *testing.T) {
+	t.Parallel()
+
+	key := testKey(t)
+	iv := make([]byte, 16)
+
+	rand.Read(iv)
+
+	p := testPayload{
+		IV:    base64.StdEncoding.EncodeToString(iv),
+		Value: "not-valid-base64!!",
+	}
+
+	p.MAC = computeTestMAC(p.IV, p.Value, key)
+
+	encoded := encodePayload(t, p)
+
+	_, err := cryptox.Decrypt(encoded, key)
+
+	if err == nil {
+		t.Error("expected error for invalid value base64, got nil")
+	}
+}
+
+func computeTestMAC(ivB64, valueB64 string, key []byte) string {
+	h := hmac.New(sha256.New, key)
+
+	h.Write([]byte(ivB64 + valueB64))
+
+	return hex.EncodeToString(h.Sum(nil))
 }
