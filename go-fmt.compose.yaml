@@ -9,6 +9,4 @@ services:
         command:
             - format
             - --host-path
-            - ${PWD}/core
-            - --host-path
-            - ${PWD}/demo/api
+            - ${PWD}
