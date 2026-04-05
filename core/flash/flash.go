@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/oullin/inertia-go/core/cryptox"
 )
 
 // Message carries a flash notification across requests.
@@ -28,6 +30,7 @@ type CookieStore struct {
 	httpOnly   bool
 	secure     bool
 	sameSite   http.SameSite
+	key        []byte
 }
 
 // Option configures a CookieStore.
@@ -84,7 +87,18 @@ func WithSameSite(mode http.SameSite) Option {
 	}
 }
 
-// Set serializes msg as JSON, URL-escapes it, and writes it as a cookie.
+// WithKey enables AES-256-CBC encryption with HMAC-SHA256 verification
+// for flash cookie values. The key must be 32 bytes. When set, cookies
+// are encrypted on write and verified+decrypted on read, preventing
+// clients from forging flash content.
+func WithKey(key []byte) Option {
+	return func(s *CookieStore) {
+		s.key = key
+	}
+}
+
+// Set serializes msg as JSON and writes it as a cookie. When a key is
+// configured the value is encrypted; otherwise it is URL-escaped.
 func (s *CookieStore) Set(w http.ResponseWriter, msg Message) error {
 	data, err := json.Marshal(msg)
 
@@ -92,9 +106,21 @@ func (s *CookieStore) Set(w http.ResponseWriter, msg Message) error {
 		return fmt.Errorf("flash: marshal: %w", err)
 	}
 
+	value := url.QueryEscape(string(data))
+
+	if s.key != nil {
+		encrypted, err := cryptox.Encrypt(string(data), s.key)
+
+		if err != nil {
+			return fmt.Errorf("flash: encrypt: %w", err)
+		}
+
+		value = encrypted
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     s.cookieName,
-		Value:    url.QueryEscape(string(data)),
+		Value:    value,
 		Path:     s.path,
 		HttpOnly: s.httpOnly,
 		Secure:   s.secure,
@@ -106,6 +132,8 @@ func (s *CookieStore) Set(w http.ResponseWriter, msg Message) error {
 
 // Consume reads the flash cookie, deletes it, and returns the decoded
 // Message. Returns nil if no flash cookie exists or decoding fails.
+// When a key is configured, the cookie value is verified and decrypted
+// before unmarshalling; tampered or forged values return nil.
 func (s *CookieStore) Consume(w http.ResponseWriter, r *http.Request) *Message {
 	cookie, err := r.Cookie(s.cookieName)
 
@@ -123,17 +151,31 @@ func (s *CookieStore) Consume(w http.ResponseWriter, r *http.Request) *Message {
 		SameSite: s.sameSite,
 	})
 
-	value, err := url.QueryUnescape(cookie.Value)
+	var value string
 
-	if err != nil {
+	if s.key != nil {
+		decrypted, err := cryptox.Decrypt(cookie.Value, s.key)
+
+		if err != nil {
+			return nil
+		}
+
+		value = decrypted
+	} else {
+		unescaped, err := url.QueryUnescape(cookie.Value)
+
+		if err != nil {
+			return nil
+		}
+
+		value = unescaped
+	}
+
+	var msg Message
+
+	if err := json.Unmarshal([]byte(value), &msg); err != nil {
 		return nil
 	}
 
-	var payload Message
-
-	if err := json.Unmarshal([]byte(value), &payload); err != nil {
-		return nil
-	}
-
-	return &payload
+	return &msg
 }

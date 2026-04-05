@@ -33,6 +33,10 @@ type groupMember struct {
 }
 
 func Generate(reg *Registry, w io.Writer, opts GenerateOptions) error {
+	if opts.FlatOnly && opts.NestedOnly {
+		return fmt.Errorf("wayfinder: FlatOnly and NestedOnly are mutually exclusive")
+	}
+
 	routes := reg.Export()
 
 	header := opts.Header
@@ -225,12 +229,13 @@ func generateNested(w io.Writer, routes []Route, ts bool) error {
 func groupRoutes(routes []Route) map[string][]groupMember {
 	groups := make(map[string][]groupMember)
 
+	var ungrouped []groupMember
+
 	for _, route := range routes {
 		parts := strings.SplitN(route.Name, ".", 2)
 
 		if len(parts) < 2 {
-			// Top-level routes (no dot) go into a special group.
-			groups["app"] = append(groups["app"], groupMember{
+			ungrouped = append(ungrouped, groupMember{
 				key:   dotToCamel(route.Name),
 				route: route,
 			})
@@ -246,7 +251,24 @@ func groupRoutes(routes []Route) map[string][]groupMember {
 		})
 	}
 
+	if len(ungrouped) > 0 {
+		name := syntheticGroupName(groups)
+		groups[name] = append(groups[name], ungrouped...)
+	}
+
 	return groups
+}
+
+// syntheticGroupName returns a group name for ungrouped routes that
+// does not collide with any real group already in the map.
+func syntheticGroupName(groups map[string][]groupMember) string {
+	for _, c := range []string{"app", "routes", "_app"} {
+		if _, exists := groups[c]; !exists {
+			return c
+		}
+	}
+
+	return "_ungrouped"
 }
 
 // dotToCamel converts "contacts.notes.store" to "contactsNotesStore".

@@ -1,6 +1,8 @@
 package errors
 
 import (
+	stderrors "errors"
+	"fmt"
 	"net/http"
 
 	"github.com/oullin/inertia-go/core/httpx"
@@ -13,8 +15,27 @@ type Container struct {
 	Render      func(http.ResponseWriter, *http.Request, string, httpx.Props)
 }
 
+// Validate checks that all required dependencies are set.
+func (c Container) Validate() error {
+	var errs []error
+
+	if c.RequireAuth == nil {
+		errs = append(errs, stderrors.New("errors: RequireAuth must not be nil"))
+	}
+
+	if c.Render == nil {
+		errs = append(errs, stderrors.New("errors: Render must not be nil"))
+	}
+
+	return stderrors.Join(errs...)
+}
+
 // RegisterRoutes mounts the error showcase HTTP routes onto the provided mux.
-func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) {
+func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) error {
+	if err := container.Validate(); err != nil {
+		return fmt.Errorf("errors: %w", err)
+	}
+
 	auth := func(h http.HandlerFunc) http.Handler {
 		return container.RequireAuth(h)
 	}
@@ -24,6 +45,8 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 	mux.Handle("/features/errors/http-error/{code}", auth(httpErrorTriggerHandler()))
 
 	routes.Handle("features.errors.network-errors", auth(networkErrorsHandler(container)), mux)
+
+	return nil
 }
 
 func httpErrorHandler(container Container) http.HandlerFunc {

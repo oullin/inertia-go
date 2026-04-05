@@ -14,8 +14,12 @@ type service struct {
 	db *sql.DB
 }
 
-func newService(db *sql.DB) service {
-	return service{db: db}
+func newService(db *sql.DB) (service, error) {
+	if db == nil {
+		return service{}, errors.New("auth: database connection must not be nil")
+	}
+
+	return service{db: db}, nil
 }
 
 func (s service) authenticate(form loginForm) (*database.User, error) {

@@ -58,7 +58,7 @@ func TestFlattenJSON(t *testing.T) {
 	})
 
 	t.Run("succeeds at exactly max depth", func(t *testing.T) {
-		data := buildDeepMap(maxJSONDepth)
+		data := buildDeepMap(maxJSONDepth + 1)
 
 		out := make(url.Values)
 
@@ -108,6 +108,27 @@ func TestParseForm_JSON(t *testing.T) {
 
 	if got := req.FormValue("name"); got != "Alice" {
 		t.Errorf("Form name = %q, want %q", got, "Alice")
+	}
+}
+
+func TestParseForm_JSON_BodyOverridesQuery(t *testing.T) {
+	t.Parallel()
+
+	body := `{"name":"body"}`
+	req := httptest.NewRequest(http.MethodPost, "/submit?name=query", strings.NewReader(body))
+
+	req.Header.Set("Content-Type", "application/json")
+
+	if err := ParseForm(req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := req.FormValue("name"); got != "body" {
+		t.Errorf("FormValue(name) = %q, want %q (body should override query)", got, "body")
+	}
+
+	if got := req.PostFormValue("name"); got != "body" {
+		t.Errorf("PostFormValue(name) = %q, want %q", got, "body")
 	}
 }
 
@@ -187,6 +208,36 @@ func TestParseJSONForm_Arrays(t *testing.T) {
 
 	if got := req.PostFormValue("items[0].name"); got != "a" {
 		t.Errorf("items[0].name = %q, want %q", got, "a")
+	}
+}
+
+func TestFlattenJSON_NestedArrays(t *testing.T) {
+	t.Parallel()
+
+	data := map[string]any{
+		"matrix": []any{
+			[]any{float64(1), float64(2)},
+			[]any{float64(3), float64(4)},
+		},
+	}
+
+	out := make(url.Values)
+
+	if err := flattenJSON("", data, out, 0); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := map[string]string{
+		"matrix[0][0]": "1",
+		"matrix[0][1]": "2",
+		"matrix[1][0]": "3",
+		"matrix[1][1]": "4",
+	}
+
+	for key, exp := range want {
+		if got := out.Get(key); got != exp {
+			t.Errorf("key %q = %q, want %q", key, got, exp)
+		}
 	}
 }
 

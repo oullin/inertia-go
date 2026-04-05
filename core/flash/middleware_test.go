@@ -1,11 +1,14 @@
 package flash
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/oullin/inertia-go/core/inertia"
 )
 
 func TestMiddlewareConsumesFlash(t *testing.T) {
@@ -13,10 +16,11 @@ func TestMiddlewareConsumesFlash(t *testing.T) {
 
 	s := NewCookieStore(WithCookieName("test_flash"))
 
+	var capturedCtx context.Context
+
 	handler := Middleware(s)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// The middleware should have set the flash prop on the context.
-		// We can't directly access context props without importing inertia internals,
-		// so we verify via the cookie lifecycle instead.
+		capturedCtx = r.Context()
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -48,6 +52,19 @@ func TestMiddlewareConsumesFlash(t *testing.T) {
 
 	if !found {
 		t.Error("expected flash cookie to be deleted after middleware consumed it")
+	}
+
+	// Verify the flash prop was set under the default "flash" key.
+	props := inertia.PropsFromContext(capturedCtx)
+
+	got, ok := props["flash"].(*Message)
+
+	if !ok || got == nil {
+		t.Fatal("expected flash prop to be set in context under \"flash\" key")
+	}
+
+	if got.Kind != msg.Kind || got.Title != msg.Title || got.Message != msg.Message {
+		t.Errorf("flash prop mismatch: got %+v, want %+v", got, msg)
 	}
 }
 
@@ -107,7 +124,11 @@ func TestMiddlewareCustomPropKey(t *testing.T) {
 
 	s := NewCookieStore(WithCookieName("test_flash"))
 
+	var capturedCtx context.Context
+
 	handler := Middleware(s, WithPropKey("notification"))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedCtx = r.Context()
+
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -125,19 +146,20 @@ func TestMiddlewareCustomPropKey(t *testing.T) {
 
 	handler.ServeHTTP(rec, req)
 
-	// Verify cookie was still consumed.
-	cookies := rec.Result().Cookies()
-	found := false
+	props := inertia.PropsFromContext(capturedCtx)
 
-	for _, c := range cookies {
-		if c.Name == "test_flash" && c.MaxAge == -1 {
-			found = true
+	// The prop must appear under "notification", not the default "flash".
+	got, ok := props["notification"].(*Message)
 
-			break
-		}
+	if !ok || got == nil {
+		t.Fatal("expected flash prop under \"notification\" key")
 	}
 
-	if !found {
-		t.Error("expected flash cookie to be deleted with custom prop key")
+	if got.Kind != msg.Kind || got.Title != msg.Title || got.Message != msg.Message {
+		t.Errorf("prop mismatch: got %+v, want %+v", got, msg)
+	}
+
+	if _, exists := props["flash"]; exists {
+		t.Error("expected no prop under default \"flash\" key when custom key is set")
 	}
 }

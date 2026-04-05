@@ -14,6 +14,10 @@ type app struct {
 
 // RegisterRoutes mounts the CRM HTTP routes onto the provided mux.
 func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) error {
+	if err := container.Validate(); err != nil {
+		return fmt.Errorf("crm: %w", err)
+	}
+
 	app, err := newApp(container)
 
 	if err != nil {

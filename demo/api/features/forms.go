@@ -275,7 +275,7 @@ func (a app) precognitionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) optimisticUpdatesHandler(w http.ResponseWriter, r *http.Request) {
-	contacts, err := database.ListContacts(a.container.DB, "", false)
+	contacts, err := database.ListRecentContacts(a.container.DB, 10)
 
 	if err != nil {
 		slog.Error("list contacts", "error", err)
@@ -285,13 +285,9 @@ func (a app) optimisticUpdatesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := make([]map[string]any, 0, 10)
+	items := make([]map[string]any, 0, len(contacts))
 
-	for i, c := range contacts {
-		if i >= 10 {
-			break
-		}
-
+	for _, c := range contacts {
 		items = append(items, map[string]any{
 			"id":          c.ID,
 			"first_name":  c.FirstName,

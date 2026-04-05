@@ -41,8 +41,6 @@ func TestDefaultI18n(t *testing.T) {
 }
 
 func TestLoadI18n(t *testing.T) {
-	t.Parallel()
-
 	dir := t.TempDir()
 	path := filepath.Join(dir, "i18n.yml")
 
@@ -122,8 +120,6 @@ locales:
 }
 
 func TestLoadI18n_InvalidDefaultLocale(t *testing.T) {
-	t.Parallel()
-
 	dir := t.TempDir()
 	path := filepath.Join(dir, "i18n.yml")
 
@@ -147,8 +143,6 @@ locales:
 }
 
 func TestLoadI18n_FileNotFound(t *testing.T) {
-	t.Parallel()
-
 	_, err := config.LoadI18n("/nonexistent/i18n.yml")
 
 	if err == nil {

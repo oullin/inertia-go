@@ -53,7 +53,7 @@ func (a app) deferredPropsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
-	contacts, err := database.ListContacts(a.container.DB, "", false)
+	contacts, err := database.ListRecentContacts(a.container.DB, 5)
 
 	if err != nil {
 		slog.Error("list contacts", "error", err)
@@ -63,13 +63,9 @@ func (a app) partialReloadsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users := make([]map[string]any, 0, min(len(contacts), 5))
+	users := make([]map[string]any, 0, len(contacts))
 
-	for i, c := range contacts {
-		if i >= 5 {
-			break
-		}
-
+	for _, c := range contacts {
 		users = append(users, map[string]any{
 			"id":    c.ID,
 			"name":  c.FirstName + " " + c.LastName,

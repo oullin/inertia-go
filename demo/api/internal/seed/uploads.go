@@ -2,6 +2,7 @@ package seed
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/oullin/inertia-go/demo/api/internal/database"
@@ -31,7 +32,7 @@ func seedUploads(db *sql.DB, now time.Time) error {
 
 	for _, upl := range uploads {
 		if err := database.CreateUploadAt(db, upl.id, upl.label, upl.filename, upl.size, upl.status, now.Add(-upl.ago)); err != nil {
-			return err
+			return fmt.Errorf("upload %s: %w", upl.id, err)
 		}
 	}
 

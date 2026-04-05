@@ -3,11 +3,18 @@ package testutil
 import (
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 )
 
 const TestTemplate = `<!DOCTYPE html><html><head>{{ .inertiaHead }}</head><body>{{ .inertia }}</body></html>`
+
+var csrfMetaRe = regexp.MustCompile(
+	`<meta\s[^>]*\bname="csrf-token"[^>]*\bcontent="([^"]*)"` +
+		`|` +
+		`<meta\s[^>]*\bcontent="([^"]*)"[^>]*\bname="csrf-token"`,
+)
 
 func FindCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {
 	t.Helper()
@@ -26,20 +33,15 @@ func FindCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.C
 func FindCSRFMetaToken(t *testing.T, body string) string {
 	t.Helper()
 
-	const prefix = `name="csrf-token" content="`
+	m := csrfMetaRe.FindStringSubmatch(body)
 
-	start := strings.Index(body, prefix)
-
-	if start == -1 {
+	if m == nil {
 		t.Fatal("csrf meta tag not found")
 	}
 
-	start += len(prefix)
-	end := strings.Index(body[start:], `"`)
-
-	if end == -1 {
-		t.Fatal("csrf meta token not terminated")
+	if strings.TrimSpace(m[1]) != "" {
+		return m[1]
 	}
 
-	return body[start : start+end]
+	return m[2]
 }

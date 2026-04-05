@@ -35,10 +35,6 @@ func (r databaseRepository) CountNotes() (int, error) {
 	return database.CountNotes(r.db)
 }
 
-func (r databaseRepository) ListContacts(search string, favoritesOnly bool) ([]database.Contact, error) {
-	return database.ListContacts(r.db, search, favoritesOnly)
-}
-
 func (r databaseRepository) ListContactsPaginated(search string, favoritesOnly bool, cursor *string, direction string, perPage int) (database.CursorPage[database.Contact], error) {
 	return database.ListContactsPaginated(r.db, search, favoritesOnly, cursor, direction, perPage)
 }

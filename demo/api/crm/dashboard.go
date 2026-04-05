@@ -32,6 +32,8 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 			if err != nil {
 				slog.Error("count contacts", "error", err)
+
+				return nil
 			}
 
 			return n
@@ -45,6 +47,8 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 			if err != nil {
 				slog.Error("count organizations", "error", err)
+
+				return nil
 			}
 
 			return n
@@ -58,6 +62,8 @@ func (a app) dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 			if err != nil {
 				slog.Error("count notes", "error", err)
+
+				return nil
 			}
 
 			return n

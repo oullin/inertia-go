@@ -1,13 +1,18 @@
 package features
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/oullin/inertia-go/core/wayfinder"
 )
 
 // RegisterRoutes mounts all feature showcase HTTP routes onto the provided mux.
-func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) {
+func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) error {
+	if err := container.Validate(); err != nil {
+		return fmt.Errorf("features: %w", err)
+	}
+
 	a := newApp(container)
 
 	auth := func(h http.HandlerFunc) http.Handler {
@@ -92,4 +97,6 @@ func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Co
 	routes.Handle("features.http.use-http", auth(a.useHttpHandler), mux)
 
 	mux.Handle("/features/http/use-http/api", auth(a.useHttpApiHandler))
+
+	return nil
 }

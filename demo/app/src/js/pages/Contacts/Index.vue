@@ -26,14 +26,6 @@ const favoriteOnly = ref(Boolean(props.filters.favorite));
 const allContacts = ref<Contact[]>([...props.contacts.data]);
 const nextCursor = ref<string | null>(props.contacts.next_cursor);
 
-watch(
-  () => props.contacts,
-  (fresh) => {
-    allContacts.value = [...fresh.data];
-    nextCursor.value = fresh.next_cursor;
-  },
-);
-
 let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
 watch([search, favoriteOnly], () => {

@@ -11,6 +11,10 @@ function fillPattern(pattern: string, params: Record<string, string | number> = 
   return url;
 }
 
+/**
+ * Resolve a named route using the shared Inertia page props.
+ * Must be called within Vue component setup or template context.
+ */
 export function useDemoRoute(
   name: string,
   params: Record<string, string | number> = {},
@@ -27,6 +31,10 @@ export function useDemoRoute(
   };
 }
 
+/**
+ * Resolve a feature route pattern by name.
+ * Must be called within Vue component setup or template context.
+ */
 export function featureRoute(name: string): string | null {
   const page = usePage<SharedPageProps>();
   const resolved = page.props.routes?.[name];
@@ -40,12 +48,20 @@ export function featureRoute(name: string): string | null {
   return resolved;
 }
 
+/**
+ * Route builders for app-level routes.
+ * Must be called within Vue component setup or template context.
+ */
 export const appRoutes = {
   login: (): DemoRoute => useDemoRoute("login"),
   logout: (): DemoRoute => useDemoRoute("logout"),
   dashboard: (): DemoRoute => useDemoRoute("dashboard"),
 };
 
+/**
+ * Route builders for contact routes.
+ * Must be called within Vue component setup or template context.
+ */
 export const contactRoutes = {
   index: (): DemoRoute => useDemoRoute("contacts.index"),
   create: (): DemoRoute => useDemoRoute("contacts.create"),
@@ -59,6 +75,10 @@ export const contactRoutes = {
     useDemoRoute("contacts.notes.store", { contact }),
 };
 
+/**
+ * Route builders for organization routes.
+ * Must be called within Vue component setup or template context.
+ */
 export const organizationRoutes = {
   index: (): DemoRoute => useDemoRoute("organizations.index"),
   show: (organization: string | number): DemoRoute =>

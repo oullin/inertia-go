@@ -34,5 +34,9 @@ func (f loginForm) validate() httpx.ValidationErrors {
 		errors["password"] = "Enter the demo password."
 	}
 
-	return errors
+	if len(errors) > 0 {
+		return errors
+	}
+
+	return nil
 }

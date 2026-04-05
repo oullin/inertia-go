@@ -47,6 +47,10 @@ func parseJSONForm(r *http.Request) error {
 	r.PostForm = values
 	r.Form = make(url.Values)
 
+	for k, v := range values {
+		r.Form[k] = v
+	}
+
 	if r.URL != nil {
 		qs, err := url.ParseQuery(r.URL.RawQuery)
 
@@ -55,12 +59,8 @@ func parseJSONForm(r *http.Request) error {
 		}
 
 		for k, v := range qs {
-			r.Form[k] = v
+			r.Form[k] = append(r.Form[k], v...)
 		}
-	}
-
-	for k, v := range values {
-		r.Form[k] = append(r.Form[k], v...)
 	}
 
 	return nil
@@ -84,19 +84,36 @@ func flattenJSON(prefix string, data map[string]any, out url.Values, depth int) 
 				return err
 			}
 		case []any:
-			for i, item := range v {
-				arrKey := fmt.Sprintf("%s[%d]", fullKey, i)
-
-				if nested, ok := item.(map[string]any); ok {
-					if err := flattenJSON(arrKey, nested, out, depth+1); err != nil {
-						return err
-					}
-				} else {
-					out.Set(arrKey, toFormValue(item))
-				}
+			if err := flattenArray(fullKey, v, out, depth+1); err != nil {
+				return err
 			}
 		default:
 			out.Set(fullKey, toFormValue(val))
+		}
+	}
+
+	return nil
+}
+
+func flattenArray(prefix string, items []any, out url.Values, depth int) error {
+	if depth > maxJSONDepth {
+		return fmt.Errorf("JSON nesting exceeds maximum depth of %d", maxJSONDepth)
+	}
+
+	for i, item := range items {
+		arrKey := fmt.Sprintf("%s[%d]", prefix, i)
+
+		switch v := item.(type) {
+		case map[string]any:
+			if err := flattenJSON(arrKey, v, out, depth+1); err != nil {
+				return err
+			}
+		case []any:
+			if err := flattenArray(arrKey, v, out, depth+1); err != nil {
+				return err
+			}
+		default:
+			out.Set(arrKey, toFormValue(item))
 		}
 	}
 

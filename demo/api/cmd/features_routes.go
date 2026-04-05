@@ -7,7 +7,7 @@ import (
 	"github.com/oullin/inertia-go/demo/api/features"
 )
 
-func (rt *runtime) registerFeatureRoutes(mux *http.ServeMux, authApp auth.App) {
+func (rt *runtime) registerFeatureRoutes(mux *http.ServeMux, authApp auth.App) error {
 	redirectFn := func(w http.ResponseWriter, r *http.Request, url string) {
 		rt.inertia.Redirect(w, r, url)
 	}
@@ -15,7 +15,7 @@ func (rt *runtime) registerFeatureRoutes(mux *http.ServeMux, authApp auth.App) {
 		rt.inertia.Location(w, r, url)
 	}
 
-	features.RegisterRoutes(rt.routes, mux, features.Container{
+	return features.RegisterRoutes(rt.routes, mux, features.Container{
 		DB:          rt.db,
 		RequireAuth: authApp.RequireAuth,
 		Render:      rt.renderPage,

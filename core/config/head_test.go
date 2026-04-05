@@ -10,8 +10,6 @@ import (
 )
 
 func TestDefaultHead(t *testing.T) {
-	t.Parallel()
-
 	head := config.DefaultHead()
 
 	if head.Lang != "en" {
@@ -60,8 +58,6 @@ func TestDefaultHead_EnvOverride(t *testing.T) {
 }
 
 func TestLoadHead(t *testing.T) {
-	t.Parallel()
-
 	dir := t.TempDir()
 	path := filepath.Join(dir, "seo.yml")
 

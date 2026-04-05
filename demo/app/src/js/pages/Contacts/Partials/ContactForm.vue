@@ -111,6 +111,7 @@ function submit() {
             <div class="grid gap-2">
               <Label for="phone">Phone</Label>
               <Input id="phone" v-model="form.phone" />
+              <InputError :message="form.errors.phone" />
             </div>
 
             <div class="md:col-span-2 flex items-center gap-3">

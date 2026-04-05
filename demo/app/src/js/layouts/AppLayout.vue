@@ -33,7 +33,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/js/components/ui/sidebar";
-import { appRoutes, contactRoutes, organizationRoutes, featureRoute } from "@/js/lib/routes";
+import {
+  appRoutes,
+  contactRoutes,
+  organizationRoutes,
+  featureRoute,
+  useDemoRoute,
+} from "@/js/lib/routes";
 import type { Breadcrumb, NavGroup, SharedPageProps } from "@/js/types";
 
 const props = withDefaults(defineProps<{ title?: string; breadcrumbs?: Breadcrumb[] }>(), {
@@ -124,7 +130,10 @@ const featureGroups = computed(() => [
       { title: "Polling", href: featureRoute("features.data-loading.polling") },
       { title: "Prop Merging", href: featureRoute("features.data-loading.prop-merging") },
       { title: "Optional Props", href: featureRoute("features.data-loading.optional-props") },
-      { title: "Once Props", href: featureRoute("features.data-loading.once-props") },
+      {
+        title: "Once Props",
+        href: useDemoRoute("features.data-loading.once-props", { page: 1 }).url,
+      },
     ],
   },
   {
@@ -192,9 +201,9 @@ const featureGroups = computed(() => [
       <SidebarHeader class="border-b">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton as-child class="data-[slot=sidebar-menu-button]:!p-1.5">
+            <SidebarMenuButton as-child class="data-[slot=sidebar-menu-button]:p-1.5!">
               <Link :href="appRoutes.dashboard().url">
-                <IconDashboard class="!size-5" />
+                <IconDashboard class="size-5!" />
                 <span class="text-base font-semibold">Inertia Kitchen Sink</span>
               </Link>
             </SidebarMenuButton>
@@ -209,7 +218,7 @@ const featureGroups = computed(() => [
               <SidebarMenuItem v-for="item in group.items" :key="item.title">
                 <SidebarMenuButton
                   as-child
-                  :is-active="currentPath === item.href"
+                  :is-active="currentPath === item.href || currentPath.startsWith(item.href + '/')"
                   :tooltip="item.title"
                 >
                   <Link :href="item.href" view-transition>
@@ -230,11 +239,11 @@ const featureGroups = computed(() => [
                 <SidebarMenuButton
                   v-if="item.href"
                   as-child
-                  :is-active="currentPath === item.href"
+                  :is-active="currentPath === item.href || currentPath.startsWith(item.href + '/')"
                   :tooltip="item.title"
                 >
                   <Link :href="item.href" view-transition>
-                    <IconCode class="!size-4 opacity-60" />
+                    <IconCode class="size-4! opacity-60" />
                     <span>{{ item.title }}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -265,7 +274,7 @@ const featureGroups = computed(() => [
                     <span class="truncate font-medium">{{ user.name }}</span>
                     <span class="text-muted-foreground truncate text-xs">{{ user.email }}</span>
                   </div>
-                  <IconDots class="ml-auto !size-4" />
+                  <IconDots class="ml-auto size-4!" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start" class="w-(--reka-popper-anchor-width)">
@@ -276,7 +285,7 @@ const featureGroups = computed(() => [
                     as="button"
                     class="w-full cursor-pointer"
                   >
-                    <IconLogout class="!size-4" />
+                    <IconLogout class="size-4!" />
                     Log out
                   </Link>
                 </DropdownMenuItem>

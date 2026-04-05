@@ -145,6 +145,26 @@ func TestGenerateNestedOnly(t *testing.T) {
 	}
 }
 
+func TestGenerateConflictingFlags(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+
+	reg.Add("login", "GET", "/login")
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{FlatOnly: true, NestedOnly: true})
+
+	if err == nil {
+		t.Fatal("expected error when both FlatOnly and NestedOnly are set")
+	}
+
+	if !strings.Contains(err.Error(), "mutually exclusive") {
+		t.Errorf("unexpected error message: %s", err.Error())
+	}
+}
+
 func TestGenerateCustomHeader(t *testing.T) {
 	t.Parallel()
 
@@ -224,6 +244,57 @@ func TestGenerateTopLevelRoutes(t *testing.T) {
 
 	if !strings.Contains(output, "export const app = {") {
 		t.Error("expected top-level routes grouped under 'app'")
+	}
+}
+
+func TestGenerateTopLevelRoutes_CollisionWithAppGroup(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+
+	reg.Add("dashboard", "GET", "/dashboard")
+	reg.Add("app.settings", "GET", "/app/settings")
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{NestedOnly: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "export const app = {") {
+		t.Error("expected real 'app' group to keep the 'app' name")
+	}
+
+	if !strings.Contains(output, "export const routes = {") {
+		t.Errorf("expected ungrouped routes to fall back to 'routes', got:\n%s", output)
+	}
+}
+
+func TestGenerateTopLevelRoutes_DoubleCollision(t *testing.T) {
+	t.Parallel()
+
+	reg := New()
+
+	reg.Add("home", "GET", "/")
+	reg.Add("app.index", "GET", "/app")
+	reg.Add("routes.index", "GET", "/r")
+
+	var buf bytes.Buffer
+
+	err := Generate(reg, &buf, GenerateOptions{NestedOnly: true})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output := buf.String()
+
+	if !strings.Contains(output, "export const _app = {") {
+		t.Errorf("expected ungrouped routes to fall back to '_app', got:\n%s", output)
 	}
 }
 
@@ -746,7 +817,8 @@ func TestGenerate_WriteErrorInFlatClosingBrace(t *testing.T) {
 
 	reg.Add("login", "GET", "/login")
 
-	// TS: header(49) + \n(1) + type(46) + \n(1) + func(43) + \n(1) + return(44) + \n(1) = 186 before closing brace
+	// Probe byte limits to ensure the closing brace write path can fail.
+	// We don't assert a specific threshold as output size may change.
 	for n := 150; n < 200; n++ {
 		w := &limitWriter{n: n}
 

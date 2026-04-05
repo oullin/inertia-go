@@ -5,6 +5,7 @@ import { Badge } from "@/js/components/ui/badge";
 import { Button } from "@/js/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/js/components/ui/card";
 import { Skeleton } from "@/js/components/ui/skeleton";
+import { Label } from "@/js/components/ui/label";
 import { Textarea } from "@/js/components/ui/textarea";
 import AppLayout from "@/js/layouts/AppLayout.vue";
 import { contactRoutes } from "@/js/lib/routes";
@@ -79,7 +80,9 @@ function deleteContact() {
         </CardHeader>
         <CardContent class="space-y-3">
           <form class="space-y-3" @submit.prevent="submitNote">
+            <Label for="note-body" class="sr-only">Note</Label>
             <Textarea
+              id="note-body"
               v-model="noteForm.body"
               name="body"
               placeholder="Write a note for the activity feed..."

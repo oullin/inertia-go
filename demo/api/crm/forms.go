@@ -98,7 +98,7 @@ func parseOrganizationID(raw string) *int64 {
 	id, err := strconv.ParseInt(raw, 10, 64)
 
 	if err != nil {
-		return nil
+		panic(fmt.Sprintf("parseOrganizationID: invalid input %q should have been caught by validation", raw))
 	}
 
 	return &id

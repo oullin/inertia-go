@@ -1,6 +1,7 @@
 package crm
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/oullin/inertia-go/core/httpx"
 	"github.com/oullin/inertia-go/core/inertia"
 	"github.com/oullin/inertia-go/core/props"
+	"github.com/oullin/inertia-go/demo/api/internal/database"
 )
 
 const contactsPerPage = 15
@@ -172,6 +174,12 @@ func (a app) showContactHandler(w http.ResponseWriter, r *http.Request, contactI
 
 func (a app) deleteContactHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := a.repo.DeleteContact(contactID); err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.NotFound(w, r)
+
+			return
+		}
+
 		slog.Error("delete contact", "id", contactID, "error", err)
 
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -284,15 +292,21 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 	}
 
 	form := newContactForm(r)
-	errors := form.validate()
+	validationErrors := form.validate()
 
-	if len(errors) > 0 {
+	if len(validationErrors) > 0 {
 		existing, err := a.repo.GetContact(contactID)
 
 		if err != nil {
 			slog.Error("get contact", "id", contactID, "error", err)
 
 			http.Error(w, "internal server error", http.StatusInternalServerError)
+
+			return
+		}
+
+		if existing == nil {
+			http.NotFound(w, r)
 
 			return
 		}
@@ -307,7 +321,7 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 			return
 		}
 
-		ctx := inertia.SetValidationErrors(r.Context(), errors)
+		ctx := inertia.SetValidationErrors(r.Context(), validationErrors)
 
 		a.container.Render(w, r.WithContext(ctx), "Contacts/Edit", httpx.Props{
 			"contact":       contactPropValue(existing),
@@ -319,6 +333,12 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 	}
 
 	if err := a.repo.UpdateContact(contactID, form.record()); err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.NotFound(w, r)
+
+			return
+		}
+
 		slog.Error("update contact", "id", contactID, "error", err)
 
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -339,6 +359,12 @@ func (a app) updateContactHandler(w http.ResponseWriter, r *http.Request, contac
 
 func (a app) toggleFavoriteHandler(w http.ResponseWriter, r *http.Request, contactID int64) {
 	if err := a.repo.ToggleContactFavorite(contactID); err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.NotFound(w, r)
+
+			return
+		}
+
 		slog.Error("toggle favorite", "id", contactID, "error", err)
 
 		http.Error(w, "internal server error", http.StatusInternalServerError)

@@ -20,6 +20,7 @@ import (
 	"github.com/oullin/inertia-go/demo/api/internal/testutil"
 )
 
+// testCryptoKey is a zero-filled 32-byte key used only in tests.
 var testCryptoKey = make([]byte, 32)
 
 func TestLoginHandlerRendersPage(t *testing.T) {
@@ -331,7 +332,11 @@ func newPortTestMux(t *testing.T) (*runtime, http.Handler) {
 	}
 
 	mux := http.NewServeMux()
-	authApp := rt.newAuth()
+	authApp, err := rt.newAuth()
+
+	if err != nil {
+		t.Fatalf("newAuth() error = %v", err)
+	}
 
 	authApp.RegisterRoutes(mux)
 

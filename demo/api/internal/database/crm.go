@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -272,6 +273,36 @@ func ListContacts(db *sql.DB, search string, favoritesOnly bool) ([]Contact, err
 	}), nil
 }
 
+func ListRecentContacts(db *sql.DB, limit int) ([]Contact, error) {
+	rows, err := db.Query(`
+		SELECT
+			c.id,
+			c.organization_id,
+			COALESCE(o.name, ''),
+			c.first_name,
+			c.last_name,
+			c.email,
+			c.phone,
+			c.is_favorite,
+			c.created_at,
+			c.updated_at
+		FROM contacts c
+		LEFT JOIN organizations o ON o.id = c.organization_id
+		ORDER BY c.first_name ASC, c.last_name ASC
+		LIMIT ?
+	`, limit)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	return scanRows(rows, func(scan func(...any) error) (Contact, error) {
+		return scanContact(scan)
+	}), nil
+}
+
 func ListContactsByOrganization(db *sql.DB, organizationID int64) ([]Contact, error) {
 	rows, err := db.Query(`
 		SELECT
@@ -462,13 +493,19 @@ func ListContactsPaginated(db *sql.DB, search string, favoritesOnly bool, cursor
 	}
 
 	if cursor != nil && strings.TrimSpace(*cursor) != "" {
+		cursorID, err := strconv.ParseInt(*cursor, 10, 64)
+
+		if err != nil || cursorID <= 0 {
+			return CursorPage[Contact]{}, fmt.Errorf("invalid cursor: %q", *cursor)
+		}
+
 		if direction == "prev" {
 			query += " AND c.id < ?"
 		} else {
 			query += " AND c.id > ?"
 		}
 
-		args = append(args, *cursor)
+		args = append(args, cursorID)
 	}
 
 	if direction == "prev" {
@@ -563,6 +600,10 @@ func ListOrganizationsPaginated(db *sql.DB, search string, page int, perPage int
 		lastPage = 1
 	}
 
+	if page > lastPage {
+		page = lastPage
+	}
+
 	offset := (page - 1) * perPage
 	query += " GROUP BY o.id, o.name ORDER BY o.name ASC LIMIT ? OFFSET ?"
 	args = append(args, perPage, offset)
@@ -612,13 +653,19 @@ func ListContactsByOrgPaginated(db *sql.DB, organizationID int64, cursor *string
 	args := []any{organizationID}
 
 	if cursor != nil && strings.TrimSpace(*cursor) != "" {
+		cursorID, err := strconv.ParseInt(*cursor, 10, 64)
+
+		if err != nil || cursorID <= 0 {
+			return CursorPage[Contact]{}, fmt.Errorf("invalid cursor: %q", *cursor)
+		}
+
 		if direction == "prev" {
 			query += " AND c.id < ?"
 		} else {
 			query += " AND c.id > ?"
 		}
 
-		args = append(args, *cursor)
+		args = append(args, cursorID)
 	}
 
 	if direction == "prev" {

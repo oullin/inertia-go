@@ -58,7 +58,9 @@ func (a App) loginSubmitHandler(w http.ResponseWriter, r *http.Request) {
 
 			return
 		case errors.Is(err, errInvalidCredentials):
-			errorsByField["email"] = "Use test@example.com and password to sign in."
+			errorsByField = httpx.ValidationErrors{
+				"email": "Use test@example.com and password to sign in.",
+			}
 		default:
 			slog.Error("authenticate", "error", err)
 

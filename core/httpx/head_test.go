@@ -1,7 +1,6 @@
 package httpx_test
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -476,9 +475,7 @@ func TestApplyEnv_OverridesExistingPropertyMeta(t *testing.T) {
 }
 
 func TestApplyEnv_NoOpWhenEnvEmpty(t *testing.T) {
-	t.Parallel()
-
-	os.Unsetenv("INERTIA_SEO_TITLE")
+	t.Setenv("INERTIA_SEO_TITLE", "")
 
 	h := httpx.Head{Title: "Keep"}
 

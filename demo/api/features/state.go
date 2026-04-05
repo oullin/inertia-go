@@ -19,6 +19,10 @@ func (a app) flashDataHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		if err := httpx.ParseForm(r); err != nil {
 			slog.Error("flash: parse form", "error", err)
+
+			http.Error(w, "bad request", http.StatusBadRequest)
+
+			return
 		}
 
 		kind := r.FormValue("kind")

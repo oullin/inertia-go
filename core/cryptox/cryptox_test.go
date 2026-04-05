@@ -13,6 +13,13 @@ import (
 	"github.com/oullin/inertia-go/core/cryptox"
 )
 
+type testPayload struct {
+	IV    string `json:"iv"`
+	Value string `json:"value"`
+	MAC   string `json:"mac"`
+	Tag   string `json:"tag"`
+}
+
 func testKey(t *testing.T) []byte {
 	t.Helper()
 
@@ -23,6 +30,36 @@ func testKey(t *testing.T) []byte {
 	}
 
 	return key
+}
+
+func encodePayload(t *testing.T, p testPayload) string {
+	t.Helper()
+
+	js, err := json.Marshal(p)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return base64.StdEncoding.EncodeToString(js)
+}
+
+func decodePayload(t *testing.T, encoded string) testPayload {
+	t.Helper()
+
+	js, err := base64.StdEncoding.DecodeString(encoded)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var p testPayload
+
+	if err := json.Unmarshal(js, &p); err != nil {
+		t.Fatal(err)
+	}
+
+	return p
 }
 
 func TestEncryptDecrypt_Roundtrip(t *testing.T) {
@@ -77,20 +114,9 @@ func TestDecrypt_TamperedMAC(t *testing.T) {
 	}
 
 	// Decode, tamper with MAC, re-encode.
-	js, _ := base64.StdEncoding.DecodeString(encrypted)
-
-	var p struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-	}
-
-	json.Unmarshal(js, &p)
-
+	p := decodePayload(t, encrypted)
 	p.MAC = strings.Repeat("ff", 32)
-
-	tampered, _ := json.Marshal(p)
-	tamperedB64 := base64.StdEncoding.EncodeToString(tampered)
+	tamperedB64 := encodePayload(t, p)
 
 	_, err = cryptox.Decrypt(tamperedB64, key)
 
@@ -219,20 +245,11 @@ func TestDecrypt_InvalidIVLength(t *testing.T) {
 	value := base64.StdEncoding.EncodeToString([]byte("0123456789abcdef"))
 
 	// Compute a valid MAC so we pass MAC check.
-	p := struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-		Tag   string `json:"tag"`
-	}{
+	encoded := encodePayload(t, testPayload{
 		IV:    shortIV,
 		Value: value,
 		MAC:   computeTestMAC(shortIV, value, key),
-		Tag:   "",
-	}
-
-	js, _ := json.Marshal(p)
-	encoded := base64.StdEncoding.EncodeToString(js)
+	})
 
 	_, err := cryptox.Decrypt(encoded, key)
 
@@ -254,20 +271,11 @@ func TestDecrypt_InvalidCiphertextLength(t *testing.T) {
 	ivB64 := base64.StdEncoding.EncodeToString(iv)
 	valueB64 := base64.StdEncoding.EncodeToString([]byte("12345678901234567")) // 17 bytes
 
-	p := struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-		Tag   string `json:"tag"`
-	}{
+	encoded := encodePayload(t, testPayload{
 		IV:    ivB64,
 		Value: valueB64,
 		MAC:   computeTestMAC(ivB64, valueB64, key),
-		Tag:   "",
-	}
-
-	js, _ := json.Marshal(p)
-	encoded := base64.StdEncoding.EncodeToString(js)
+	})
 
 	_, err := cryptox.Decrypt(encoded, key)
 
@@ -288,20 +296,11 @@ func TestDecrypt_EmptyCiphertext(t *testing.T) {
 	ivB64 := base64.StdEncoding.EncodeToString(iv)
 	valueB64 := base64.StdEncoding.EncodeToString([]byte{}) // empty
 
-	p := struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-		Tag   string `json:"tag"`
-	}{
+	encoded := encodePayload(t, testPayload{
 		IV:    ivB64,
 		Value: valueB64,
 		MAC:   computeTestMAC(ivB64, valueB64, key),
-		Tag:   "",
-	}
-
-	js, _ := json.Marshal(p)
-	encoded := base64.StdEncoding.EncodeToString(js)
+	})
 
 	_, err := cryptox.Decrypt(encoded, key)
 
@@ -315,20 +314,11 @@ func TestDecrypt_InvalidMACHex(t *testing.T) {
 
 	key := testKey(t)
 
-	p := struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-		Tag   string `json:"tag"`
-	}{
+	encoded := encodePayload(t, testPayload{
 		IV:    base64.StdEncoding.EncodeToString(make([]byte, 16)),
 		Value: base64.StdEncoding.EncodeToString(make([]byte, 16)),
 		MAC:   "not-valid-hex-gg",
-		Tag:   "",
-	}
-
-	js, _ := json.Marshal(p)
-	encoded := base64.StdEncoding.EncodeToString(js)
+	})
 
 	_, err := cryptox.Decrypt(encoded, key)
 
@@ -350,16 +340,7 @@ func TestDecrypt_InvalidPadding(t *testing.T) {
 	}
 
 	// Decode, tamper with the ciphertext (last block), re-compute MAC, re-encode.
-	js, _ := base64.StdEncoding.DecodeString(encrypted)
-
-	var p struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-		Tag   string `json:"tag"`
-	}
-
-	json.Unmarshal(js, &p)
+	p := decodePayload(t, encrypted)
 
 	// Tamper with the encrypted value to corrupt padding.
 	ct, _ := base64.StdEncoding.DecodeString(p.Value)
@@ -368,8 +349,7 @@ func TestDecrypt_InvalidPadding(t *testing.T) {
 	p.Value = base64.StdEncoding.EncodeToString(ct)
 	p.MAC = computeTestMAC(p.IV, p.Value, key)
 
-	tampered, _ := json.Marshal(p)
-	tamperedB64 := base64.StdEncoding.EncodeToString(tampered)
+	tamperedB64 := encodePayload(t, p)
 
 	_, err = cryptox.Decrypt(tamperedB64, key)
 
@@ -383,21 +363,14 @@ func TestDecrypt_InvalidIVBase64(t *testing.T) {
 
 	key := testKey(t)
 
-	p := struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-		Tag   string `json:"tag"`
-	}{
+	p := testPayload{
 		IV:    "not-valid-base64!!",
 		Value: base64.StdEncoding.EncodeToString(make([]byte, 16)),
-		Tag:   "",
 	}
 
 	p.MAC = computeTestMAC(p.IV, p.Value, key)
 
-	js, _ := json.Marshal(p)
-	encoded := base64.StdEncoding.EncodeToString(js)
+	encoded := encodePayload(t, p)
 
 	_, err := cryptox.Decrypt(encoded, key)
 
@@ -414,21 +387,14 @@ func TestDecrypt_InvalidValueBase64(t *testing.T) {
 
 	rand.Read(iv)
 
-	p := struct {
-		IV    string `json:"iv"`
-		Value string `json:"value"`
-		MAC   string `json:"mac"`
-		Tag   string `json:"tag"`
-	}{
+	p := testPayload{
 		IV:    base64.StdEncoding.EncodeToString(iv),
 		Value: "not-valid-base64!!",
-		Tag:   "",
 	}
 
 	p.MAC = computeTestMAC(p.IV, p.Value, key)
 
-	js, _ := json.Marshal(p)
-	encoded := base64.StdEncoding.EncodeToString(js)
+	encoded := encodePayload(t, p)
 
 	_, err := cryptox.Decrypt(encoded, key)
 

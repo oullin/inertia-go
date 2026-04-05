@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+var testKey = []byte("0123456789abcdef0123456789abcdef")
+
 func TestNewCookieStoreDefaults(t *testing.T) {
 	t.Parallel()
 
@@ -198,6 +200,83 @@ func TestConsumeAfterConsumeReturnsNil(t *testing.T) {
 
 	if second != nil {
 		t.Errorf("expected second consume to return nil, got %+v", second)
+	}
+}
+
+// 32 bytes
+
+func TestSetAndConsumeEncrypted(t *testing.T) {
+	t.Parallel()
+
+	s := NewCookieStore(WithCookieName("enc_flash"), WithKey(testKey))
+	msg := Message{Kind: "success", Title: "Done", Message: "Encrypted."}
+
+	rec := httptest.NewRecorder()
+
+	if err := s.Set(rec, msg); err != nil {
+		t.Fatalf("Set returned unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	req.AddCookie(findCookie(t, rec, "enc_flash"))
+
+	rec2 := httptest.NewRecorder()
+	got := s.Consume(rec2, req)
+
+	if got == nil {
+		t.Fatal("expected a flash message, got nil")
+	}
+
+	if got.Kind != msg.Kind || got.Title != msg.Title || got.Message != msg.Message {
+		t.Errorf("round-trip mismatch: got %+v, want %+v", got, msg)
+	}
+}
+
+func TestConsumeRejectsTamperedCookie(t *testing.T) {
+	t.Parallel()
+
+	s := NewCookieStore(WithCookieName("enc_flash"), WithKey(testKey))
+	msg := Message{Kind: "info", Title: "Hi", Message: "Hello."}
+
+	rec := httptest.NewRecorder()
+
+	if err := s.Set(rec, msg); err != nil {
+		t.Fatalf("Set returned unexpected error: %v", err)
+	}
+
+	cookie := findCookie(t, rec, "enc_flash")
+	cookie.Value = cookie.Value[:len(cookie.Value)-4] + "XXXX"
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	req.AddCookie(cookie)
+
+	rec2 := httptest.NewRecorder()
+	got := s.Consume(rec2, req)
+
+	if got != nil {
+		t.Errorf("expected nil for tampered cookie, got %+v", got)
+	}
+}
+
+func TestConsumeRejectsForgedPlaintext(t *testing.T) {
+	t.Parallel()
+
+	s := NewCookieStore(WithCookieName("enc_flash"), WithKey(testKey))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	req.AddCookie(&http.Cookie{
+		Name:  "enc_flash",
+		Value: `%7B%22kind%22%3A%22error%22%2C%22title%22%3A%22Forged%22%2C%22message%22%3A%22Evil%22%7D`,
+	})
+
+	rec := httptest.NewRecorder()
+	got := s.Consume(rec, req)
+
+	if got != nil {
+		t.Errorf("expected nil for forged plaintext cookie, got %+v", got)
 	}
 }
 

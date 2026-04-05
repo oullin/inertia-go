@@ -108,7 +108,7 @@ func main() {
 		cryptoKey:  cryptoKey,
 		inertia:    i,
 		localeCfg:  localeCfg,
-		flashStore: flash.NewCookieStore(flash.WithCookieName("beacon_flash")),
+		flashStore: flash.NewCookieStore(flash.WithCookieName("beacon_flash"), flash.WithKey(cryptoKey)),
 		routes:     initRoutes(),
 	}
 
@@ -126,7 +126,12 @@ func main() {
 	)
 
 	appMux := http.NewServeMux()
-	authApp := rt.newAuth()
+
+	authApp, err := rt.newAuth()
+
+	if err != nil {
+		log.Fatalf("auth: %v", err)
+	}
 
 	authApp.RegisterRoutes(appMux)
 
@@ -134,9 +139,13 @@ func main() {
 		log.Fatalf("crm routes: %v", err)
 	}
 
-	rt.registerFeatureRoutes(appMux, authApp)
+	if err := rt.registerFeatureRoutes(appMux, authApp); err != nil {
+		log.Fatalf("feature routes: %v", err)
+	}
 
-	rt.registerErrorRoutes(appMux, authApp)
+	if err := rt.registerErrorRoutes(appMux, authApp); err != nil {
+		log.Fatalf("error routes: %v", err)
+	}
 
 	appMux.Handle("GET /{$}", http.RedirectHandler("/dashboard", http.StatusFound))
 
