@@ -2,7 +2,11 @@
 
 Turborepo supports different modes for handling environment variables during task execution.
 
-## Strict Mode (Default)
+As of April 6, 2026, environment modes are generally available in supported Turborepo `1.x` and `2.x` releases starting with `1.10`. `Strict Mode` becomes the default in `2.0`. The `turbo.json` `envMode` key is newer and requires `2.1+`.
+
+## Strict Mode
+
+Default in Turborepo `2.0+`.
 
 Only explicitly configured variables are available to tasks.
 
@@ -19,7 +23,7 @@ Only explicitly configured variables are available to tasks.
 - Reproducible builds across machines
 
 ```bash
-# Explicit (though it's the default)
+# Explicit in versions that support --env-mode
 turbo run build --env-mode=strict
 ```
 
@@ -57,7 +61,7 @@ Turborepo automatically detects frameworks and includes their conventional env v
 | Vite             | `VITE_*`            |
 | Create React App | `REACT_APP_*`       |
 | Gatsby           | `GATSBY_*`          |
-| Nuxt             | `NUXT_*`, `NITRO_*` |
+| Nuxt             | `NUXT_*`, `NITRO_*`, `SERVER_*`, `AWS_APP_ID`, `INPUT_AZURE_STATIC_WEB_APPS_API_TOKEN`, `CLEAVR`, `CF_PAGES`, `FIREBASE_APP_HOSTING`, `NETLIFY`, `STORMKIT`, `NOW_BUILDER`, `ZEABUR`, `RENDER`, `LAUNCH_EDITOR` |
 | Expo             | `EXPO_PUBLIC_*`     |
 | Astro            | `PUBLIC_*`          |
 | SvelteKit        | `PUBLIC_*`          |
@@ -95,6 +99,8 @@ Or exclude specific patterns in config:
 ## Checking Environment Mode
 
 Use `--dry` to see which vars affect each task:
+
+This example requires `jq` to be installed because it extracts environment variables from the JSON output.
 
 ```bash
 turbo run build --dry=json | jq '.tasks[].environmentVariables'

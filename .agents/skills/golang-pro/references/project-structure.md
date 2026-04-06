@@ -2,7 +2,7 @@
 
 ## Standard Project Layout
 
-```
+```text
 myproject/
 ├── cmd/                    # Main applications
 │   ├── server/
@@ -100,9 +100,7 @@ go mod tidy
 
 ## Internal Packages
 
-```go
-// internal/ packages can only be imported by code in the parent tree
-
+```text
 myproject/
 ├── internal/
 │   ├── auth/           # Can only be imported by myproject
@@ -112,14 +110,19 @@ myproject/
 └── pkg/
     └── models/         # Can be imported by anyone
         └── user.go
+```
+
+```go
+// internal/ packages can only be imported by code in the parent tree
 
 // This works (same project):
 import "github.com/user/myproject/internal/auth"
 
 // This fails (different project):
 import "github.com/other/project/internal/auth" // Error!
+```
 
-// Internal subdirectories
+```text
 myproject/
 └── api/
     └── internal/       # Can only be imported by code in api/
@@ -174,7 +177,7 @@ func (s *Service) RegisterUser(ctx context.Context, email string) (*User, error)
 
 ## Multi-Module Repository (Monorepo)
 
-```
+```text
 monorepo/
 ├── go.work              # Workspace file
 ├── services/
@@ -188,7 +191,9 @@ monorepo/
     └── models/
         ├── go.mod
         └── user.go
+```
 
+```go
 // go.work
 go 1.21
 
@@ -197,11 +202,13 @@ use (
     ./services/worker
     ./shared/models
 )
+```
 
-// Commands:
-// go work init ./services/api ./services/worker
-// go work use ./shared/models
-// go work sync
+```bash
+# Commands:
+go work init ./services/api ./services/worker
+go work use ./shared/models
+go work sync
 ```
 
 ## Build Tags and Constraints

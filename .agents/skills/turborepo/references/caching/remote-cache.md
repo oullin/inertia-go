@@ -52,15 +52,26 @@ Get your token from Vercel dashboard → Settings → Tokens.
 {
   "remoteCache": {
     "enabled": true,
-    "signature": false
+    "signature": false,
+    "timeout": 30,
+    "uploadTimeout": 60
   }
 }
 ```
 
-Options:
+| Option          | Default                | Description                                            |
+| --------------- | ---------------------- | ------------------------------------------------------ |
+| `enabled`       | `true`                 | Enable or disable remote caching                       |
+| `signature`     | `false`                | Sign artifacts with `TURBO_REMOTE_CACHE_SIGNATURE_KEY` |
+| `preflight`     | `false`                | Send an `OPTIONS` request before cache requests        |
+| `timeout`       | `30`                   | Timeout in seconds for cache operations                |
+| `uploadTimeout` | `60`                   | Timeout in seconds for uploads                         |
+| `apiUrl`        | `"https://vercel.com"` | Remote cache API endpoint                              |
+| `loginUrl`      | `"https://vercel.com"` | Login endpoint                                         |
+| `teamId`        | -                      | Team ID (must start with `team_`)                      |
+| `teamSlug`      | -                      | Team slug for querystring                              |
 
-- `enabled`: toggle remote cache (default: true when authenticated)
-- `signature`: require artifact signing (default: false)
+Use this block for repo-level `remoteCache` defaults in `turbo.json`.
 
 ## Artifact Signing
 

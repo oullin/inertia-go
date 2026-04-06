@@ -49,7 +49,7 @@ The `transit` task creates dependency relationships without running anything (no
 
 ## outputs
 
-Glob patterns for files to cache. **If omitted, nothing is cached.**
+Glob patterns for file artefacts to cache. **If omitted, no file artefacts are cached, but task logs can still be replayed from cache hits.**
 
 ```json
 {

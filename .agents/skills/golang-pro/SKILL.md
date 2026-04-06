@@ -10,7 +10,7 @@ Pragmatic guidance for building reliable Go services and tools.
 
 ## Scope
 
-This skill is maintained in `/Users/gustavo/Sites/partners-api/.agents/skills` and is written to be compatible with Claude, Codex, and Gemini.
+This skill is maintained in `.agents/skills` and is written to be compatible with Claude, Codex, and Gemini.
 
 ## When to Use
 
@@ -36,6 +36,7 @@ This skill is maintained in `/Users/gustavo/Sites/partners-api/.agents/skills` a
 ## Engineering Standards
 
 ### Must
+
 - Run `gofmt` and `go test ./...`
 - Use `context.Context` for I/O and blocking work
 - Wrap errors with `%w` and preserve root causes
@@ -43,6 +44,7 @@ This skill is maintained in `/Users/gustavo/Sites/partners-api/.agents/skills` a
 - Document exported types and functions
 
 ### Must Not
+
 - Ignore returned errors without a clear reason
 - Start goroutines without lifecycle control
 - Use `panic` for expected runtime failures

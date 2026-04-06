@@ -10,7 +10,7 @@ Practical guidance for secure, reproducible, and efficient container workflows.
 
 ## Scope
 
-This skill is maintained in `/Users/gustavo/Sites/partners-api/.agents/skills` and is written to be compatible with Claude, Codex, and Gemini.
+This skill is maintained in `.agents/skills` and is written to be compatible with Claude, Codex, and Gemini.
 
 ## When to Use
 
@@ -36,6 +36,7 @@ This skill is maintained in `/Users/gustavo/Sites/partners-api/.agents/skills` a
 ## Engineering Standards
 
 ### Must
+
 - Use `.dockerignore` to keep build context small
 - Prefer multi-stage builds for compiled applications
 - Run as non-root where possible
@@ -43,6 +44,7 @@ This skill is maintained in `/Users/gustavo/Sites/partners-api/.agents/skills` a
 - Keep runtime images minimal and explicit
 
 ### Must Not
+
 - Bake secrets into images
 - Use broad `COPY . .` too early in the Dockerfile
 - Depend on mutable tags without justification

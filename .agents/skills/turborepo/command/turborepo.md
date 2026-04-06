@@ -2,13 +2,15 @@
 description: Load Turborepo skill for creating workflows, tasks, and pipelines in monorepos. Use when users ask to "create a workflow", "make a task", "generate a pipeline", or set up build orchestration.
 ---
 
+# Turborepo Command
+
 Load the Turborepo skill and help with monorepo task orchestration: creating workflows, configuring tasks, setting up pipelines, and optimising builds.
 
 ## Workflow
 
 ### Step 1: Load turborepo skill
 
-```
+```javascript
 skill({ name: 'turborepo' })
 ```
 
@@ -56,7 +58,7 @@ Apply Turborepo-specific patterns from references to complete the user's request
 
 ### Step 5: Summarise
 
-```
+```text
 === Turborepo Task Complete ===
 
 Topic: <configuration|caching|filtering|environment|ci|cli>

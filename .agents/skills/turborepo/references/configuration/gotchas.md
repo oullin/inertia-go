@@ -240,7 +240,7 @@ Some tasks can run in parallel (don't need built output from dependencies) but m
 }
 ```
 
-No `outputs` key is fine for stdout-only tasks. For file-producing tasks, missing `outputs` means Turbo has nothing to cache.
+No `outputs` key is fine for stdout-only tasks. For file-producing tasks, missing `outputs` means Turbo has no file artefacts to cache, though stdout/stderr logs may still be cached and replayed.
 
 ## Forgetting ^ in dependsOn
 

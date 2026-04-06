@@ -27,11 +27,13 @@ turbo run web#build docs#lint    # Multiple specific tasks
 
 ### `--affected`
 
-Run only in packages changed since the base branch.
+Run only in packages changed since the base branch. For narrower selections such
+as only changed apps, use a single combined `--filter` expression instead of
+adding another positive `--filter` flag.
 
 ```bash
 turbo build --affected
-turbo test --affected --filter=./apps/*  # combine with filter
+turbo test --filter='{./apps/*}[main...HEAD]'  # changed apps only
 ```
 
 **How it works:**
@@ -168,11 +170,11 @@ turbo build -vvv    # maximum verbosity
 
 ### `--env-mode`
 
-Control environment variable handling.
+Control environment variable handling. Available in Turborepo `1.10+`. In `2.0+`, `strict` is the default.
 
 ```bash
-turbo build --env-mode=strict  # only declared env vars (default)
-turbo build --env-mode=loose   # include all env vars in hash
+turbo build --env-mode=strict  # only declared env vars
+turbo build --env-mode=loose   # pass through all env vars
 ```
 
 ## UI

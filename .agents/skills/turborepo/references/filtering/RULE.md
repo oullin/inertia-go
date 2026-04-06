@@ -135,6 +135,13 @@ Multiple `--filter` flags create a union:
 turbo run build --filter=web --filter=api   # runs in both
 ```
 
+To intersect target types, combine them inside one filter expression instead of
+adding another positive `--filter` flag:
+
+```bash
+turbo run build --filter='{./apps/*}[main...HEAD]'   # only changed apps
+```
+
 ---
 
 ## Quick Reference: Changed Packages

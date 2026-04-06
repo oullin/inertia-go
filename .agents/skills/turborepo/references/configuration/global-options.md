@@ -62,7 +62,7 @@ Disable in CI or when debugging.
 
 ## envMode
 
-How unspecified env vars are handled. Default: `"strict"`.
+How unspecified env vars are handled in `turbo.json`. Requires Turborepo `2.1+`. In `2.0+`, the default is `"strict"`. On `1.10` through `2.0`, use the CLI `--env-mode` flag instead.
 
 ```json
 {
@@ -90,32 +90,18 @@ TUI provides better UX for parallel tasks.
 
 ## remoteCache
 
-Configure remote caching.
+Configure remote caching with the global `remoteCache` block in `turbo.json`.
 
 ```json
 {
   "remoteCache": {
     "enabled": true,
-    "signature": true,
-    "timeout": 30,
-    "uploadTimeout": 60
+    "signature": true
   }
 }
 ```
 
-| Option          | Default                | Description                                            |
-| --------------- | ---------------------- | ------------------------------------------------------ |
-| `enabled`       | `true`                 | Enable/disable remote caching                          |
-| `signature`     | `false`                | Sign artifacts with `TURBO_REMOTE_CACHE_SIGNATURE_KEY` |
-| `preflight`     | `false`                | Send OPTIONS request before cache requests             |
-| `timeout`       | `30`                   | Timeout in seconds for cache operations                |
-| `uploadTimeout` | `60`                   | Timeout in seconds for uploads                         |
-| `apiUrl`        | `"https://vercel.com"` | Remote cache API endpoint                              |
-| `loginUrl`      | `"https://vercel.com"` | Login endpoint                                         |
-| `teamId`        | -                      | Team ID (must start with `team_`)                      |
-| `teamSlug`      | -                      | Team slug for querystring                              |
-
-See https://turborepo.dev/docs/core-concepts/remote-caching for setup.
+For the full option table, setup flow, signing, CI usage, and debugging, see [Remote Caching](../caching/remote-cache.md#configuration-in-turbojson).
 
 ## concurrency
 

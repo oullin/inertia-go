@@ -30,7 +30,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Every plan MUST start with this header:**
 
-```markdown
+````markdown
 # [Feature Name] Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -42,11 +42,11 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 **Tech Stack:** [Key technologies/libraries]
 
 ---
-```
+````
 
 ## Task Structure
 
-```markdown
+````markdown
 ### Task N: [Component Name]
 
 **Files:**
@@ -85,7 +85,7 @@ Expected: PASS
 git add tests/path/test.py src/path/file.py
 git commit -m "feat: add specific feature"
 ```
-```
+````
 
 ## Remember
 - Exact file paths always

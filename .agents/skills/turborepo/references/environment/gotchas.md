@@ -33,6 +33,8 @@ Turbo does NOT read `.env` files. Your framework (Next.js, Vite, etc.) or `doten
 
 ## Strict Mode Filters CI Variables
 
+In Turborepo `2.0+`, strict mode is the default. In `1.10+`, the same filtering applies when you run with `--env-mode=strict`.
+
 In strict mode, CI provider variables (GITHUB_TOKEN, GITLAB_CI, etc.) are filtered unless explicitly listed.
 
 **Symptom:** Task fails with "authentication required" or "permission denied" in CI.

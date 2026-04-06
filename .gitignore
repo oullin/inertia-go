@@ -77,3 +77,4 @@ storage/dist/app/*
 !.agents/*.md
 !.agents/skills
 !.agents/skills/**
+.DS_Store

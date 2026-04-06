@@ -4,13 +4,15 @@ Turborepo integrates seamlessly with Vercel for monorepo deployments.
 
 ## Remote Cache
 
-Remote caching is **automatically enabled** when deploying to Vercel. No configuration needed - Vercel detects Turborepo and enables caching.
+Remote caching is **automatically enabled** for builds run by Vercel. No extra Turborepo remote-cache configuration is needed for Vercel-managed deployments.
 
 This means:
 
-- No `TURBO_TOKEN` or `TURBO_TEAM` setup required on Vercel
-- Cache is shared across all deployments
+- Builds run by Vercel do not require `TURBO_TOKEN` or `TURBO_TEAM`
+- Cache is shared across Vercel deployments
 - Preview and production builds benefit from cache
+
+If you run Turborepo in external CI providers such as GitHub Actions, you still need to configure `TURBO_TOKEN` and `TURBO_TEAM` to use Vercel Remote Cache.
 
 ## turbo-ignore
 
@@ -99,5 +101,6 @@ turbo run build --filter=web
 Or for production-only optimizations:
 
 ```bash
+# Requires Turborepo 1.10+
 turbo run build --filter=web --env-mode=strict
 ```
