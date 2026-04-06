@@ -13,11 +13,12 @@ import (
 )
 
 // SessionCookieName is the cookie used by the demo auth flow.
+
+type ctxKey string
+
 const SessionCookieName = "inertia_go_demo_session"
 
 const currentUserKey ctxKey = "current_user"
-
-type ctxKey string
 
 // WithCurrentUser resolves the demo user from the session cookie into request context.
 func (a App) WithCurrentUser(next http.Handler) http.Handler {

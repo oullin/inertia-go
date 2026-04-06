@@ -82,14 +82,17 @@ func newCRMHarness(t *testing.T) *crmHarness {
 			t.Fatalf("Render(%s) error = %v", component, err)
 		}
 	}
+
 	redirectFn := func(w http.ResponseWriter, r *http.Request, url string) {
 		i.Redirect(w, r, url)
 	}
+
 	setFlashFn := func(w http.ResponseWriter, msg flash.Message) error {
 		h.flashes = append(h.flashes, msg)
 
 		return nil
 	}
+
 	currentUserFn := func(r *http.Request) *database.User {
 		return h.user
 	}

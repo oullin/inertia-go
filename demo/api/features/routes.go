@@ -21,6 +21,7 @@ func DefineRoutes(routes *wayfinder.Registry) {
 		g.Add("dotted-keys", "GET", "/dotted-keys")
 		g.Add("wayfinder", "GET", "/wayfinder")
 	})
+
 	routes.Group("features.navigation", "/features/navigation", func(g *wayfinder.Group) {
 		g.Add("links", "GET", "/links")
 		g.Add("preserve-state", "GET", "/preserve-state")
@@ -36,6 +37,7 @@ func DefineRoutes(routes *wayfinder.Registry) {
 		g.Add("instant-visit-target", "GET", "/instant-visit-target")
 		g.Add("url-fragments", "GET", "/url-fragments")
 	})
+
 	routes.Group("features.data-loading", "/features/data-loading", func(g *wayfinder.Group) {
 		g.Add("deferred-props", "GET", "/deferred-props")
 		g.Add("partial-reloads", "GET", "/partial-reloads")
@@ -46,17 +48,20 @@ func DefineRoutes(routes *wayfinder.Registry) {
 		g.Add("optional-props", "GET", "/optional-props")
 		g.Add("once-props", "GET", "/once-props/{page}")
 	})
+
 	routes.Group("features.prefetching", "/features/prefetching", func(g *wayfinder.Group) {
 		g.Add("link-prefetch", "GET", "/link-prefetch")
 		g.Add("stale-while-revalidate", "GET", "/stale-while-revalidate")
 		g.Add("manual-prefetch", "GET", "/manual-prefetch")
 		g.Add("cache-management", "GET", "/cache-management")
 	})
+
 	routes.Group("features.state", "/features/state", func(g *wayfinder.Group) {
 		g.Add("remember", "GET", "/remember")
 		g.Add("flash-data", "GET", "/flash-data")
 		g.Add("shared-props", "GET", "/shared-props")
 	})
+
 	routes.Group("features.layouts", "/features/layouts", func(g *wayfinder.Group) {
 		g.Add("persistent-layouts", "GET", "/persistent-layouts")
 		g.Add("persistent-layouts-page-2", "GET", "/persistent-layouts/page-2")
@@ -64,12 +69,14 @@ func DefineRoutes(routes *wayfinder.Registry) {
 		g.Add("head", "GET", "/head")
 		g.Add("layout-props", "GET", "/layout-props")
 	})
+
 	routes.Group("features.events", "/features/events", func(g *wayfinder.Group) {
 		g.Add("global-events", "GET", "/global-events")
 		g.Add("visit-callbacks", "GET", "/visit-callbacks")
 		g.Add("progress", "GET", "/progress")
 		g.Add("progress-slow", "GET", "/progress/slow")
 	})
+
 	routes.Group("features.http", "/features/http", func(g *wayfinder.Group) {
 		g.Add("use-http", "GET", "/use-http")
 	})

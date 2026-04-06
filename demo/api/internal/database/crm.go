@@ -17,8 +17,6 @@ import (
 
 // OffsetPage holds offset-paginated results.
 
-var ErrNotFound = errors.New("database: record not found")
-
 type CursorPage[T any] struct {
 	Data       []T     `json:"data"`
 	NextCursor *string `json:"next_cursor"`
@@ -69,6 +67,8 @@ type Note struct {
 	Body        string
 	CreatedAt   time.Time
 }
+
+var ErrNotFound = errors.New("database: record not found")
 
 func checkRowsAffected(result sql.Result) error {
 	n, err := result.RowsAffected()
