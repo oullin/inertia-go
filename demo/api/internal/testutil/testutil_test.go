@@ -1,8 +1,18 @@
 package testutil
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
+
+type mockTB struct {
+	testing.TB
+	failed bool
+}
+
+func (m *mockTB) Helper()               {}
+func (m *mockTB) Fatalf(string, ...any) { m.failed = true }
 
 func TestFindCSRFMetaToken(t *testing.T) {
 	tests := []struct {
@@ -50,5 +60,32 @@ func TestFindCSRFMetaToken(t *testing.T) {
 				t.Fatalf("got %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestFindCookie(t *testing.T) {
+	t.Parallel()
+
+	w := httptest.NewRecorder()
+
+	http.SetCookie(w, &http.Cookie{Name: "session", Value: "encrypted"})
+
+	cookie := FindCookie(t, w, "session")
+
+	if cookie.Value != "encrypted" {
+		t.Fatalf("FindCookie() value = %q, want %q", cookie.Value, "encrypted")
+	}
+}
+
+func TestFindCookie_Missing(t *testing.T) {
+	t.Parallel()
+
+	m := &mockTB{}
+	w := httptest.NewRecorder()
+
+	FindCookie(m, w, "missing")
+
+	if !m.failed {
+		t.Fatal("FindCookie() should fail when the cookie is missing")
 	}
 }

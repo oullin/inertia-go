@@ -16,7 +16,7 @@ var csrfMetaRe = regexp.MustCompile(
 		`<meta\s[^>]*\bcontent="([^"]*)"[^>]*\bname="csrf-token"`,
 )
 
-func FindCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.Cookie {
+func FindCookie(t testing.TB, w *httptest.ResponseRecorder, name string) *http.Cookie {
 	t.Helper()
 
 	for _, c := range w.Result().Cookies() {
@@ -30,7 +30,7 @@ func FindCookie(t *testing.T, w *httptest.ResponseRecorder, name string) *http.C
 	return nil
 }
 
-func FindCSRFMetaToken(t *testing.T, body string) string {
+func FindCSRFMetaToken(t testing.TB, body string) string {
 	t.Helper()
 
 	m := csrfMetaRe.FindStringSubmatch(body)

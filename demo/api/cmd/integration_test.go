@@ -184,11 +184,12 @@ func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
 	tests := []struct {
 		name string
 		path string
+		want int
 	}{
-		{name: "root", path: "/"},
-		{name: "dashboard navigation", path: "/dashboard/navigation"},
-		{name: "dashboard data", path: "/dashboard/data"},
-		{name: "dashboard state", path: "/dashboard/state"},
+		{name: "root", path: "/", want: http.StatusFound},
+		{name: "dashboard navigation", path: "/dashboard/navigation", want: http.StatusNotFound},
+		{name: "dashboard data", path: "/dashboard/data", want: http.StatusNotFound},
+		{name: "dashboard state", path: "/dashboard/state", want: http.StatusNotFound},
 	}
 
 	for _, tt := range tests {
@@ -201,10 +202,84 @@ func TestLegacyDemoRoutesReturnNotFound(t *testing.T) {
 
 			testMux.ServeHTTP(w, req)
 
-			if w.Code != http.StatusNotFound {
-				t.Fatalf("status = %d, want %d", w.Code, http.StatusNotFound)
+			if w.Code != tt.want {
+				t.Fatalf("status = %d, want %d", w.Code, tt.want)
 			}
 		})
+	}
+}
+
+func TestRootRedirectsAndFeatureErrorRoutes(t *testing.T) {
+	t.Parallel()
+
+	_, testMux := newPortTestMux(t)
+	encrypted := mustEncryptSession(t, "1")
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
+	w := httptest.NewRecorder()
+
+	testMux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound || w.Header().Get("Location") != "/dashboard" {
+		t.Fatalf("root status = %d, location = %q", w.Code, w.Header().Get("Location"))
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/features/errors/http-error", nil)
+
+	req.Header.Set(httpx.HeaderInertia, "true")
+
+	req.RequestURI = "/features/errors/http-error"
+
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
+	w = httptest.NewRecorder()
+
+	testMux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("errors page status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/features/errors/http-error/403", nil)
+
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
+	w = httptest.NewRecorder()
+
+	testMux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("http-error/403 status = %d, want %d", w.Code, http.StatusForbidden)
+	}
+}
+
+func TestFeatureExternalRedirectUsesInertiaLocation(t *testing.T) {
+	t.Parallel()
+
+	_, testMux := newPortTestMux(t)
+	encrypted := mustEncryptSession(t, "1")
+	csrfCookie, rawToken := issuePortCSRFCookie(t, testMux, "/login")
+
+	req := httptest.NewRequest(http.MethodPost, "/features/navigation/redirects/external", nil)
+
+	req.Header.Set(httpx.HeaderInertia, "true")
+
+	req.RequestURI = "/features/navigation/redirects/external"
+
+	req.Header.Set("X-CSRF-TOKEN", rawToken)
+
+	req.AddCookie(csrfCookie)
+	req.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: encrypted})
+
+	w := httptest.NewRecorder()
+
+	testMux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusConflict || w.Header().Get(httpx.HeaderLocation) != "https://oullin.io" {
+		t.Fatalf("status = %d, location = %q", w.Code, w.Header().Get(httpx.HeaderLocation))
 	}
 }
 
@@ -344,7 +419,15 @@ func newPortTestMux(t *testing.T) (*runtime, http.Handler) {
 		t.Fatalf("registerCRMRoutes() error = %v", err)
 	}
 
-	rt.registerFeatureRoutes(mux, authApp)
+	if err := rt.registerFeatureRoutes(mux, authApp); err != nil {
+		t.Fatalf("registerFeatureRoutes() error = %v", err)
+	}
+
+	if err := rt.registerErrorRoutes(mux, authApp); err != nil {
+		t.Fatalf("registerErrorRoutes() error = %v", err)
+	}
+
+	mux.Handle("GET /{$}", http.RedirectHandler("/dashboard", http.StatusFound))
 
 	handler := rt.dashboardAppHandler(
 		authApp.WithCurrentUser(rt.withDemoProps(authApp, mux)),

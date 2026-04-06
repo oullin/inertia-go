@@ -58,6 +58,7 @@ Thumbs.db
 
 .claude/*
 !.claude/.gitkeep
+!.claude/skills
 
 storage/.turbo/*
 !storage/.turbo/.gitkeep
@@ -73,3 +74,7 @@ storage/dist/app/*
 
 .agents/*
 !.agents/.gitkeep
+!.agents/*.md
+!.agents/skills
+!.agents/skills/**
+.DS_Store

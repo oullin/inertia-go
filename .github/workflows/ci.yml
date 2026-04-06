@@ -26,7 +26,8 @@ jobs:
       - run: cd core && go test -race -coverprofile=${{ github.workspace }}/storage/.cache/core_coverage.out ./...
       - run: cd demo/api && go test -race -coverprofile=${{ github.workspace }}/storage/.cache/demo_coverage.out ./...
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         with:
           files: storage/.cache/core_coverage.out,storage/.cache/demo_coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
