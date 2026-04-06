@@ -74,7 +74,8 @@ func TestPartialReloadsInfiniteScrollAndPolling(t *testing.T) {
 		t.Fatalf("contacts = %#v, want next cursor", page.Props["contacts"])
 	}
 
-	req = h.request(http.MethodGet, "/features/data-loading/infinite-scroll?cursor=15", nil)
+	cursor, _ := contacts["next_cursor"].(string)
+	req = h.request(http.MethodGet, "/features/data-loading/infinite-scroll?cursor="+cursor, nil)
 	w = httptest.NewRecorder()
 
 	h.app.infiniteScrollHandler(w, req)

@@ -30,6 +30,15 @@ func (c Container) Validate() error {
 	return stderrors.Join(errs...)
 }
 
+// DefineRoutes registers error showcase route metadata (name, method, pattern)
+// on the given registry without mounting handlers.
+func DefineRoutes(routes *wayfinder.Registry) {
+	routes.Group("features.errors", "/features/errors", func(g *wayfinder.Group) {
+		g.Add("http-error", "GET", "/http-error")
+		g.Add("network-errors", "GET", "/network-errors")
+	})
+}
+
 // RegisterRoutes mounts the error showcase HTTP routes onto the provided mux.
 func RegisterRoutes(routes *wayfinder.Registry, mux *http.ServeMux, container Container) error {
 	if err := container.Validate(); err != nil {

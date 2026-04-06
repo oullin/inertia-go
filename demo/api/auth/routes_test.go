@@ -1,9 +1,11 @@
 package auth
 
 import (
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -23,7 +25,7 @@ var testCryptoKey = make([]byte, 32)
 func TestLoginHandlerRendersPage(t *testing.T) {
 	t.Parallel()
 
-	_, handler := newAuthTestHandler(t)
+	_, handler, _ := newAuthTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 
@@ -46,7 +48,15 @@ func TestLoginHandlerRendersPage(t *testing.T) {
 func TestLoginHandlerCreatesSession(t *testing.T) {
 	t.Parallel()
 
-	_, handler := newAuthTestHandler(t)
+	_, handler, testDB := newAuthTestHandler(t)
+
+	user, err := database.FindUserByEmail(testDB, "test@example.com")
+
+	if err != nil {
+		t.Fatalf("FindUserByEmail() error = %v", err)
+	}
+
+	wantID := strconv.FormatInt(user.ID, 10)
 
 	body := strings.NewReader(url.Values{
 		"email":    {"test@example.com"},
@@ -78,15 +88,23 @@ func TestLoginHandlerCreatesSession(t *testing.T) {
 		t.Fatalf("decrypt session cookie: %v", err)
 	}
 
-	if decrypted != "1" {
-		t.Fatalf("session cookie value = %q, want %q", decrypted, "1")
+	if decrypted != wantID {
+		t.Fatalf("session cookie value = %q, want %q", decrypted, wantID)
 	}
 }
 
 func TestLoginHandlerCreatesSessionFromJSON(t *testing.T) {
 	t.Parallel()
 
-	_, handler := newAuthTestHandler(t)
+	_, handler, testDB := newAuthTestHandler(t)
+
+	user, err := database.FindUserByEmail(testDB, "test@example.com")
+
+	if err != nil {
+		t.Fatalf("FindUserByEmail() error = %v", err)
+	}
+
+	wantID := strconv.FormatInt(user.ID, 10)
 
 	body := strings.NewReader(`{"email":"test@example.com","password":"password","remember":true}`)
 
@@ -114,15 +132,15 @@ func TestLoginHandlerCreatesSessionFromJSON(t *testing.T) {
 		t.Fatalf("decrypt session cookie: %v", err)
 	}
 
-	if decrypted != "1" {
-		t.Fatalf("session cookie value = %q, want %q", decrypted, "1")
+	if decrypted != wantID {
+		t.Fatalf("session cookie value = %q, want %q", decrypted, wantID)
 	}
 }
 
 func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 	t.Parallel()
 
-	_, handler := newAuthTestHandler(t)
+	_, handler, _ := newAuthTestHandler(t)
 
 	body := strings.NewReader(url.Values{
 		"email":    {"test@example.com"},
@@ -161,9 +179,15 @@ func TestLoginHandlerRejectsInvalidPassword(t *testing.T) {
 func TestLogoutHandlerClearsSession(t *testing.T) {
 	t.Parallel()
 
-	_, handler := newAuthTestHandler(t)
+	_, handler, testDB := newAuthTestHandler(t)
 
-	encrypted, err := cryptox.Encrypt("1", testCryptoKey)
+	user, err := database.FindUserByEmail(testDB, "test@example.com")
+
+	if err != nil {
+		t.Fatalf("FindUserByEmail() error = %v", err)
+	}
+
+	encrypted, err := cryptox.Encrypt(strconv.FormatInt(user.ID, 10), testCryptoKey)
 
 	if err != nil {
 		t.Fatal(err)
@@ -193,7 +217,7 @@ func TestLogoutHandlerClearsSession(t *testing.T) {
 func TestWithCurrentUserLoadsUserFromCookie(t *testing.T) {
 	t.Parallel()
 
-	app, _ := newAuthTestHandler(t)
+	app, _, testDB := newAuthTestHandler(t)
 
 	handler := app.WithCurrentUser(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := app.CurrentUser(r)
@@ -207,7 +231,13 @@ func TestWithCurrentUserLoadsUserFromCookie(t *testing.T) {
 		}
 	}))
 
-	encrypted, err := cryptox.Encrypt("1", testCryptoKey)
+	user, err := database.FindUserByEmail(testDB, "test@example.com")
+
+	if err != nil {
+		t.Fatalf("FindUserByEmail() error = %v", err)
+	}
+
+	encrypted, err := cryptox.Encrypt(strconv.FormatInt(user.ID, 10), testCryptoKey)
 
 	if err != nil {
 		t.Fatal(err)
@@ -225,7 +255,7 @@ func TestWithCurrentUserLoadsUserFromCookie(t *testing.T) {
 func TestForgedCookieIsRejected(t *testing.T) {
 	t.Parallel()
 
-	app, _ := newAuthTestHandler(t)
+	app, _, _ := newAuthTestHandler(t)
 
 	handler := app.WithCurrentUser(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.CurrentUser(r) != nil {
@@ -242,7 +272,7 @@ func TestForgedCookieIsRejected(t *testing.T) {
 	handler.ServeHTTP(w, req)
 }
 
-func newAuthTestHandler(t *testing.T) (App, http.Handler) {
+func newAuthTestHandler(t *testing.T) (App, http.Handler, *sql.DB) {
 	t.Helper()
 
 	testInertia, err := inertia.New(testutil.TestTemplate, inertia.WithVersion("test"))
@@ -296,7 +326,7 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler) {
 
 	app.RegisterRoutes(mux)
 
-	return app, app.WithCurrentUser(mux)
+	return app, app.WithCurrentUser(mux), testDB
 }
 
 func authTestRouteURL(name string, params map[string]string) string {

@@ -57,11 +57,19 @@ func newCRMHarness(t *testing.T) *crmHarness {
 	}
 
 	h := &crmHarness{
-		t:        t,
-		db:       db,
-		inertia:  i,
-		registry: buildCRMRegistry(),
-		user:     user,
+		t:       t,
+		db:      db,
+		inertia: i,
+		registry: func() *wayfinder.Registry {
+			r := wayfinder.New()
+
+			DefineRoutes(r)
+
+			r.Add("login", "GET", "/login")
+
+			return r
+		}(),
+		user: user,
 	}
 
 	requireAuthFn := func(next http.Handler) http.Handler { return next }
@@ -106,32 +114,28 @@ func newCRMHarness(t *testing.T) *crmHarness {
 	return h
 }
 
-func buildCRMRegistry() *wayfinder.Registry {
-	routes := wayfinder.New()
+func (h *crmHarness) firstContactID() int64 {
+	h.t.Helper()
 
-	routes.Add("login", "GET", "/login")
-	routes.Add("dashboard", "GET", "/dashboard")
+	var id int64
 
-	routes.Group("contacts", "/contacts", func(g *wayfinder.Group) {
-		g.Add("index", "GET", "")
-		g.Add("create", "GET", "/create")
-		g.Add("show", "GET", "/{contact}")
-		g.Add("edit", "GET", "/{contact}/edit")
-		g.Add("update", "POST", "/{contact}")
-		g.Add("destroy", "DELETE", "/{contact}")
-		g.Add("favorite", "POST", "/{contact}/favorite")
+	if err := h.db.QueryRow("SELECT id FROM contacts ORDER BY id LIMIT 1").Scan(&id); err != nil {
+		h.t.Fatalf("firstContactID: %v", err)
+	}
 
-		g.Group("notes", "", func(ng *wayfinder.Group) {
-			ng.Add("store", "POST", "/{contact}/notes")
-		})
-	})
-	routes.Group("organizations", "/organizations", func(g *wayfinder.Group) {
-		g.Add("index", "GET", "")
-		g.Add("show", "GET", "/{organization}")
-		g.Add("update", "POST", "/{organization}")
-	})
+	return id
+}
 
-	return routes
+func (h *crmHarness) firstOrganizationID() int64 {
+	h.t.Helper()
+
+	var id int64
+
+	if err := h.db.QueryRow("SELECT id FROM organizations ORDER BY id LIMIT 1").Scan(&id); err != nil {
+		h.t.Fatalf("firstOrganizationID: %v", err)
+	}
+
+	return id
 }
 
 func (h *crmHarness) request(method, target string) *http.Request {

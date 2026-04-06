@@ -86,15 +86,9 @@ func TestOrganizationQueriesAndPagination(t *testing.T) {
 
 	_ = bravoID
 
-	alphaContacts := 0
-
-	for _, orgID := range []*int64{&alphaID, &alphaID, &charlieID} {
-		mustCreateContact(t, db, orgID, "Name", time.Now().Format("150405"), time.Now().Format("150405")+"@example.com", false)
-
-		if orgID != nil && *orgID == alphaID {
-			alphaContacts++
-		}
-	}
+	mustCreateContact(t, db, &alphaID, "Dan", "Drew", "dan@example.com", false)
+	mustCreateContact(t, db, &alphaID, "Eve", "Ellis", "eve@example.com", false)
+	mustCreateContact(t, db, &charlieID, "Fay", "Ford", "fay@example.com", false)
 
 	orgs, err := ListOrganizations(db, "Alpha")
 
@@ -102,8 +96,8 @@ func TestOrganizationQueriesAndPagination(t *testing.T) {
 		t.Fatalf("ListOrganizations() error = %v", err)
 	}
 
-	if len(orgs) != 1 || orgs[0].ID != alphaID || orgs[0].ContactsCount != alphaContacts {
-		t.Fatalf("ListOrganizations() = %#v, want Alpha with %d contacts", orgs, alphaContacts)
+	if len(orgs) != 1 || orgs[0].ID != alphaID || orgs[0].ContactsCount != 2 {
+		t.Fatalf("ListOrganizations() = %#v, want Alpha with 2 contacts", orgs)
 	}
 
 	org, err := GetOrganization(db, bravoID)

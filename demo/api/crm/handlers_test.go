@@ -2,6 +2,7 @@ package crm
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -120,8 +121,10 @@ func TestContactByIDDispatchAndMutations(t *testing.T) {
 	t.Parallel()
 
 	h := newCRMHarness(t)
+	cID := h.firstContactID()
+	cURL := fmt.Sprintf("/contacts/%d", cID)
 
-	req := h.request(http.MethodGet, "/contacts/1")
+	req := h.request(http.MethodGet, cURL)
 	w := httptest.NewRecorder()
 
 	h.app.contactByIDHandler(w, req)
@@ -130,16 +133,16 @@ func TestContactByIDDispatchAndMutations(t *testing.T) {
 
 	page.AssertComponent(t, "Contacts/Show")
 
-	req = h.partialRequest("/contacts/1", "Contacts/Show", "notes")
+	req = h.partialRequest(cURL, "Contacts/Show", "notes")
 	w = httptest.NewRecorder()
 
-	h.app.showContactHandler(w, req, 1)
+	h.app.showContactHandler(w, req, cID)
 
 	page = h.page(t, w)
 
 	page.AssertHasProp(t, "notes")
 
-	req = h.request(http.MethodGet, "/contacts/1/edit")
+	req = h.request(http.MethodGet, cURL+"/edit")
 	w = httptest.NewRecorder()
 
 	h.app.contactByIDHandler(w, req)
@@ -148,16 +151,16 @@ func TestContactByIDDispatchAndMutations(t *testing.T) {
 
 	page.AssertComponent(t, "Contacts/Edit")
 
-	req = h.request(http.MethodPost, "/contacts/1/favorite")
+	req = h.request(http.MethodPost, cURL+"/favorite")
 	w = httptest.NewRecorder()
 
 	h.app.contactByIDHandler(w, req)
 
-	if w.Code != http.StatusFound || w.Header().Get("Location") != "/contacts/1" {
+	if w.Code != http.StatusFound || w.Header().Get("Location") != cURL {
 		t.Fatalf("favorite status = %d, location = %q", w.Code, w.Header().Get("Location"))
 	}
 
-	req = h.request(http.MethodDelete, "/contacts/1")
+	req = h.request(http.MethodDelete, cURL)
 	w = httptest.NewRecorder()
 
 	h.app.contactByIDHandler(w, req)
@@ -189,6 +192,9 @@ func TestStoreAndUpdateContactBranches(t *testing.T) {
 	t.Parallel()
 
 	h := newCRMHarness(t)
+	cID := h.firstContactID()
+	cURL := fmt.Sprintf("/contacts/%d", cID)
+	orgID := fmt.Sprintf("%d", h.firstOrganizationID())
 
 	req := httptest.NewRequest(http.MethodPost, "/contacts", strings.NewReader(url.Values{
 		"organization_id": {"bad"},
@@ -212,7 +218,7 @@ func TestStoreAndUpdateContactBranches(t *testing.T) {
 	page.AssertHasProp(t, "errors")
 
 	req = httptest.NewRequest(http.MethodPost, "/contacts", strings.NewReader(url.Values{
-		"organization_id": {"1"},
+		"organization_id": {orgID},
 		"first_name":      {"Mina"},
 		"last_name":       {"Cole"},
 		"email":           {"mina@example.com"},
@@ -231,7 +237,7 @@ func TestStoreAndUpdateContactBranches(t *testing.T) {
 		t.Fatalf("store status = %d, location = %q", w.Code, w.Header().Get("Location"))
 	}
 
-	req = httptest.NewRequest(http.MethodPost, "/contacts/1", strings.NewReader(url.Values{
+	req = httptest.NewRequest(http.MethodPost, cURL, strings.NewReader(url.Values{
 		"first_name": {" "},
 		"last_name":  {" "},
 		"email":      {"bad"},
@@ -243,14 +249,14 @@ func TestStoreAndUpdateContactBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.updateContactHandler(w, req, 1)
+	h.app.updateContactHandler(w, req, cID)
 
 	page = h.page(t, w)
 
 	page.AssertComponent(t, "Contacts/Edit")
 
-	req = httptest.NewRequest(http.MethodPost, "/contacts/1", strings.NewReader(url.Values{
-		"organization_id": {"1"},
+	req = httptest.NewRequest(http.MethodPost, cURL, strings.NewReader(url.Values{
+		"organization_id": {orgID},
 		"first_name":      {"Updated"},
 		"last_name":       {"Name"},
 		"email":           {"updated@example.com"},
@@ -263,14 +269,14 @@ func TestStoreAndUpdateContactBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.updateContactHandler(w, req, 1)
+	h.app.updateContactHandler(w, req, cID)
 
-	if w.Code != http.StatusFound || w.Header().Get("Location") != "/contacts/1" {
+	if w.Code != http.StatusFound || w.Header().Get("Location") != cURL {
 		t.Fatalf("update status = %d, location = %q", w.Code, w.Header().Get("Location"))
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/contacts/999", strings.NewReader(url.Values{
-		"organization_id": {"1"},
+		"organization_id": {orgID},
 		"first_name":      {"Missing"},
 		"last_name":       {"Contact"},
 		"email":           {"missing@example.com"},
@@ -320,7 +326,7 @@ func TestStoreAndUpdateContactBranches(t *testing.T) {
 		t.Fatalf("store bad request status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 
-	req = httptest.NewRequest(http.MethodPost, "/contacts/1", strings.NewReader("bad"))
+	req = httptest.NewRequest(http.MethodPost, cURL, strings.NewReader("bad"))
 
 	req.Header.Set("Content-Type", "multipart/form-data; boundary=bad")
 	req.Header.Set(httpx.HeaderInertia, "true")
@@ -328,7 +334,7 @@ func TestStoreAndUpdateContactBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.updateContactHandler(w, req, 1)
+	h.app.updateContactHandler(w, req, cID)
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("update bad request status = %d, want %d", w.Code, http.StatusBadRequest)
@@ -339,8 +345,12 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 	t.Parallel()
 
 	h := newCRMHarness(t)
+	cID := h.firstContactID()
+	cURL := fmt.Sprintf("/contacts/%d", cID)
+	oID := h.firstOrganizationID()
+	oURL := fmt.Sprintf("/organizations/%d", oID)
 
-	req := httptest.NewRequest(http.MethodPost, "/contacts/1/notes", strings.NewReader(url.Values{
+	req := httptest.NewRequest(http.MethodPost, cURL+"/notes", strings.NewReader(url.Values{
 		"body": {""},
 	}.Encode()))
 
@@ -350,14 +360,14 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w := httptest.NewRecorder()
 
-	h.app.storeNoteHandler(w, req, 1)
+	h.app.storeNoteHandler(w, req, cID)
 
 	page := h.page(t, w)
 
 	page.AssertComponent(t, "Contacts/Show")
 
 	h.user = nil
-	req = httptest.NewRequest(http.MethodPost, "/contacts/1/notes", strings.NewReader(url.Values{
+	req = httptest.NewRequest(http.MethodPost, cURL+"/notes", strings.NewReader(url.Values{
 		"body": {"Need follow-up"},
 	}.Encode()))
 
@@ -367,7 +377,7 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.storeNoteHandler(w, req, 1)
+	h.app.storeNoteHandler(w, req, cID)
 
 	if w.Code != http.StatusFound || w.Header().Get("Location") != "/login" {
 		t.Fatalf("note redirect status = %d, location = %q", w.Code, w.Header().Get("Location"))
@@ -380,7 +390,7 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 	}
 
 	h.user = user
-	req = httptest.NewRequest(http.MethodPost, "/contacts/1/notes", strings.NewReader(url.Values{
+	req = httptest.NewRequest(http.MethodPost, cURL+"/notes", strings.NewReader(url.Values{
 		"body": {"Need follow-up"},
 	}.Encode()))
 
@@ -390,13 +400,13 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.storeNoteHandler(w, req, 1)
+	h.app.storeNoteHandler(w, req, cID)
 
-	if w.Code != http.StatusFound || w.Header().Get("Location") != "/contacts/1" {
+	if w.Code != http.StatusFound || w.Header().Get("Location") != cURL {
 		t.Fatalf("note status = %d, location = %q", w.Code, w.Header().Get("Location"))
 	}
 
-	req = h.request(http.MethodGet, "/organizations/1")
+	req = h.request(http.MethodGet, oURL)
 	w = httptest.NewRecorder()
 
 	h.app.organizationByIDHandler(w, req)
@@ -405,7 +415,7 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 
 	page.AssertComponent(t, "Organizations/Show")
 
-	req = httptest.NewRequest(http.MethodPost, "/organizations/1", strings.NewReader(url.Values{
+	req = httptest.NewRequest(http.MethodPost, oURL, strings.NewReader(url.Values{
 		"name": {""},
 	}.Encode()))
 
@@ -415,13 +425,13 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.updateOrganizationHandler(w, req, 1)
+	h.app.updateOrganizationHandler(w, req, oID)
 
 	page = h.page(t, w)
 
 	page.AssertComponent(t, "Organizations/Show")
 
-	req = httptest.NewRequest(http.MethodPost, "/organizations/1", strings.NewReader(url.Values{
+	req = httptest.NewRequest(http.MethodPost, oURL, strings.NewReader(url.Values{
 		"name": {"Updated Org"},
 	}.Encode()))
 
@@ -431,9 +441,9 @@ func TestStoreNoteAndOrganizationBranches(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.updateOrganizationHandler(w, req, 1)
+	h.app.updateOrganizationHandler(w, req, oID)
 
-	if w.Code != http.StatusFound || w.Header().Get("Location") != "/organizations/1" {
+	if w.Code != http.StatusFound || w.Header().Get("Location") != oURL {
 		t.Fatalf("organization update status = %d, location = %q", w.Code, w.Header().Get("Location"))
 	}
 }
@@ -442,6 +452,11 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 	t.Parallel()
 
 	h := newCRMHarness(t)
+	cID := h.firstContactID()
+	cURL := fmt.Sprintf("/contacts/%d", cID)
+	oID := h.firstOrganizationID()
+	oURL := fmt.Sprintf("/organizations/%d", oID)
+	orgID := fmt.Sprintf("%d", oID)
 
 	req := h.request(http.MethodPut, "/contacts")
 	w := httptest.NewRecorder()
@@ -524,7 +539,7 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 		t.Fatalf("showOrganizationHandler status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 
-	req = h.request(http.MethodPost, "/contacts/1/notes")
+	req = h.request(http.MethodPost, cURL+"/notes")
 	w = httptest.NewRecorder()
 
 	h.app.contactByIDHandler(w, req)
@@ -533,7 +548,7 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 		t.Fatalf("contactByIDHandler note status = %d, want %d", w.Code, http.StatusOK)
 	}
 
-	req = h.request(http.MethodGet, "/contacts/1/notes")
+	req = h.request(http.MethodGet, cURL+"/notes")
 	w = httptest.NewRecorder()
 
 	h.app.contactByIDHandler(w, req)
@@ -542,7 +557,7 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 		t.Fatalf("contactByIDHandler wrong note method status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 
-	req = h.request(http.MethodGet, "/contacts/1/missing")
+	req = h.request(http.MethodGet, cURL+"/missing")
 	w = httptest.NewRecorder()
 
 	h.app.contactByIDHandler(w, req)
@@ -551,7 +566,7 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 		t.Fatalf("contactByIDHandler unknown action status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 
-	req = h.request(http.MethodDelete, "/organizations/1")
+	req = h.request(http.MethodDelete, oURL)
 	w = httptest.NewRecorder()
 
 	h.app.organizationByIDHandler(w, req)
@@ -589,26 +604,26 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 		t.Fatalf("contactsCreateHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
-	req = h.request(http.MethodGet, "/contacts/1")
+	req = h.request(http.MethodGet, cURL)
 	w = httptest.NewRecorder()
 
-	h.app.showContactHandler(w, req, 1)
+	h.app.showContactHandler(w, req, cID)
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("showContactHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
-	req = h.request(http.MethodGet, "/contacts/1/edit")
+	req = h.request(http.MethodGet, cURL+"/edit")
 	w = httptest.NewRecorder()
 
-	h.app.editContactHandler(w, req, 1)
+	h.app.editContactHandler(w, req, cID)
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("editContactHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/contacts", strings.NewReader(url.Values{
-		"organization_id": {"1"},
+		"organization_id": {orgID},
 		"first_name":      {"Closed"},
 		"last_name":       {"DB"},
 		"email":           {"closed@example.com"},
@@ -626,8 +641,8 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 		t.Fatalf("storeContactHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
-	req = httptest.NewRequest(http.MethodPost, "/contacts/1", strings.NewReader(url.Values{
-		"organization_id": {"1"},
+	req = httptest.NewRequest(http.MethodPost, cURL, strings.NewReader(url.Values{
+		"organization_id": {orgID},
 		"first_name":      {"Closed"},
 		"last_name":       {"DB"},
 		"email":           {"closed@example.com"},
@@ -639,22 +654,22 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.updateContactHandler(w, req, 1)
+	h.app.updateContactHandler(w, req, cID)
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("updateContactHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
-	req = h.request(http.MethodPost, "/contacts/1/favorite")
+	req = h.request(http.MethodPost, cURL+"/favorite")
 	w = httptest.NewRecorder()
 
-	h.app.toggleFavoriteHandler(w, req, 1)
+	h.app.toggleFavoriteHandler(w, req, cID)
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("toggleFavoriteHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
-	req = httptest.NewRequest(http.MethodPost, "/contacts/1/notes", strings.NewReader(url.Values{
+	req = httptest.NewRequest(http.MethodPost, cURL+"/notes", strings.NewReader(url.Values{
 		"body": {"Need note"},
 	}.Encode()))
 
@@ -664,7 +679,7 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.storeNoteHandler(w, req, 1)
+	h.app.storeNoteHandler(w, req, cID)
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("storeNoteHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
@@ -679,16 +694,16 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 		t.Fatalf("organizationsHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
-	req = h.request(http.MethodGet, "/organizations/1")
+	req = h.request(http.MethodGet, oURL)
 	w = httptest.NewRecorder()
 
-	h.app.showOrganizationHandler(w, req, 1)
+	h.app.showOrganizationHandler(w, req, oID)
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("showOrganizationHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 
-	req = httptest.NewRequest(http.MethodPost, "/organizations/1", strings.NewReader(url.Values{
+	req = httptest.NewRequest(http.MethodPost, oURL, strings.NewReader(url.Values{
 		"name": {"Closed DB"},
 	}.Encode()))
 
@@ -698,7 +713,7 @@ func TestCRMHandlers_MethodGuardsNotFoundAndDatabaseErrors(t *testing.T) {
 	req.RequestURI = req.URL.RequestURI()
 	w = httptest.NewRecorder()
 
-	h.app.updateOrganizationHandler(w, req, 1)
+	h.app.updateOrganizationHandler(w, req, oID)
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("updateOrganizationHandler db error status = %d, want %d", w.Code, http.StatusInternalServerError)

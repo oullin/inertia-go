@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -14,7 +15,7 @@ import (
 func TestLoginValidationAndLogoutMethodGuard(t *testing.T) {
 	t.Parallel()
 
-	_, handler := newAuthTestHandler(t)
+	_, handler, _ := newAuthTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(""))
 
@@ -39,7 +40,7 @@ func TestLoginValidationAndLogoutMethodGuard(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 
-	app, _ := newAuthTestHandler(t)
+	app, _, _ := newAuthTestHandler(t)
 	req = httptest.NewRequest(http.MethodGet, "/logout", nil)
 	w = httptest.NewRecorder()
 
@@ -53,7 +54,7 @@ func TestLoginValidationAndLogoutMethodGuard(t *testing.T) {
 func TestRequireAuthGuestOnlyAndCurrentUserBranches(t *testing.T) {
 	t.Parallel()
 
-	app, _ := newAuthTestHandler(t)
+	app, _, testDB := newAuthTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
 	w := httptest.NewRecorder()
@@ -66,7 +67,13 @@ func TestRequireAuthGuestOnlyAndCurrentUserBranches(t *testing.T) {
 		t.Fatalf("RequireAuth status = %d, location = %q", w.Code, w.Header().Get("Location"))
 	}
 
-	encrypted, err := cryptox.Encrypt("1", testCryptoKey)
+	user, err := database.FindUserByEmail(testDB, "test@example.com")
+
+	if err != nil {
+		t.Fatalf("FindUserByEmail() error = %v", err)
+	}
+
+	encrypted, err := cryptox.Encrypt(strconv.FormatInt(user.ID, 10), testCryptoKey)
 
 	if err != nil {
 		t.Fatalf("Encrypt() error = %v", err)
@@ -94,7 +101,7 @@ func TestRequireAuthGuestOnlyAndCurrentUserBranches(t *testing.T) {
 func TestLoadCurrentUserAndPublicUser(t *testing.T) {
 	t.Parallel()
 
-	app, _ := newAuthTestHandler(t)
+	app, _, testDB := newAuthTestHandler(t)
 
 	if app.loadCurrentUser(httptest.NewRequest(http.MethodGet, "/", nil)) != nil {
 		t.Fatal("loadCurrentUser() without cookie should return nil")
@@ -121,16 +128,41 @@ func TestLoadCurrentUserAndPublicUser(t *testing.T) {
 		t.Fatal("loadCurrentUser() with non-integer payload should return nil")
 	}
 
-	user := app.PublicUser(&database.User{
-		ID:    1,
+	user, err := database.FindUserByEmail(testDB, "test@example.com")
+
+	if err != nil {
+		t.Fatalf("FindUserByEmail() error = %v", err)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	encrypted, err = cryptox.Encrypt(strconv.FormatInt(user.ID, 10), testCryptoKey)
+
+	if err != nil {
+		t.Fatalf("Encrypt() error = %v", err)
+	}
+
+	req.AddCookie(&http.Cookie{Name: SessionCookieName, Value: encrypted})
+
+	loaded := app.loadCurrentUser(req)
+
+	if loaded == nil {
+		t.Fatal("loadCurrentUser() with valid encrypted cookie should return a user")
+	}
+
+	if loaded.Email != "test@example.com" {
+		t.Fatalf("loadCurrentUser().Email = %q, want %q", loaded.Email, "test@example.com")
+	}
+
+	publicUser := app.PublicUser(&database.User{
+		ID:    user.ID,
 		Name:  "Ada Lovelace",
 		Email: "ada@example.com",
 	})
 
-	payload, ok := user.(map[string]any)
+	payload, ok := publicUser.(map[string]any)
 
 	if !ok || payload["initials"] != "AL" {
-		t.Fatalf("PublicUser() = %#v, want initials AL", user)
+		t.Fatalf("PublicUser() = %#v, want initials AL", publicUser)
 	}
 
 	if app.PublicUser(nil) != nil {

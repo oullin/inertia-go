@@ -139,17 +139,23 @@ func TestRedirectsAndFragmentsActionHandlers(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 
-	for _, action := range []string{"redirect-with-hash", "preserve-fragment"} {
-		req = h.request(http.MethodPost, "/features/navigation/url-fragments/"+action, nil)
+	for _, tt := range []struct {
+		action       string
+		wantLocation string
+	}{
+		{"redirect-with-hash", "/features/navigation/url-fragments#section-2"},
+		{"preserve-fragment", "/features/navigation/url-fragments"},
+	} {
+		req = h.request(http.MethodPost, "/features/navigation/url-fragments/"+tt.action, nil)
 
-		req.SetPathValue("action", action)
+		req.SetPathValue("action", tt.action)
 
 		w = httptest.NewRecorder()
 
 		h.app.urlFragmentsActionHandler(w, req)
 
-		if w.Code != http.StatusFound {
-			t.Fatalf("action %s: status = %d, want %d", action, w.Code, http.StatusFound)
+		if w.Code != http.StatusFound || w.Header().Get("Location") != tt.wantLocation {
+			t.Fatalf("action %s: status = %d, location = %q, want %d %q", tt.action, w.Code, w.Header().Get("Location"), http.StatusFound, tt.wantLocation)
 		}
 	}
 
