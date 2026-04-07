@@ -17,6 +17,7 @@ func initRoutes() *wayfinder.Registry {
 	routes := wayfinder.New()
 
 	routes.Add("login", "GET", "/login")
+
 	routes.Add("logout", "POST", "/logout")
 
 	crm.DefineRoutes(routes)

@@ -21,12 +21,15 @@ func TestRegisterRoutes_MountsHandlers(t *testing.T) {
 			t.Fatalf("Render(%s) error = %v", component, err)
 		}
 	}
+
 	redirectFn := func(w http.ResponseWriter, r *http.Request, url string) {
 		h.inertia.Redirect(w, r, url)
 	}
+
 	locationFn := func(w http.ResponseWriter, r *http.Request, url string) {
 		h.inertia.Location(w, r, url)
 	}
+
 	setFlashFn := func(w http.ResponseWriter, msg flash.Message) error {
 		return nil
 	}

@@ -302,9 +302,11 @@ func newAuthTestHandler(t *testing.T) (App, http.Handler, *sql.DB) {
 			t.Fatalf("render failed: %v", err)
 		}
 	}
+
 	redirectFn := func(w http.ResponseWriter, r *http.Request, url string) {
 		testInertia.Redirect(w, r, url)
 	}
+
 	setFlashFn := func(http.ResponseWriter, flash.Message) error { return nil }
 
 	app, err := NewApp(Container{

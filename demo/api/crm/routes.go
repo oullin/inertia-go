@@ -31,6 +31,7 @@ func DefineRoutes(routes *wayfinder.Registry) {
 			ng.Add("store", "POST", "/{contact}/notes")
 		})
 	})
+
 	routes.Group("organizations", "/organizations", func(g *wayfinder.Group) {
 		g.Add("index", "GET", "")
 		g.Add("show", "GET", "/{organization}")

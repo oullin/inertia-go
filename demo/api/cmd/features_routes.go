@@ -11,6 +11,7 @@ func (rt *runtime) registerFeatureRoutes(mux *http.ServeMux, authApp auth.App) e
 	redirectFn := func(w http.ResponseWriter, r *http.Request, url string) {
 		rt.inertia.Redirect(w, r, url)
 	}
+
 	locationFn := func(w http.ResponseWriter, r *http.Request, url string) {
 		rt.inertia.Location(w, r, url)
 	}
